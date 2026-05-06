@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Logs
+logs/
+*.jsonl
+
+# Build outputs
+dist/
+build/
+*.spec
+
+# Binary files
+*.exe
