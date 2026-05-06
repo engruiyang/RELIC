@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
+
 """RELIC 独立通信解析程序。
 
 连接 HNNK/科创平台 TCP 端口，按 4 字节大端长度头 + UTF-8 JSON 负载解析 IPC 帧，
 并将原始消息写入 JSONL 日志。
 """
+
 
 from __future__ import annotations
 
