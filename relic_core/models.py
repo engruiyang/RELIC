@@ -11,7 +11,7 @@ class FocusState(str, Enum):
 
 @dataclass
 class RealtimeSnapshot:
-    connected: bool=False; layout_type:int|None=None; last_msg:str|None=None; last_algorithm_name:str|None=None
+    connected: bool=False; bridge_alive: bool|None=None; layout_type:int|None=None; last_msg:str|None=None; last_algorithm_name:str|None=None
     attention_value:int|None=None; attention_valid:bool=False; attention_age_ms:int|None=None
     focus_x:float|None=None; focus_y:float|None=None; focus_area_x:float|None=None; focus_area_y:float|None=None; focus_area_width:float|None=None; focus_area_height:float|None=None
     gyro_x:float|None=None; gyro_y:float|None=None; gyro_z:float|None=None; gyro_valid:bool=False; gyro_age_ms:int|None=None
