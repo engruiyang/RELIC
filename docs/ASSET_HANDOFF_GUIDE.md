@@ -1,91 +1,116 @@
-# RELIC 美术与页面设计交付规范（Headless Core 阶段）
+# 美术交付说明（从 0 开始，一眼看懂版）
 
-> 本文档用于指导后续美工/UI 设计同学交付素材，**不改变当前核心设计**。
-> 适用日期：2026-05-07
+> 旧版说明已弃用。请只看这份。
 
-## 1. 交付总原则
-
-- 逻辑层（`relic_core/`、`games/`）不直接写死素材路径、颜色、字体。
-- 所有素材通过 `assets/manifest.json` 的 key 引用。
-- 所有颜色/字体/尺寸 token 通过 `assets/themes/default/theme.json` 管理。
-- 页面结构通过 `assets/layouts/*.json` 提供（当前可先从占位 JSON 扩展）。
+你不用懂代码。
+你只要照着下面做，就不会错。
 
 ---
 
-## 2. 目录与职责
+## 第 1 步：先知道你要交什么
 
-请按以下目录放置：
+你只需要交两部分：
 
-```text
-assets/
-  manifest.json                  # 资源索引（逻辑 key -> 相对路径）
-  themes/
-    default/theme.json           # 主题 token（颜色、字体、尺寸）
-  layouts/
-    main_menu.json               # 主菜单页面结构
-    quick_check.json             # 快检页面结构
-    game_hud.json                # 游戏 HUD 页面结构
-    report.json                  # 报告页面结构
-  images/
-    backgrounds/                 # 背景图
-    buttons/                     # 按钮图
-    icons/                       # 通用图标
-    games/
-      fragment_lock/             # 碎片锁定游戏图
-      signal_hunter/             # 信号猎手游戏图
-      stabilizer/                # 稳定协议游戏图
-  fonts/                         # 字体文件
-  sounds/                        # 音效文件
-  animations/                    # 动画序列或导出文件
+### A. 素材文件（图片/字体/音效）
+
+放到这些文件夹：
+
+- 背景图：`assets/images/backgrounds/`
+- 按钮图：`assets/images/buttons/`
+- 图标：`assets/images/icons/`
+- 游戏图：
+  - 碎片锁定：`assets/images/games/fragment_lock/`
+  - 信号猎手：`assets/images/games/signal_hunter/`
+  - 稳定协议：`assets/images/games/stabilizer/`
+- 字体：`assets/fonts/`
+- 音效：`assets/sounds/`
+- 动画：`assets/animations/`
+
+### B. 3 个 JSON 文件（很简单，照抄模板改字就行）
+
+1. `assets/manifest.json`（写“素材名字 -> 文件路径”）
+2. `assets/themes/default/theme.json`（写颜色、字体、尺寸）
+3. `assets/layouts/main_menu.json`（写页面上有什么）
+
+---
+
+## 第 2 步：JSON 怎么写（不会也能写）
+
+请记住 4 条：
+
+1. 最外层用 `{ }`
+2. 每一项是 `"名字": 值`
+3. 字符串必须加英文双引号 `"`（不要用中文引号）
+4. 每项后面用英文逗号 `,`，最后一项不要逗号
+
+### 正确示例
+
+```json
+{
+  "name": "default",
+  "width": 1280
+}
 ```
 
+### 错误示例（不要这样写）
+
+```json
+{
+  name: "default",
+  "width": 1280,
+}
+```
+
+错因：
+- `name` 没加双引号
+- 最后一行多了逗号
+
 ---
 
-## 3. manifest.json 规范
+## 第 3 步：manifest.json 怎么写（最重要）
 
-`manifest.json` 是“资源注册表”，格式为：
+文件位置：`assets/manifest.json`
+
+它的作用：
+**给每个素材起一个“代码名”，并告诉系统素材在哪个路径。**
+
+直接按这个模板填：
 
 ```json
 {
   "images.logo": "images/icons/logo.png",
-  "images.main_background": "images/backgrounds/main.png",
-  "images.button.normal": "images/buttons/button_normal.png",
-  "images.button.hover": "images/buttons/button_hover.png",
-  "sounds.click": "sounds/click.wav",
+  "images.main_background": "images/backgrounds/main_bg.png",
+  "images.button.start.normal": "images/buttons/btn_start_normal.png",
+  "images.button.start.hover": "images/buttons/btn_start_hover.png",
+  "sounds.click": "sounds/ui_click.wav",
   "fonts.main": "fonts/main.ttf"
 }
 ```
 
-### 3.1 key 命名建议
+### 你要改哪里？
 
-- 采用点分层级：`类别.页面或模块.用途.状态`
-- 例如：
-  - `images.main_menu.background`
-  - `images.button.primary.normal`
-  - `images.button.primary.hover`
-  - `sounds.ui.confirm`
-  - `sounds.game.hit`
-  - `fonts.main`
+- 左边（比如 `images.logo`）是“名字”，可以按示例风格新增
+- 右边是**真实文件路径**（相对 `assets/`）
 
-### 3.2 注意事项
+例如你放了文件：
+- 实际文件：`assets/images/icons/icon_help.png`
 
-- value 必须是 **assets 目录下相对路径**。
-- key 一旦被代码使用，改名前需同步开发。
-- 可以新增 key，不建议直接删除已有 key。
+那就写：
+
+```json
+"images.icon.help": "images/icons/icon_help.png"
+```
 
 ---
 
-## 4. theme.json 规范
+## 第 4 步：theme.json 怎么写
 
-`assets/themes/default/theme.json` 用于设计 token。
+文件位置：`assets/themes/default/theme.json`
 
-当前已存在字段：
-- `name`
-- `font_family`
-- `colors`（颜色 token）
-- `sizes`（尺寸 token）
+它的作用：
+**统一颜色、字体、窗口大小。**
 
-建议扩展但保持兼容：
+直接用这个模板：
 
 ```json
 {
@@ -95,11 +120,7 @@ assets/
     "background": "#10131A",
     "panel": "#1B2130",
     "primary": "#70E0FF",
-    "secondary": "#8B7CFF",
-    "warning": "#FFD166",
-    "danger": "#FF5C7A",
-    "text": "#F5F7FA",
-    "muted_text": "#A7B0C0"
+    "text": "#F5F7FA"
   },
   "sizes": {
     "window_width": 1280,
@@ -110,23 +131,28 @@ assets/
 }
 ```
 
-可扩展字段示例：
-- `radius`: 圆角 token
-- `spacing`: 间距 token
-- `shadow`: 阴影 token
-- `font_size`: 字号 token
+说明：
+- 颜色必须是 `#` 开头，比如 `#FFFFFF`
+- 尺寸必须是数字，不要加单位（不要写 `1280px`）
 
 ---
 
-## 5. 页面 layout JSON 规范（建议）
+## 第 5 步：layout（页面）json 怎么写
 
-当前 `assets/layouts/*.json` 仍是占位 `{}`。建议按以下结构交付页面描述：
+先从主菜单开始：`assets/layouts/main_menu.json`
+
+它的作用：
+**告诉系统页面上有哪些东西（背景、按钮、文字）。**
+
+请直接从下面这个最小模板开始：
 
 ```json
 {
   "page": "main_menu",
-  "version": 1,
-  "canvas": {"width": 1280, "height": 720},
+  "canvas": {
+    "width": 1280,
+    "height": 720
+  },
   "nodes": [
     {
       "id": "bg",
@@ -135,135 +161,84 @@ assets/
       "x": 0,
       "y": 0,
       "width": 1280,
-      "height": 720,
-      "anchor": "top_left"
+      "height": 720
     },
     {
-      "id": "start_button",
+      "id": "btn_start",
       "type": "button",
-      "style": "primary",
       "text": "开始训练",
       "x": 540,
       "y": 520,
       "width": 200,
       "height": 64,
       "states": {
-        "normal": "images.button.normal",
-        "hover": "images.button.hover"
+        "normal": "images.button.start.normal",
+        "hover": "images.button.start.hover"
       }
     }
   ]
 }
 ```
 
-### 5.1 推荐字段
-
-- `page`: 页面名
-- `version`: 结构版本号
-- `canvas`: 设计稿尺寸
-- `nodes`: 组件数组
-- 节点通用字段：`id/type/x/y/width/height/anchor/visible/z_index`
-
-### 5.2 常用节点 type
-
-- `image`
-- `text`
-- `button`
-- `panel`
-- `progress`
-- `icon`
+注意：
+- `asset` 里写的是 **manifest 的名字**，不是文件路径
+- 比如 `images.main_background`，必须先在 `manifest.json` 里存在
 
 ---
 
-## 6. 可交付素材清单
+## 第 6 步：文件格式和命名（直接照做）
 
-### 6.1 图片（推荐 PNG / WebP）
+### 图片
+- 推荐：PNG
+- 文件名示例：
+  - `main_bg.png`
+  - `btn_start_normal.png`
+  - `btn_start_hover.png`
 
-可交付：
-- 背景图（主菜单、快检、游戏、报告）
-- 按钮（normal/hover/pressed/disabled）
-- 图标（状态、导航、提示）
-- 游戏对象图（后续三个小游戏）
+### 字体
+- 推荐：TTF/OTF
+- 示例：`main.ttf`
 
-放置目录：
-- `assets/images/backgrounds/`
-- `assets/images/buttons/`
-- `assets/images/icons/`
-- `assets/images/games/<game_id>/`
+### 音效
+- 推荐：WAV
+- 示例：`ui_click.wav`
 
-建议：
-- UI 元素优先透明 PNG。
-- 命名包含状态后缀，如 `_normal/_hover/_pressed`。
-
-### 6.2 字体
-
-可交付：
-- 主字体、数字字体、强调字体（如有授权）
-
-放置目录：
-- `assets/fonts/`
-
-并在 manifest 注册：
-- `fonts.main`
-- `fonts.number`（可选）
-
-### 6.3 音效
-
-可交付：
-- 点击、确认、警告、命中、miss、结算提示等
-
-放置目录：
-- `assets/sounds/`
-
-建议：
-- UI 音效命名：`ui_click.wav`、`ui_confirm.wav`
-- 游戏音效命名：`game_hit.wav`、`game_miss.wav`
-
-### 6.4 动画
-
-可交付：
-- 帧序列（PNG 序列）
-- 或导出资源（按后续 UI 框架能力决定）
-
-放置目录：
-- `assets/animations/`
-
-并在 manifest 增加对应 key。
+### 命名规则（必须）
+- 只用：英文小写、数字、下划线
+- 不要空格，不要中文
 
 ---
 
-## 7. 交付包建议格式
+## 第 7 步：交付前 30 秒自检
 
-建议一次交付包含：
+你只检查这 6 条：
 
-1. `assets/` 下新增或替换的文件。
-2. 更新后的 `assets/manifest.json`。
-3. 更新后的 `assets/themes/default/theme.json`（若 token 有调整）。
-4. 更新后的 `assets/layouts/*.json`（若页面结构有定义）。
-5. 一份变更说明（Markdown）：
-   - 新增了哪些 key
-   - 删除/替换了哪些 key
-   - 哪些页面布局字段变更
+1. 素材都放对文件夹了
+2. `manifest.json` 里每个路径都写对了
+3. `theme.json` 没有中文引号
+4. `layout` 里的 `asset` 名字都能在 `manifest.json` 找到
+5. JSON 最后一项没有多余逗号
+6. 文件名没有中文和空格
 
 ---
 
-## 8. 与开发协作的“最小对齐清单”
+## 第 8 步：最小可用交付（赶时间就交这个）
 
-每次交付前请确认：
+最少交 4 个文件：
 
-- [ ] manifest 的 key 唯一且语义清晰。
-- [ ] theme token 名称稳定，不随意改名。
-- [ ] layout 节点 id 在同页面唯一。
-- [ ] 实际文件路径与 manifest 一致。
-- [ ] 文件名只使用英文、数字、下划线，避免空格。
-- [ ] 若替换同名素材，确认尺寸变化不会破坏布局。
+1. `assets/images/backgrounds/main_bg.png`
+2. `assets/images/buttons/btn_start_normal.png`
+3. `assets/images/buttons/btn_start_hover.png`
+4. `assets/manifest.json`（把上面 3 张图注册进去）
+
+这样开发就能先接起来跑。
 
 ---
 
-## 9. 当前阶段边界（重要）
+## 第 9 步：你不需要做的事
 
-- 当前为 Headless Core 阶段，不直接加载 QPixmap/音频对象。
-- 资源系统当前只做“路径与 token 管理”。
-- 正式渲染与交互由后续 `ui_pyqt/` 适配层实现。
+- 不需要改 Python 代码
+- 不需要改核心逻辑
+- 不需要理解程序架构
 
-这意味着：美术和页面可以先按本文档沉淀素材与 JSON 规范，待 UI Adapter 接入时即可直接消费。
+你只要把素材 + JSON 按本说明给齐，就完成了。
