@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import importlib
+import importlib.util
 import inspect
 import math
 import threading
 import time
+from pathlib import Path
 from typing import Any, Protocol
 
 
@@ -43,18 +46,35 @@ class LiveDataBridgeAdapter:
                 args[name] = defaults[name]
         return cls(**args)
 
-    def start(self) -> None:
-        err: Exception | None = None
-        cls = None
+    def _import_relic_client(self) -> type:
+        errors: list[str] = []
         for mod in ("relic_data_bridge", "RELIC_MAIN"):
             try:
-                m = __import__(mod, fromlist=["RelicClient"])
-                cls = getattr(m, "RelicClient")
-                break
-            except Exception as exc:
-                err = exc
-        if cls is None:
-            raise RuntimeError(f"无法导入RelicClient: {err}")
+                m = importlib.import_module(mod)
+                if hasattr(m, "RelicClient"):
+                    return getattr(m, "RelicClient")
+                errors.append(f"{mod}: missing RelicClient")
+            except Exception as exc:  # noqa: BLE001
+                errors.append(f"{mod}: {exc}")
+
+        # fallback: load ./relic_data_bridge.py directly by file path
+        candidate = Path.cwd() / "relic_data_bridge.py"
+        if candidate.exists():
+            try:
+                spec = importlib.util.spec_from_file_location("relic_data_bridge_local", candidate)
+                if spec and spec.loader:
+                    module = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(module)
+                    if hasattr(module, "RelicClient"):
+                        return getattr(module, "RelicClient")
+                errors.append("relic_data_bridge.py: missing RelicClient")
+            except Exception as exc:  # noqa: BLE001
+                errors.append(f"relic_data_bridge.py: {exc}")
+
+        raise RuntimeError("无法导入RelicClient: " + " | ".join(errors))
+
+    def start(self) -> None:
+        cls = self._import_relic_client()
         self.client = self._build_client(cls)
         self.client.connect()
         self._alive = True
