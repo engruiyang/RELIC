@@ -1,0 +1,20 @@
+{
+  "name": "default",
+  "font_family": "Microsoft YaHei UI",
+  "colors": {
+    "background": "#10131A",
+    "panel": "#1B2130",
+    "primary": "#70E0FF",
+    "secondary": "#8B7CFF",
+    "warning": "#FFD166",
+    "danger": "#FF5C7A",
+    "text": "#F5F7FA",
+    "muted_text": "#A7B0C0"
+  },
+  "sizes": {
+    "window_width": 1280,
+    "window_height": 720,
+    "top_bar_height": 72,
+    "bottom_bar_height": 48
+  }
+}
