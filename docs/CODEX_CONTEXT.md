@@ -1464,3 +1464,40 @@ Check whether attention test mode is running.
 Check whether the headset is connected and worn correctly.
 Check whether attention score is stuck at 0.
 Restart headset and official software if needed.
+
+# RELIC 当前最高优先级架构决策
+
+本文档记录 RELIC 当前阶段的软件架构约束。后续 Codex 执行任务时，应优先遵守本节。
+
+## 1. 当前阶段目标
+
+当前阶段不做正式 GUI，不做完整小游戏，不做完整算法。
+
+当前阶段目标是建立 RELIC App Core，也就是主程序根基。它应当为后续小游戏、正式 UI、美术素材、平台嵌入、校准、状态估计和报告系统提供稳定接口。
+
+已经验证完成的数据桥接模块负责：
+
+- 连接官方平台。
+- 接收 TCP 帧。
+- 解析 4 字节大端序长度头 + JSON payload。
+- 解析 `ipc_user_info`。
+- 解析 `ipc_algorithm_test`。
+- 解析 attention。
+- 解析 gyroscope / focus。
+- 写入 raw 和 sensor 日志。
+- 提供 `get_snapshot()`。
+
+App Core 不得重复实现这些功能。
+
+## 2. 核心分层
+
+RELIC 软件分为四层：
+
+```text
+官方平台 / 头环
+        ↓
+Data Bridge 数据桥接层
+        ↓
+App Core 主程序内核
+        ↓
+UI Adapter / Games / Reports
