@@ -337,20 +337,28 @@ class RelicClient:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(description="RELIC IPC client")
-    p.add_argument("--host", default="10.138.172.184") """官方接口，暂时无需调整"""
-    p.add_argument("--port", type=int, default=8000)
-    p.add_argument("--print", dest="print_attention", action="store_true")
-    p.add_argument("--verbose", action="store_true")
-    p.add_argument("--dump-raw", action="store_true")
-    p.add_argument("--raw-limit", type=int, default=20)
-    p.add_argument("--save-payload-text", action="store_true")
-    return p
+    parser = argparse.ArgumentParser(description="RELIC IPC client")
+    parser.add_argument("--host", default="127.0.0.1")
+    parser.add_argument("--port", type=int, default=8000)
+    parser.add_argument("--print", dest="print_attention", action="store_true")
+    parser.add_argument("--verbose", action="store_true")
+    parser.add_argument("--dump-raw", action="store_true")
+    parser.add_argument("--raw-limit", type=int, default=20)
+    parser.add_argument("--save-payload-text", action="store_true")
+    return parser
 
 
 def main() -> int:
     args = build_parser().parse_args()
-    client = RelicClient(args.host, args.port, args.print_attention, args.verbose, args.dump_raw, args.raw_limit, args.save_payload_text)
+    client = RelicClient(
+        args.host,
+        args.port,
+        args.print_attention,
+        args.verbose,
+        args.dump_raw,
+        args.raw_limit,
+        args.save_payload_text,
+    )
     try:
         client.connect()
         client.recv_loop()
