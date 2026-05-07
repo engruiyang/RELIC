@@ -2,8 +2,10 @@ import time
 from .models import FocusState, GameMetrics
 class StateMachine:
     def __init__(self): self.history=[]; self.current=FocusState.UNKNOWN.value
-    def update(self,focus,quality=None,now_ms=None):
+    def update(self,focus,quality=None,now_ms=None,training_data_valid=True,stream_state='UNKNOWN'):
         if quality and quality.status=='error': st=FocusState.NO_SIGNAL.value
+        elif not training_data_valid: st=FocusState.NO_SIGNAL.value
+        elif stream_state in ('STREAM_INACTIVE','BRIDGE_DISCONNECTED','BRIDGE_DEAD'): st=FocusState.NO_SIGNAL.value
         elif focus.fi>=80: st=FocusState.HIGH_FOCUS.value
         elif focus.fi>=60: st=FocusState.STABLE_FOCUS.value
         elif focus.fi>=40: st=FocusState.DISTRACTED.value

@@ -122,7 +122,10 @@ class RelicClient:
         self.attention_value: int | None = None
         self.attention_valid = False
         self.attention_ts_ms: int | None = None
+        self.last_algorithm_msg_ts_ms: int | None = None
         self.focus_x = self.focus_y = None
+        self.focus_area_x = self.focus_area_y = None
+        self.focus_area_width = self.focus_area_height = None
         self.gyro_x = self.gyro_y = self.gyro_z = None
         self.gyro_valid = False
         self.gyro_ts_ms: int | None = None
@@ -246,6 +249,7 @@ class RelicClient:
             if self.layout_type == 1 and self.window_id is None:
                 print("当前为分屏布局，但控制台程序没有窗口句柄。后续 GUI 程序需要调用 send_window_handle(window_id) 完成嵌入。")
         elif msg == "ipc_algorithm_test":
+            self.last_algorithm_msg_ts_ms = self.mono_ms()
             algorithm_name, data = _get_nested_algorithm_data(message)
             self.last_algorithm_name = algorithm_name
             if self.verbose:
@@ -267,6 +271,8 @@ class RelicClient:
                     gyro_sample = self.parse_gyro_from_algorithm(message, algorithm_name, data_dict)
                     if gyro_sample:
                         self.focus_x, self.focus_y = gyro_sample.focus_x, gyro_sample.focus_y
+                        self.focus_area_x, self.focus_area_y = gyro_sample.focus_area_x, gyro_sample.focus_area_y
+                        self.focus_area_width, self.focus_area_height = gyro_sample.focus_area_width, gyro_sample.focus_area_height
                         self.gyro_x, self.gyro_y, self.gyro_z = gyro_sample.gyro_x, gyro_sample.gyro_y, gyro_sample.gyro_z
                         self.gyro_valid = True
                         self.gyro_ts_ms = self.mono_ms()
@@ -302,11 +308,16 @@ class RelicClient:
             "layout_type": self.layout_type,
             "last_msg": self.last_msg,
             "last_algorithm_name": self.last_algorithm_name,
+            "last_algorithm_msg_age_ms": None if self.last_algorithm_msg_ts_ms is None else now_ms - self.last_algorithm_msg_ts_ms,
             "attention_value": self.attention_value,
             "attention_valid": self.attention_valid,
             "attention_age_ms": None if self.attention_ts_ms is None else now_ms - self.attention_ts_ms,
             "focus_x": self.focus_x,
             "focus_y": self.focus_y,
+            "focus_area_x": self.focus_area_x,
+            "focus_area_y": self.focus_area_y,
+            "focus_area_width": self.focus_area_width,
+            "focus_area_height": self.focus_area_height,
             "gyro_x": self.gyro_x,
             "gyro_y": self.gyro_y,
             "gyro_z": self.gyro_z,
@@ -326,6 +337,8 @@ class RelicClient:
             data = self.sock.recv(4096)
             if not data:
                 print("连接已断开，退出接收循环")
+                self.running = False
+                self.connected = False
                 break
             try:
                 for msg, text in self.parser.feed(data):
@@ -334,6 +347,10 @@ class RelicClient:
                 payload_text = data.decode("utf-8", errors="replace")
                 self.log_decode_error(payload_text, exc)
                 print(f"解析 JSON 失败: {exc}", file=sys.stderr)
+            except OSError:
+                self.running = False
+                self.connected = False
+                break
 
 
 def build_parser() -> argparse.ArgumentParser:
