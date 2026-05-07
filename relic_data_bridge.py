@@ -338,7 +338,7 @@ class RelicClient:
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description="RELIC IPC client")
-    p.add_argument("--host", default="127.0.0.1")
+    p.add_argument("--host", default="10.138.172.184") """官方接口，暂时无需调整"""
     p.add_argument("--port", type=int, default=8000)
     p.add_argument("--print", dest="print_attention", action="store_true")
     p.add_argument("--verbose", action="store_true")
