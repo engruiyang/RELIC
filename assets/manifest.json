@@ -1,0 +1,8 @@
+{
+  "images.logo": "images/icons/logo.png",
+  "images.main_background": "images/backgrounds/main.png",
+  "images.button.normal": "images/buttons/button_normal.png",
+  "images.button.hover": "images/buttons/button_hover.png",
+  "sounds.click": "sounds/click.wav",
+  "fonts.main": "fonts/main.ttf"
+}
