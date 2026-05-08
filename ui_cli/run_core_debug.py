@@ -1,23 +1,57 @@
-import argparse,time
-from relic_core.bridge_adapter import MockDataBridge,LiveDataBridgeAdapter
-from relic_core.runtime import AppCore
+import argparse
+import time
 
-def main():
-    p=argparse.ArgumentParser(); p.add_argument('--mock',action='store_true'); p.add_argument('--bridge',choices=['live','mock'],default='mock'); p.add_argument('--host',default='127.0.0.1'); p.add_argument('--port',type=int,default=8000); p.add_argument('--ticks',type=int,default=20); p.add_argument('--interval',type=float,default=0.5); p.add_argument('--debug',action='store_true'); p.add_argument('--game',default='empty_game'); a=p.parse_args()
-    mode='mock' if a.mock else a.bridge
-    bridge=MockDataBridge() if mode=='mock' else LiveDataBridgeAdapter(host=a.host,port=a.port)
+from data.data_center import DataCenter
+from platform.platform_gateway import PlatformGateway
+
+
+def build_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser()
+    p.add_argument("--mock", action="store_true")
+    p.add_argument("--bridge", choices=["live", "mock"], default="mock")
+    p.add_argument("--host", default="127.0.0.1")
+    p.add_argument("--port", type=int, default=8000)
+    p.add_argument("--ticks", type=int, default=20)
+    p.add_argument("--interval", type=float, default=0.5)
+    return p
+
+
+def run_debug_loop(mode: str, host: str, port: int, ticks: int, interval: float) -> None:
+    gateway = PlatformGateway(mode=mode, host=host, port=port)
+    data_center = DataCenter()
+    gateway.start()
+
     try:
-        core=AppCore(bridge); core.start(); core.start_game(a.game)
-    except Exception as e:
-        print(f'[RELIC CORE] live bridge start failed: {e}. 建议使用 --mock 测试核心。'); return
-    print(f'[RELIC CORE] bridge={mode} session={core.session_manager.info.session_id}')
-    try:
-        for i in range(1,a.ticks+1):
-            out=core.tick(int(a.interval*1000)); s=out['snapshot']; q=out['quality']; f=out['focus']
-            print(f"tick={i} connected={out['bridge_connected']} bridge_alive={out['bridge_alive']} stream={out['stream_state']} sensor_stream_active={out['sensor_stream_active']} training_data_valid={out['training_data_valid']} attention={s.get('attention_value')} attention_age_ms={s.get('attention_age_ms')} last_algorithm_age_ms={s.get('last_algorithm_msg_age_ms')} focus=({s.get('focus_x')},{s.get('focus_y')}) gyro=({s.get('gyro_x')},{s.get('gyro_y')},{s.get('gyro_z')}) gyro_age_ms={s.get('gyro_age_ms')} sqi={q.get('sqi'):.2f} quality={q.get('status')} reasons={q.get('reasons')} fi={f.get('fi'):.1f} state={out['focus_state']} game={out['current_game']}")
-            time.sleep(a.interval)
-    except KeyboardInterrupt:
-        print('Interrupted, cleaning up...')
+        now_ms = 0
+        tick_ms = int(interval * 1000)
+        for i in range(1, ticks + 1):
+            now_ms += tick_ms
+            events = gateway.poll_raw_events(now_ms=now_ms)
+            data_center.ingest_events(events, now_ms=now_ms)
+            s = data_center.get_runtime_snapshot()
+            print(
+                f"tick={i} connected={s['device_connected']} stream_alive={s['stream_alive']} "
+                f"sensor_stream_active={s['sensor_stream_active']} attention={s['attention']} "
+                f"attention_age_ms={s['attention_age_ms']} attention_fresh={s['attention_fresh']} "
+                f"attention_seen_once={s['attention_seen_once']} gyro={s['gyro']} gyro_age_ms={s['gyro_age_ms']} "
+                f"gyro_fresh={s['gyro_fresh']} gyro_seen_once={s['gyro_seen_once']} "
+                f"display_data_available={s['display_data_available']} training_data_valid={s['training_data_valid']} "
+                f"control_data_valid={s['control_data_valid']} quality={s['quality']} "
+                f"quality_reasons={s['quality_reasons']} warning_flags={s['warning_flags']} error_flags={s['error_flags']}"
+            )
+            time.sleep(interval)
     finally:
-        core.end_game('stop'); core.cleanup()
-if __name__=='__main__': main()
+        gateway.stop()
+
+
+def main() -> None:
+    a = build_parser().parse_args()
+    mode = "mock" if a.mock else a.bridge
+    try:
+        run_debug_loop(mode=mode, host=a.host, port=a.port, ticks=a.ticks, interval=a.interval)
+    except Exception as e:
+        print(f"[RELIC CORE] debug run failed: {e}. 建议先用 --bridge mock 验证。")
+
+
+if __name__ == "__main__":
+    main()
