@@ -2,7 +2,7 @@ from data.realtime_snapshot import RealtimeSnapshot
 
 class DataCenter:
     def __init__(self, config:dict|None=None):
-        self.cfg={'attention_fresh_ms':1500,'attention_lost_ms':5000,'gyro_fresh_ms':500,'gyro_lost_ms':2000,'focus_fresh_ms':500,'focus_lost_ms':2000,'algorithm_fresh_ms':500,'algorithm_lost_ms':2000,'focus_jump_threshold':200.0,'gyro_spike_threshold':80.0,'min_sqi':0.45,'warning_sqi':0.8,'error_sqi':0.4,'fatigued_enter_ms':9000,'fatigued_exit_ms':3000,'stable_enter_ticks':3,'stable_exit_threshold':55,'stable_enter_threshold':60,'warning_allows_fi_valid':False}
+        self.cfg={'attention_fresh_ms':1500,'attention_lost_ms':5000,'gyro_fresh_ms':500,'gyro_lost_ms':2000,'focus_fresh_ms':500,'focus_lost_ms':2000,'algorithm_fresh_ms':500,'algorithm_lost_ms':2000,'focus_jump_threshold':200.0,'gyro_spike_threshold':80.0,'min_sqi':0.45,'warning_sqi':0.8,'error_sqi':0.4,'fatigued_enter_ms':9000,'fatigued_exit_ms':3000,'stable_enter_ticks':3,'stable_exit_threshold':55,'stable_enter_threshold':60}
         if config: self.cfg.update(config)
         self._s=RealtimeSnapshot(); self._last_focus=None; self._last_gyro=None
         self._low_fi_since=None; self._stable_streak=0; self._recover_streak=0
@@ -27,12 +27,8 @@ class DataCenter:
     def _age(self,now,last): return None if last is None else max(0,now-last)
 
     def _update_control_state(self,s:RealtimeSnapshot,now_ms:int)->None:
-        if not s.attention_seen_once:
-            s.control_state='WARMUP'; return
-        if s.quality=='error' or not s.stream_alive:
-            s.control_state='NO_SIGNAL'; return
-        if s.fi_provisional or not s.training_data_valid or s.quality=='warning':
-            s.control_state='SIGNAL_WARNING'; return
+        if not s.attention_seen_once: s.control_state='WARMUP'; return
+        if not s.training_data_valid or s.quality=='error': s.control_state='NO_SIGNAL'; return
         fi=s.fi
         if fi<40:
             self._low_fi_since = self._low_fi_since or now_ms
@@ -51,7 +47,7 @@ class DataCenter:
         elif fi<self.cfg['stable_exit_threshold']:
             self._stable_streak=0
         if self._stable_streak>=self.cfg['stable_enter_ticks']: s.control_state='STABLE_FOCUS'
-        elif fi<40: s.control_state='LOW_FOCUS'
+        elif fi<40: s.control_state='DISTRACTED'
         elif fi<60: s.control_state='DISTRACTED'
 
     def tick(self,now_ms:int)->RealtimeSnapshot:
@@ -78,18 +74,9 @@ class DataCenter:
         else: s.quality='ok'
         s.quality_reasons=list(dict.fromkeys(s.error_flags+s.warning_flags))
         s.fi=float(s.attention if s.attention is not None else 0)
-        s.training_data_valid=bool(
-            s.device_connected and s.stream_alive and s.attention_seen_once and s.attention is not None and
-            (s.attention_age_ms is not None and s.attention_age_ms<=self.cfg['attention_lost_ms']) and
-            (s.gyro_seen_once or s.focus_seen_once) and not s.error_flags and s.sqi>=self.cfg['min_sqi']
-        )
-        s.fi_provisional=bool(not s.attention_seen_once and (s.gyro_seen_once or s.focus_seen_once))
+        s.training_data_valid=bool(s.device_connected and s.stream_alive and s.attention_seen_once and (s.attention_age_ms is not None and s.attention_age_ms<=self.cfg['attention_lost_ms']) and (s.gyro_seen_once or s.focus_seen_once) and not s.error_flags and s.sqi>=self.cfg['min_sqi'])
         s.fi_valid=bool(s.training_data_valid and s.quality=='ok')
-        if s.quality=='warning' and not self.cfg.get('warning_allows_fi_valid',False):
-            s.fi_valid=False
-            s.fi_provisional=True
-        elif not s.fi_valid:
-            s.fi_provisional=True
+        s.fi_provisional=not s.fi_valid
         self._update_control_state(s,now_ms)
         return s
 
