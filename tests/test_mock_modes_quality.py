@@ -30,4 +30,10 @@ class T(unittest.TestCase):
         s,_=self.run_mode('stream_drop',100)
         self.assertFalse(s.stream_alive)
         self.assertFalse(s.training_data_valid)
+        self.assertEqual(s.control_state,'NO_SIGNAL')
+    def test_partial_stale_no_strong_state(self):
+        s,seen=self.run_mode('partial_stale',80)
+        self.assertIn('gyro_stale',seen)
+        self.assertIn(s.quality,['warning','ok'])
+        self.assertNotIn(s.control_state,['FATIGUED','HIGH_FOCUS','STABLE_FOCUS'])
 if __name__=='__main__': unittest.main()
