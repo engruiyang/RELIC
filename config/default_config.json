@@ -1,8 +1,37 @@
 {
-  "platform": {"host": "127.0.0.1", "port": 8000},
-  "app": {"tick_interval_ms": 50, "default_game": "empty_game"},
-  "quality": {"attention_stale_ms": 3000, "gyro_stale_ms": 500, "attention_zero_warning_ms": 10000},
-  "calibration": {"quick_check_sec": 20, "first_calibration_sec": 180},
-  "assets": {"theme": "default", "manifest": "assets/manifest.json"},
-  "game": {"default_duration_sec": 180, "difficulty_min": 1, "difficulty_max": 5}
+  "platform": {
+    "host": "127.0.0.1",
+    "port": 8000
+  },
+  "app": {
+    "tick_interval_ms": 50,
+    "default_game": "empty_game"
+  },
+  "quality": {
+    "attention_stale_ms": 3000,
+    "gyro_stale_ms": 500,
+    "attention_zero_warning_ms": 10000
+  },
+  "calibration": {
+    "quick_check_sec": 20,
+    "first_calibration_sec": 180
+  },
+  "assets": {
+    "theme": "default",
+    "manifest": "assets/manifest.json"
+  },
+  "game": {
+    "default_duration_sec": 180,
+    "difficulty_min": 1,
+    "difficulty_max": 5
+  },
+  "data_center": {
+    "focus_jump_threshold": 200,
+    "gyro_spike_threshold": 80,
+    "fatigued_enter_ms": 9000,
+    "stable_enter_ticks": 3,
+    "stable_enter_threshold": 60,
+    "stable_exit_threshold": 55
+  },
+  "mock_mode": "normal"
 }
