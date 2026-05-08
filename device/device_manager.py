@@ -1,0 +1,3 @@
+class DeviceManager:
+    def initialize(self)->None: ...
+    def status(self)->dict: return {'connected':False}
