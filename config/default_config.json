@@ -2,6 +2,16 @@
   "platform": {"host": "127.0.0.1", "port": 8000},
   "app": {"tick_interval_ms": 50, "default_game": "empty_game"},
   "quality": {"attention_stale_ms": 3000, "gyro_stale_ms": 500, "attention_zero_warning_ms": 10000},
+  "mock": {
+    "mode": "normal",
+    "run_ticks": 40,
+    "thresholds_ms": {
+      "attention_fresh_ms": 1500,
+      "attention_lost_ms": 5000,
+      "gyro_fresh_ms": 500,
+      "gyro_lost_ms": 2000
+    }
+  },
   "calibration": {"quick_check_sec": 20, "first_calibration_sec": 180},
   "assets": {"theme": "default", "manifest": "assets/manifest.json"},
   "game": {"default_duration_sec": 180, "difficulty_min": 1, "difficulty_max": 5}
