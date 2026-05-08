@@ -9,7 +9,10 @@ class T(unittest.TestCase):
         self.assertFalse(s.training_data_valid)
         self.assertFalse(s.fi_valid)
         self.assertTrue(s.fi_provisional)
+<<<<<<< codex/fix-datacenter-and-cli-debug-outputs-xjefpe
         self.assertFalse(s.control_data_valid)
+=======
+>>>>>>> main
         self.assertNotIn(s.control_state,['STABLE_FOCUS','HIGH_FOCUS'])
     def test_attention_seen_then_valid_possible(self):
         dc=DataCenter(); now=1000
@@ -26,5 +29,9 @@ class T(unittest.TestCase):
         ev=[{'type':'device_status','device_connected':True,'bridge_alive':True},{'type':'algorithm_frame','algorithm':'attention','data':{'attention':20}},{'type':'algorithm_frame','algorithm':'gyroscope','data':{'focus_x':10,'focus_y':8,'gyro_x':1,'gyro_y':1,'gyro_z':1}}]
         dc.ingest_events(ev,now); s=dc.tick(now)
         self.assertNotEqual(s.control_state,'FATIGUED')
+<<<<<<< codex/fix-datacenter-and-cli-debug-outputs-xjefpe
         self.assertIn(s.control_state,['RECOVERING','LOW_FOCUS','DISTRACTED'])
+=======
+        self.assertIn(s.control_state,['LOW_FOCUS','DISTRACTED'])
+>>>>>>> main
 if __name__=='__main__': unittest.main()
