@@ -22,7 +22,11 @@ class RealtimeSnapshot:
     bridge_alive:bool=False
     stream_alive:bool=False
     sensor_stream_active:bool=False
+    display_data_available:bool=False
     training_data_valid:bool=False
+    control_data_valid:bool=False
+    stream_epoch:int=0
+    recovering:bool=False
 
     sqi:float=0.0
     quality:str='warning'

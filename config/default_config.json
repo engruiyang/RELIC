@@ -31,7 +31,8 @@
     "fatigued_enter_ms": 9000,
     "stable_enter_ticks": 3,
     "stable_enter_threshold": 60,
-    "stable_exit_threshold": 55
+    "stable_exit_threshold": 55,
+    "warning_allows_fi_valid": false
   },
   "mock_mode": "normal"
 }
