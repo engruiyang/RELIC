@@ -109,6 +109,7 @@ class DataCenter:
 
         fi = s.fi
         if fi < 40:
+
             self._low_fi_since = self._low_fi_since or now_ms
         else:
             self._low_fi_since = None
@@ -118,6 +119,15 @@ class DataCenter:
         if can_fatigue and low_dur >= self.cfg['fatigued_enter_ms']:
             s.control_state = 'FATIGUED'
             self._recover_streak = 0
+            return
+
+        if s.control_state == 'FATIGUED':
+            if fi >= 45:
+                self._recover_streak += 1
+            else:
+                self._recover_streak = 0
+            if self._recover_streak * 100 >= self.cfg['fatigued_exit_ms']:
+                s.control_state = 'DISTRACTED'
             return
 
         if s.control_state == 'FATIGUED':
@@ -243,6 +253,7 @@ class DataCenter:
         s.fi_provisional = bool(not s.fi_valid)
 
         self._update_control_state(s, now_ms)
+
         return s
 
     def get_snapshot(self) -> RealtimeSnapshot:
