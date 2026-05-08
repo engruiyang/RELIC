@@ -14,9 +14,6 @@ class MockAdapter:
 
         if self.mode=='stream_drop' and self.t>5:
             return events
-        if self.mode=='partial_stale' and self.t>3 and (self._tick % 8 != 0):
-            # keep algorithm stream alive but lower effective gyro/focus freshness
-            return events + [{'type':'algorithm_frame','algorithm':'attention','data':{'attention':58}}] if (self._tick % 10 == 0) else events
 
         gx=255+20*math.sin(self.t*2); gy=255+20*math.cos(self.t*2); gz=176+10*math.sin(self.t)
         fx=960+120*math.sin(self.t); fy=540+80*math.cos(self.t)
