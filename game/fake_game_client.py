@@ -1,0 +1,3 @@
+class FakeGameClient:
+    game_id='fake_game'
+    def update(self,dt_ms:int)->None: ...
