@@ -75,6 +75,12 @@ class SqliteStore:
         row = conn.execute("SELECT * FROM users WHERE user_id=?", (user_id,)).fetchone()
         return dict(row) if row else None
 
+
+    def list_users(self) -> list[dict[str, Any]]:
+        conn = self._ensure_conn()
+        rows = conn.execute("SELECT * FROM users ORDER BY created_at").fetchall()
+        return [dict(r) for r in rows]
+
     def list_users_by_type(self, user_type: str) -> list[dict[str, Any]]:
         conn = self._ensure_conn()
         rows = conn.execute("SELECT * FROM users WHERE user_type=? ORDER BY created_at", (user_type,)).fetchall()
