@@ -5,7 +5,7 @@
 - `core/`：Headless Control Core（应用装配、状态机、时钟、上下文）。
 - `data/`：`RealtimeSnapshot` / `DataCenter` 与数据有效性聚合。
 - `device/`：设备入口与 adapters（mock 等）。
-- `platform/`：平台 IPC / live 输入边界与消息转换。
+- `relic_platform/`：平台 IPC / live 输入边界与消息转换。
 - `user/`：用户与 Profile 业务管理。
 - `storage/`：本地存储（SQLite 等底层持久化）。
 - `ui_cli/`：命令行 debug / smoke test 入口。
@@ -36,8 +36,8 @@
 3. `user/` vs `profiles/`
    - 正式用户系统为 `user/ + storage/`。
    - `profiles/` 为历史 phase-1 目录，不再承载新功能。
-4. `platform/`、`device/`、`data/` 与 `relic_data_bridge.py`
-   - 正式运行链路在 `platform/`、`device/`、`data/`。
+4. `relic_platform/`、`device/`、`data/` 与 `relic_data_bridge.py`
+   - 正式运行链路在 `relic_platform/`、`device/`、`data/`。
    - `relic_data_bridge.py` 暂为 live 兼容桥接保留。
 
 ## 后续任务写入位置
@@ -47,7 +47,7 @@
 - Task7 训练会话：`session/`
 - Task8 Runtime API：`runtime/`
 - Task8 游戏管理：`game/`
-- Task9 平台报告：`platform/`
+- Task9 平台报告：`relic_platform/`
 
 ## 写入禁令
 

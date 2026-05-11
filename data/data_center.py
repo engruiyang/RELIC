@@ -31,6 +31,15 @@ class DataCenter:
     def get_runtime_snapshot(self) -> dict:
         return asdict(self._snapshot) | {"gyro": self._snapshot.gyro}
 
+    def apply_quality_gate(self, gate_result: dict) -> None:
+        self._snapshot.sqi = float(gate_result.get("sqi", 0.0))
+        self._snapshot.quality_state = str(gate_result.get("quality_state", "error"))
+        self._snapshot.quality_reasons = list(gate_result.get("quality_reasons", []))
+        self._snapshot.calibration_usable = bool(gate_result.get("calibration_usable", False))
+        self._snapshot.formal_training_allowed = bool(gate_result.get("formal_training_allowed", False))
+        self._snapshot.signal_reliable = bool(gate_result.get("signal_reliable", False))
+        self._snapshot.estimation_allowed = bool(gate_result.get("estimation_allowed", False))
+
     def _apply_event(self, event: dict, now_ms: int) -> None:
         event_type = event.get("type")
         if event_type == "device_status":
