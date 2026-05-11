@@ -38,12 +38,14 @@
 | 命令 | 用途 | 入口文件 | 写数据库 | 连接平台 | 生成文件 | 典型输出字段 | 状态 |
 |---|---|---|---|---|---|---|---|
 | `python -m ui_cli.run_calibration_debug --action status --mode user --user-id TEST` | 查看当前用户校准绑定/最新状态 | `ui_cli/run_calibration_debug.py` | 否（仅读） | 否 | 否 | `profile.last_calibration_id`, `latest_calibration_id`, `latest_valid` | active |
-| `python -m ui_cli.run_calibration_debug --action start --mode demo --calibration-type auto` | 执行快速校准 | `ui_cli/run_calibration_debug.py` | demo/user: 是；guest: 否 | 否 | 否 | `calibration_id`, `calibration_type`, `valid`, `failure_reason` | active |
+| `python -m ui_cli.run_calibration_debug --action start --mode demo --calibration-type auto` | 执行校准（默认显示阶段/进度） | `ui_cli/run_calibration_debug.py` | demo/user: 是；guest: 否 | 否 | 否 | `calibration_id`, `calibration_type`, `valid`, `failure_reason` | active |
 | `python -m ui_cli.run_calibration_debug --action cancel --mode user --user-id TEST` | 取消校准（当前实现为同步取消记录返回） | `ui_cli/run_calibration_debug.py` | 否（不绑定） | 否 | 否 | `valid=False`, `failure_reason=cancelled_by_user` | active |
 | `python -m ui_cli.run_calibration_debug --action list --mode user --user-id TEST` | 列出用户历史校准 | `ui_cli/run_calibration_debug.py` | 否（仅读） | 否 | 否 | `calibration_count`, `calibrations[]` | active |
 | `python -m ui_cli.run_calibration_debug --action latest --mode user --user-id TEST` | 读取用户最新校准 | `ui_cli/run_calibration_debug.py` | 否（仅读） | 否 | 否 | `calibration_id`, `valid`, `failure_reason` | active |
 | `python -m ui_cli.run_calibration_debug --action show --calibration-id cal_xxx` | 读取指定 calibration 详情 | `ui_cli/run_calibration_debug.py` | 否（仅读） | 否 | 否 | `attention_baseline`, `gyro_noise_rms`, `signal_quality_baseline` | active |
 | `python -m ui_cli.run_calibration_debug --action bind --mode user --user-id TEST --calibration-id cal_xxx` | 绑定有效 calibration 到 profile | `ui_cli/run_calibration_debug.py` | 是（更新 `user_profiles.last_calibration_id`） | 否 | 否 | `old_last_calibration_id`, `new_last_calibration_id` | active |
+| `python -m ui_cli.run_calibration_debug --action start --mode user --user-id TEST --fast` | fast 模式（测试/开发快速完成） | `ui_cli/run_calibration_debug.py` | demo/user: 是；guest: 否 | 否 | 否 | `events`, `valid`, `calibration_id` | active |
+| `python -m ui_cli.run_calibration_debug --action start --mode user --user-id TEST --no-progress` | 关闭进度行输出，仅保留结果 | `ui_cli/run_calibration_debug.py` | demo/user: 是；guest: 否 | 否 | 否 | `valid`, `calibration_id` | active |
 
 ## 后续 planned 命令
 
@@ -63,3 +65,4 @@
 ## unknown 命令说明
 
 - `python -m main` 被标记为 `unknown`：入口存在，但 README/docs 未提供稳定参数契约与运行前置条件说明；因此不把它作为稳定 debug 命令宣传。
+

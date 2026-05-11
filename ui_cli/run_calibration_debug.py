@@ -40,7 +40,7 @@ def _with_bool_valid(payload: dict) -> dict:
     return out
 
 
-def run_calibration_action(action: str, mode: str | None, db_path: str, user_id: str | None = None, calibration_type: str = "auto", calibration_id: str | None = None, fail: bool = False) -> dict:
+def run_calibration_action(action: str, mode: str | None, db_path: str, user_id: str | None = None, calibration_type: str = "auto", calibration_id: str | None = None, fail: bool = False, fast: bool = True, progress: bool = True) -> dict:
     storage = StorageManager(sqlite_path=db_path)
     storage.initialize()
     sm = StateMachine()
@@ -64,7 +64,24 @@ def run_calibration_action(action: str, mode: str | None, db_path: str, user_id:
     elif action == "start":
         sm.transition(SystemState.CALIBRATING)
         gyro, att = _build_samples(fail=fail)
-        cp = cm.start_calibration(user, calibration_type, gyro, att)
+        events=[]
+
+        def on_event(evt: dict):
+            events.append(evt)
+            if progress:
+                if evt["event_type"] == "calibration_started":
+                    print(f"[calibration] started user={evt['user_id']} type={evt['calibration_type']}")
+                elif evt["event_type"] == "calibration_phase_started":
+                    print(f"[phase {evt['phase_index']}/{evt['phase_count']}] {evt['phase']} ...")
+                elif evt["event_type"] == "calibration_progress":
+                    print(f"[progress] phase={evt['phase']} progress={evt['progress']:.2f} elapsed_ms={evt['elapsed_ms']}")
+                elif evt["event_type"] == "calibration_completed":
+                    print("[done] calibration_completed")
+                elif evt["event_type"] == "calibration_failed":
+                    print(f"[done] calibration_failed reason={evt['message']}")
+
+        cp = cm.start_calibration(user, calibration_type, gyro, att, fast=fast, emit_event=on_event)
+        out["events"] = events
         sm.transition(SystemState.READY if cp.valid else SystemState.CALIBRATION_FAILED)
         out |= cp.to_dict()
         out["valid"] = bool(out["valid"])
@@ -73,6 +90,7 @@ def run_calibration_action(action: str, mode: str | None, db_path: str, user_id:
     elif action == "cancel":
         sm.transition(SystemState.CALIBRATING)
         cp = cm.cancel_calibration(user)
+        out["events"] = [{"event_type":"calibration_cancelled","user_id":user["user_id"],"cancellable":True,"message":"cancelled_by_user"}]
         sm.transition(SystemState.CALIBRATION_FAILED)
         out |= cp.to_dict()
         out["valid"] = False
@@ -119,7 +137,7 @@ def run_calibration_action(action: str, mode: str | None, db_path: str, user_id:
 
 
 def run_calibration(mode: str, db_path: str, user_id: str | None = None, fail: bool = False) -> dict:
-    return run_calibration_action("start", mode, db_path, user_id=user_id, calibration_type="auto", fail=fail)
+    return run_calibration_action("start", mode, db_path, user_id=user_id, calibration_type="auto", fail=fail, fast=True, progress=False)
 
 
 def main() -> None:
@@ -131,8 +149,10 @@ def main() -> None:
     p.add_argument("--calibration-type", choices=["auto", "first_profile", "quick_check", "periodic", "triggered"], default="auto")
     p.add_argument("--calibration-id")
     p.add_argument("--fail", action="store_true")
+    p.add_argument("--fast", action="store_true")
+    p.add_argument("--no-progress", action="store_true")
     args = p.parse_args()
-    run_calibration_action(args.action, args.mode, args.db_path, args.user_id, args.calibration_type, args.calibration_id, args.fail)
+    run_calibration_action(args.action, args.mode, args.db_path, args.user_id, args.calibration_type, args.calibration_id, args.fail, fast=args.fast, progress=not args.no_progress)
 
 
 if __name__ == "__main__":

@@ -77,3 +77,26 @@ def test_show_owner_viewer_semantics_and_bool(tmp_path):
 
     latest = run_calibration_action("latest", "user", db, user_id="TEST")
     assert isinstance(latest["valid"], bool)
+
+
+def test_start_events_fast_and_progress_failure_and_cancel(tmp_path):
+    db = str(tmp_path / "evt.db")
+    s = StorageManager(sqlite_path=db)
+    s.initialize()
+    um = UserManager(s.sqlite)
+    um.create_local_user_if_absent("TEST", "Test")
+    s.shutdown()
+
+    out = run_calibration_action("start", "user", db, user_id="TEST", calibration_type="auto", fast=True, progress=False)
+    event_types = [e["event_type"] for e in out["events"]]
+    assert "calibration_started" in event_types
+    assert "calibration_progress" in event_types
+    assert "calibration_completed" in event_types
+
+    fail = run_calibration_action("start", "demo", db, calibration_type="auto", fail=True, fast=True, progress=False)
+    fail_types = [e["event_type"] for e in fail["events"]]
+    assert "calibration_failed" in fail_types
+
+    cancel = run_calibration_action("cancel", "user", db, user_id="TEST", fast=True, progress=False)
+    cancel_types = [e["event_type"] for e in cancel["events"]]
+    assert "calibration_cancelled" in cancel_types
