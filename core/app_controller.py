@@ -19,12 +19,10 @@ class AppController:
         self.config = load_config()
         self.clock = SystemClock()
         self.context = RuntimeContext(clock=self.clock, config=self.config)
-
         self.state_machine = StateMachine()
         self.platform_gateway = PlatformGateway()
         mock_mode = self.config.get("mock", {}).get("mode", "normal")
         self.device_manager = DeviceManager(mock_mode=mock_mode)
-
         quality_cfg = self.config.get("mock", {}).get("thresholds_ms", {})
         self.data_center = DataCenter(
             attention_fresh_ms=quality_cfg.get("attention_fresh_ms", 1500),
@@ -32,12 +30,10 @@ class AppController:
             gyro_fresh_ms=quality_cfg.get("gyro_fresh_ms", 500),
             gyro_lost_ms=quality_cfg.get("gyro_lost_ms", 2000),
         )
-
         storage_cfg = self.config.get("storage", {})
         self.storage = StorageManager(sqlite_path=storage_cfg.get("sqlite_path", "data/relic_local.db"))
         self.user_manager = UserManager(self.storage.sqlite)
         self.profile_manager = ProfileManager(self.storage.sqlite)
-
         self.calibration_manager = CalibrationManager()
         self.session_manager = SessionManager()
         self.game_manager = GameManager()
@@ -56,13 +52,11 @@ class AppController:
     def start(self, ticks: int | None = None, debug: bool = True) -> None:
         old, new = self.state_machine.transition(SystemState.NO_USER)
         print(f"[AppController] state: {old.value} -> {new.value}")
-
         self.storage.initialize()
         self._bootstrap_user()
         self.device_manager.initialize()
         tick_count = ticks if ticks is not None else int(self.config.get("mock", {}).get("run_ticks", 40))
         tick_interval_ms = int(self.config.get("app", {}).get("tick_interval_ms", 50))
-
         now_ms = 0
         for _ in range(tick_count):
             now_ms += tick_interval_ms
