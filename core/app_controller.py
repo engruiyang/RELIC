@@ -33,18 +33,32 @@ class AppController:
             gyro_lost_ms=quality_cfg.get("gyro_lost_ms", 2000),
         )
 
-        self.user_manager = UserManager()
-        self.profile_manager = ProfileManager()
+        storage_cfg = self.config.get("storage", {})
+        self.storage = StorageManager(sqlite_path=storage_cfg.get("sqlite_path", "data/relic_local.db"))
+        self.user_manager = UserManager(self.storage.sqlite)
+        self.profile_manager = ProfileManager(self.storage.sqlite)
+
         self.calibration_manager = CalibrationManager()
         self.session_manager = SessionManager()
         self.game_manager = GameManager()
         self.runtime = LocalRuntime()
-        self.storage = StorageManager()
+
+    def _bootstrap_user(self) -> None:
+        mode = self.config.get("user", {}).get("startup_mode", "demo")
+        if mode == "guest":
+            user = self.user_manager.enter_guest_mode()
+        else:
+            user = self.user_manager.ensure_demo_user()
+            self.profile_manager.load_profile(user["user_id"])
+        old, new = self.state_machine.transition(SystemState.USER_READY)
+        print(f"[AppController] state: {old.value} -> {new.value} user={user['user_id']} type={user['user_type']}")
 
     def start(self, ticks: int | None = None, debug: bool = True) -> None:
         old, new = self.state_machine.transition(SystemState.NO_USER)
         print(f"[AppController] state: {old.value} -> {new.value}")
 
+        self.storage.initialize()
+        self._bootstrap_user()
         self.device_manager.initialize()
         tick_count = ticks if ticks is not None else int(self.config.get("mock", {}).get("run_ticks", 40))
         tick_interval_ms = int(self.config.get("app", {}).get("tick_interval_ms", 50))
@@ -65,5 +79,6 @@ class AppController:
                 )
 
     def shutdown(self) -> None:
+        self.storage.shutdown()
         old, new = self.state_machine.transition(SystemState.SHUTDOWN)
         print(f"[AppController] state: {old.value} -> {new.value}")
