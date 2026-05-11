@@ -23,7 +23,7 @@ def _build_samples(fail: bool = False) -> tuple[list[dict], list[dict]]:
     return gyro, att
 
 
-def _collect_ipc_samples(host: str, port: int, fast: bool) -> tuple[list[dict], list[dict], dict]:
+def _collect_ipc_samples(host: str, port: int, fast: bool, phase_callback=None, sleeper=time.sleep) -> tuple[list[dict], list[dict], dict]:
     if fast:
         return [], [], {"ipc_connected": False, "ipc_connected_at_end": False, "stream_interrupted": False, "live_data_detected": False, "failure_reason": "ipc_stream_unavailable"}
     phase_ms = {"preparation": 2000, "gyro": 3000, "attention": 8000, "result": 1000}
@@ -31,6 +31,7 @@ def _collect_ipc_samples(host: str, port: int, fast: bool) -> tuple[list[dict], 
     dc = DataCenter()
     now = 0
     gyro_samples, att_samples = [], []
+    phase_order = [("preparation", phase_ms["preparation"]), ("gyro_static_baseline", phase_ms["gyro"]), ("attention_quick_baseline", phase_ms["attention"]), ("result", phase_ms["result"])]
     try:
         gateway.start()
         h = gateway.health()
@@ -40,19 +41,26 @@ def _collect_ipc_samples(host: str, port: int, fast: bool) -> tuple[list[dict], 
         interval = 100
         connected_once = True
         interrupted = False
-        while now < total:
-            if not gateway.health().get("alive", False):
-                interrupted = True
+        for phase_name, phase_duration in phase_order:
+            if phase_callback is not None:
+                phase_callback(phase_name)
+            phase_end = now + phase_duration
+            while now < phase_end:
+                health = gateway.health()
+                if connected_once and (not health.get("alive", False) or not health.get("connected", False)):
+                    interrupted = True
+                    break
+                now += interval
+                events = gateway.poll_raw_events(now_ms=now)
+                dc.ingest_events(events, now_ms=now)
+                s = dc.get_runtime_snapshot()
+                if phase_name == "gyro_static_baseline":
+                    gyro_samples.append(s)
+                if phase_name == "attention_quick_baseline":
+                    att_samples.append(s)
+                sleeper(interval / 1000)
+            if interrupted:
                 break
-            now += interval
-            events = gateway.poll_raw_events(now_ms=now)
-            dc.ingest_events(events, now_ms=now)
-            s = dc.get_runtime_snapshot()
-            if phase_ms["preparation"] < now <= phase_ms["preparation"] + phase_ms["gyro"]:
-                gyro_samples.append(s)
-            if now > phase_ms["preparation"] + phase_ms["gyro"] and now <= phase_ms["preparation"] + phase_ms["gyro"] + phase_ms["attention"]:
-                att_samples.append(s)
-            time.sleep(interval / 1000)
         if interrupted:
             return gyro_samples, att_samples, {"ipc_connected": connected_once, "ipc_connected_at_end": False, "stream_interrupted": True, "live_data_detected": bool(gyro_samples or att_samples), "failure_reason": "ipc_stream_interrupted"}
         return gyro_samples, att_samples, {"ipc_connected": connected_once, "ipc_connected_at_end": True, "stream_interrupted": False, "live_data_detected": bool(gyro_samples or att_samples), "failure_reason": None}
@@ -105,13 +113,25 @@ def run_calibration_action(action: str, mode: str | None, db_path: str, user_id:
 
         def on_event(e):
             events.append(e)
-            if progress and e.get("event_type") == "calibration_phase_started":
+            if progress and resolved_source != "ipc" and e.get("event_type") == "calibration_phase_started":
                 print(f"[phase {e['phase_index']}/{e['phase_count']}] {e['title']}", flush=True)
                 print(f"  {e['user_instruction']}", flush=True)
                 print(f"  {e['avoid_instruction']}", flush=True)
 
         if resolved_source == "ipc":
-            gyro, att, ipc_meta = _collect_ipc_samples(host, port, fast)
+            if progress:
+                phase_idx = {"preparation": 1, "gyro_static_baseline": 2, "attention_quick_baseline": 3, "result": 4}
+
+                def phase_prompt(phase_name: str):
+                    from calibration.calibration_manager import PHASE_PROMPTS
+                    prompt = PHASE_PROMPTS.get(phase_name, {})
+                    print(f"[phase {phase_idx.get(phase_name, '?')}/4] {prompt.get('title', phase_name)}", flush=True)
+                    print(f"  {prompt.get('user_instruction', '')}", flush=True)
+                    print(f"  {prompt.get('avoid_instruction', '')}", flush=True)
+                    print(f"  {prompt.get('duration_hint', '')}", flush=True)
+            else:
+                phase_prompt = None
+            gyro, att, ipc_meta = _collect_ipc_samples(host, port, fast, phase_callback=phase_prompt)
             out |= ipc_meta
             if ipc_meta.get("failure_reason"):
                 if ipc_meta.get("stream_interrupted"):
@@ -150,7 +170,7 @@ def run_calibration_action(action: str, mode: str | None, db_path: str, user_id:
             pm.update_last_calibration_id(user["user_id"], old_profile["last_calibration_id"])
             out["profile.last_calibration_id"] = old_profile["last_calibration_id"]
         out["user_recovery_hint"] = cm.get_recovery_hint(cp.failure_reason)
-        if resolved_source == "ipc":
+        if resolved_source == "ipc" and not out.get("stream_interrupted", False):
             if out["attention_window_ms"] < 8000:
                 out["valid"] = False; out["failure_reason"] = "attention_window_too_short"
             if out["gyro_window_ms"] < 3000:
