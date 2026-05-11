@@ -63,7 +63,7 @@ class CalibrationManager:
             return None
         return RECOVERY_HINTS.get(failure_reason, "请检查佩戴、连接状态并重试。")
 
-    def start_calibration(self, user: dict, calibration_type: str, gyro_snapshots: list[dict], attention_snapshots: list[dict], *, fast: bool = True, emit_event: Callable[[dict], None] | None = None, device_id: str = "mock_device") -> CalibrationProfile:
+    def start_calibration(self, user: dict, calibration_type: str, gyro_snapshots: list[dict], attention_snapshots: list[dict], *, fast: bool = True, emit_event: Callable[[dict], None] | None = None, device_id: str = "mock_device", persist_result: bool = True) -> CalibrationProfile:
         if self.store is None:
             raise ValueError("store is required")
         history = self.list_calibrations(user["user_id"]) if user["user_type"] != "guest" else []
@@ -129,7 +129,7 @@ class CalibrationManager:
             if emit_event is not None:
                 emit_event(final_stats | {"event_type": "calibration_failed_summary", "user_id": user["user_id"], "calibration_type": resolved_type, "phase": "result", "phase_index": phase_count, "phase_count": phase_count, "progress": 1.0, "elapsed_ms": int((time.monotonic() - t0) * 1000), "remaining_ms": 0, "cancellable": False, "title": PHASE_PROMPTS["result"]["title"], "user_instruction": PHASE_PROMPTS["result"]["user_instruction"], "avoid_instruction": PHASE_PROMPTS["result"]["avoid_instruction"], "duration_hint": PHASE_PROMPTS["result"]["duration_hint"], "message": "final summary"})
 
-        if user["user_type"] != "guest":
+        if persist_result and user["user_type"] != "guest":
             self.store.save_calibration_profile(cp.to_dict())
             if cp.valid and self.profile_manager is not None:
                 self.profile_manager.update_last_calibration_id(user["user_id"], cp.calibration_id)

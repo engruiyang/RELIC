@@ -100,20 +100,22 @@ def run_calibration_action(action: str, mode: str | None, db_path: str, user_id:
 
     if action == "start":
         sm.transition(SystemState.CALIBRATING)
-        print(f"[calibration] source={resolved_source}" + (f" host={host} port={port}" if resolved_source == "ipc" else ""))
+        print(f"[calibration] source={resolved_source}" + (f" host={host} port={port}" if resolved_source == "ipc" else ""), flush=True)
         events = []
 
         def on_event(e):
             events.append(e)
             if progress and e.get("event_type") == "calibration_phase_started":
-                print(f"[phase {e['phase_index']}/{e['phase_count']}] {e['title']}")
-                print(f"  {e['user_instruction']}")
-                print(f"  {e['avoid_instruction']}")
+                print(f"[phase {e['phase_index']}/{e['phase_count']}] {e['title']}", flush=True)
+                print(f"  {e['user_instruction']}", flush=True)
+                print(f"  {e['avoid_instruction']}", flush=True)
 
         if resolved_source == "ipc":
             gyro, att, ipc_meta = _collect_ipc_samples(host, port, fast)
             out |= ipc_meta
             if ipc_meta.get("failure_reason"):
+                if ipc_meta.get("stream_interrupted"):
+                    ipc_meta["failure_reason"] = "ipc_stream_interrupted"
                 out.update({"valid": False, "persisted": False, "calibration_source": "ipc", "stream_interrupted": ipc_meta.get("stream_interrupted", False), "ipc_connected_once": ipc_meta.get("ipc_connected", False), "ipc_connected_at_end": False, "failure_reason": ipc_meta["failure_reason"], "user_recovery_hint": "未检测到平台 IPC 数据。请确认科创平台已启动、端口配置正确，并已进入范式页面。", "system_state": SystemState.CALIBRATION_FAILED.value})
                 if verbose_events or json_events:
                     out["events"] = events
@@ -130,7 +132,7 @@ def run_calibration_action(action: str, mode: str | None, db_path: str, user_id:
             out["ipc_connected"] = False
             out["live_data_detected"] = False
 
-        cp = cm.start_calibration(user, calibration_type, gyro, att, fast=fast, emit_event=on_event, device_id=("ipc_device" if source=="ipc" else "mock_device"))
+        cp = cm.start_calibration(user, calibration_type, gyro, att, fast=fast, emit_event=on_event, device_id=("ipc_device" if resolved_source=="ipc" else "mock_device"), persist_result=(resolved_source!="ipc"))
         out |= cp.to_dict()
         out["valid"] = bool(out["valid"])
         out["calibration_source"] = resolved_source
@@ -161,6 +163,12 @@ def run_calibration_action(action: str, mode: str | None, db_path: str, user_id:
                 out["baseline_confidence"] = "low"; out["failure_reason"] = "attention_update_too_sparse"; out["valid"] = False
             out["persisted"] = out["persisted"] and out["valid"]
             out["user_recovery_hint"] = cm.get_recovery_hint(out.get("failure_reason"))
+        if resolved_source == "ipc":
+            if out["valid"] and user["user_type"] != "guest":
+                storage.save_calibration_profile(cp.to_dict())
+                pm.update_last_calibration_id(user["user_id"], cp.calibration_id)
+            out["persisted"] = bool(out["valid"] and user["user_type"] != "guest")
+            out["profile.last_calibration_id"] = None if user["user_type"] == "guest" else pm.get_profile(user["user_id"])["last_calibration_id"]
         sm.transition(SystemState.READY if out["valid"] else SystemState.CALIBRATION_FAILED)
         if verbose_events or json_events:
             out["events"] = events
