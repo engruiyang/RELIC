@@ -38,8 +38,10 @@
 - `--source mock`：开发/测试用 mock 校准。
 - `--source ipc`：真实平台 IPC 数据校准，要求平台已启动、端口正确并进入范式页面。
 - `--source ipc` 无数据会失败，不会自动回退到 mock。
+- `--source ipc` 在校准中若发生平台断开，会以 `ipc_stream_interrupted` / `live_stream_disconnected` 失败。
 - mock 校准结果不能作为真实注意力基线。
 - 真实 attention 基线至少需要 8 秒采样窗口。
+- 普通 CLI 会在每个校准阶段开始前实时输出提示（title / user_instruction / avoid_instruction / duration_hint）。
 
 | 命令 | 用途 | 入口文件 | 写数据库 | 连接平台 | 生成文件 | 典型输出字段 | 状态 |
 |---|---|---|---|---|---|---|---|
