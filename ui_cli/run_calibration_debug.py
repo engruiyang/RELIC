@@ -18,10 +18,11 @@ def _build_samples(fail: bool = False) -> tuple[list[dict], list[dict]]:
     return gyro, att
 
 
-def _load_user(mode: str, user_id: str | None, um: UserManager, pm: ProfileManager):
-    if mode == "guest":
+def _load_user(mode: str | None, user_id: str | None, um: UserManager, pm: ProfileManager):
+    resolved_mode = mode or "demo"
+    if resolved_mode == "guest":
         return um.enter_guest_mode(), None
-    if mode == "user":
+    if resolved_mode == "user":
         if not user_id:
             raise ValueError("--mode user requires --user-id")
         user = um.load_user(user_id)
@@ -32,7 +33,14 @@ def _load_user(mode: str, user_id: str | None, um: UserManager, pm: ProfileManag
     return user, pm.get_profile(user["user_id"])
 
 
-def run_calibration_action(action: str, mode: str, db_path: str, user_id: str | None = None, calibration_type: str = "auto", calibration_id: str | None = None, fail: bool = False) -> dict:
+def _with_bool_valid(payload: dict) -> dict:
+    out = dict(payload)
+    if "valid" in out:
+        out["valid"] = bool(out["valid"])
+    return out
+
+
+def run_calibration_action(action: str, mode: str | None, db_path: str, user_id: str | None = None, calibration_type: str = "auto", calibration_id: str | None = None, fail: bool = False) -> dict:
     storage = StorageManager(sqlite_path=db_path)
     storage.initialize()
     sm = StateMachine()
@@ -40,10 +48,16 @@ def run_calibration_action(action: str, mode: str, db_path: str, user_id: str | 
     um, pm = UserManager(storage.sqlite), ProfileManager(storage.sqlite)
     cm = CalibrationManager(store=storage, profile_manager=pm)
 
-    user, profile = _load_user(mode, user_id, um, pm)
-    sm.transition(SystemState.USER_READY)
+    user = None
+    profile = None
+    needs_user = action in {"status", "start", "cancel", "list", "latest", "bind"}
+    if needs_user:
+        user, profile = _load_user(mode, user_id, um, pm)
+        sm.transition(SystemState.USER_READY)
 
-    out = {"db_path": db_path, "current_user_id": user["user_id"], "user_type": user["user_type"]}
+    out = {"db_path": db_path}
+    if user is not None:
+        out |= {"current_user_id": user["user_id"], "user_type": user["user_type"]}
 
     if action == "status":
         out |= cm.get_calibration_status(user["user_id"])
@@ -53,6 +67,7 @@ def run_calibration_action(action: str, mode: str, db_path: str, user_id: str | 
         cp = cm.start_calibration(user, calibration_type, gyro, att)
         sm.transition(SystemState.READY if cp.valid else SystemState.CALIBRATION_FAILED)
         out |= cp.to_dict()
+        out["valid"] = bool(out["valid"])
         out["persisted"] = (user["user_type"] != "guest")
         out["profile.last_calibration_id"] = None if user["user_type"] == "guest" else pm.get_profile(user["user_id"])["last_calibration_id"]
     elif action == "cancel":
@@ -60,6 +75,7 @@ def run_calibration_action(action: str, mode: str, db_path: str, user_id: str | 
         cp = cm.cancel_calibration(user)
         sm.transition(SystemState.CALIBRATION_FAILED)
         out |= cp.to_dict()
+        out["valid"] = False
         out["persisted"] = False
         out["profile.last_calibration_id"] = None if user["user_type"] == "guest" else pm.get_profile(user["user_id"])["last_calibration_id"]
     elif action == "list":
@@ -69,14 +85,21 @@ def run_calibration_action(action: str, mode: str, db_path: str, user_id: str | 
         out["calibrations"] = [{"calibration_id": i["calibration_id"], "calibration_type": i["calibration_type"], "created_at": i["created_at"], "valid": bool(i["valid"]), "failure_reason": i["failure_reason"], "is_bound_to_profile": i["calibration_id"] == bound} for i in items]
     elif action == "latest":
         latest = None if user["user_type"] == "guest" else cm.get_latest_calibration(user["user_id"])
-        out |= ({"latest": None} if latest is None else latest)
+        out |= ({"latest": None} if latest is None else _with_bool_valid(latest))
     elif action == "show":
         if not calibration_id:
             raise ValueError("--calibration-id is required")
         cp = cm.get_calibration(calibration_id)
         if cp is None:
             raise ValueError("calibration_not_found")
+        cp = _with_bool_valid(cp)
         out |= cp
+        out["calibration_user_id"] = cp["user_id"]
+        out.pop("user_id", None)
+        if mode is not None:
+            viewer, _ = _load_user(mode, user_id, um, pm)
+            out["viewer_user_id"] = viewer["user_id"]
+            out["viewer_user_type"] = viewer["user_type"]
     elif action == "bind":
         if user["user_type"] == "guest":
             raise ValueError("guest_bind_not_allowed")
@@ -102,7 +125,7 @@ def run_calibration(mode: str, db_path: str, user_id: str | None = None, fail: b
 def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("--action", choices=["status", "start", "cancel", "list", "latest", "show", "bind"], default="start")
-    p.add_argument("--mode", choices=["demo", "user", "guest"], default="demo")
+    p.add_argument("--mode", choices=["demo", "user", "guest"], default=None)
     p.add_argument("--user-id")
     p.add_argument("--db-path", default="data/relic_local.db")
     p.add_argument("--calibration-type", choices=["auto", "first_profile", "quick_check", "periodic", "triggered"], default="auto")

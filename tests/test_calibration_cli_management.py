@@ -54,3 +54,26 @@ def test_status_start_list_latest_show_bind_cancel_guest(tmp_path):
 
     guest = run_calibration_action("start", "guest", db)
     assert guest["persisted"] is False
+
+
+def test_show_owner_viewer_semantics_and_bool(tmp_path):
+    db = str(tmp_path / "show.db")
+    s = StorageManager(sqlite_path=db)
+    s.initialize()
+    um = UserManager(s.sqlite)
+    um.create_local_user_if_absent("TEST", "Test")
+    s.shutdown()
+
+    created = run_calibration_action("start", "user", db, user_id="TEST", calibration_type="auto")
+    shown = run_calibration_action("show", None, db, calibration_id=created["calibration_id"])
+    assert "current_user_id" not in shown
+    assert shown["calibration_user_id"] == "TEST"
+    assert isinstance(shown["valid"], bool)
+
+    shown2 = run_calibration_action("show", "demo", db, calibration_id=created["calibration_id"])
+    assert shown2["calibration_user_id"] == "TEST"
+    assert shown2["viewer_user_id"] == "demo"
+    assert shown2["viewer_user_type"] == "demo"
+
+    latest = run_calibration_action("latest", "user", db, user_id="TEST")
+    assert isinstance(latest["valid"], bool)
