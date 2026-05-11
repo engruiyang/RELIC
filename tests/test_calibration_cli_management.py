@@ -87,16 +87,37 @@ def test_start_events_fast_and_progress_failure_and_cancel(tmp_path):
     um.create_local_user_if_absent("TEST", "Test")
     s.shutdown()
 
-    out = run_calibration_action("start", "user", db, user_id="TEST", calibration_type="auto", fast=True, progress=False)
+    out = run_calibration_action("start", "user", db, user_id="TEST", calibration_type="auto", fast=True, progress=False, verbose=True)
     event_types = [e["event_type"] for e in out["events"]]
     assert "calibration_started" in event_types
     assert "calibration_progress" in event_types
     assert "calibration_completed" in event_types
 
-    fail = run_calibration_action("start", "demo", db, calibration_type="auto", fail=True, fast=True, progress=False)
+    fail = run_calibration_action("start", "demo", db, calibration_type="auto", fail=True, fast=True, progress=False, verbose=True)
     fail_types = [e["event_type"] for e in fail["events"]]
     assert "calibration_failed" in fail_types
 
-    cancel = run_calibration_action("cancel", "user", db, user_id="TEST", fast=True, progress=False)
+    cancel = run_calibration_action("cancel", "user", db, user_id="TEST", fast=True, progress=False, verbose=True)
     cancel_types = [e["event_type"] for e in cancel["events"]]
     assert "calibration_cancelled" in cancel_types
+
+
+def test_event_includes_user_instructions_and_default_no_events(tmp_path):
+    db = str(tmp_path / "tips.db")
+    s = StorageManager(sqlite_path=db)
+    s.initialize()
+    um = UserManager(s.sqlite)
+    um.create_local_user_if_absent("TEST", "Test")
+    s.shutdown()
+
+    out_default = run_calibration_action("start", "user", db, user_id="TEST", fast=True, progress=False)
+    assert "events" not in out_default
+
+    out_verbose = run_calibration_action("start", "user", db, user_id="TEST", fast=True, progress=False, verbose=True)
+    evt = next(e for e in out_verbose["events"] if e["event_type"] == "calibration_phase_started")
+    assert evt["user_instruction"]
+    assert evt["avoid_instruction"]
+    assert evt["title"]
+
+    out_fail = run_calibration_action("start", "demo", db, fail=True, fast=True, progress=False)
+    assert out_fail["user_recovery_hint"]

@@ -24,7 +24,7 @@ def _load_user(mode: str | None, user_id: str | None, um: UserManager, pm: Profi
         return um.enter_guest_mode(), None
     if resolved_mode == "user":
         if not user_id:
-            raise ValueError("--mode user requires --user-id")
+            raise ValueError("--mode user requires --user-id. 示例: python -m ui_cli.run_calibration_debug --action start --mode user --user-id TEST")
         user = um.load_user(user_id)
         if user is None:
             raise ValueError(f"user not found: {user_id}")
@@ -40,7 +40,7 @@ def _with_bool_valid(payload: dict) -> dict:
     return out
 
 
-def run_calibration_action(action: str, mode: str | None, db_path: str, user_id: str | None = None, calibration_type: str = "auto", calibration_id: str | None = None, fail: bool = False, fast: bool = True, progress: bool = True) -> dict:
+def run_calibration_action(action: str, mode: str | None, db_path: str, user_id: str | None = None, calibration_type: str = "auto", calibration_id: str | None = None, fail: bool = False, fast: bool = True, progress: bool = True, verbose: bool = False, json_events: bool = False) -> dict:
     storage = StorageManager(sqlite_path=db_path)
     storage.initialize()
     sm = StateMachine()
@@ -59,43 +59,42 @@ def run_calibration_action(action: str, mode: str | None, db_path: str, user_id:
     if user is not None:
         out |= {"current_user_id": user["user_id"], "user_type": user["user_type"]}
 
-    if action == "status":
-        out |= cm.get_calibration_status(user["user_id"])
-    elif action == "start":
+    if action == "start":
         sm.transition(SystemState.CALIBRATING)
         gyro, att = _build_samples(fail=fail)
-        events=[]
+        events = []
 
         def on_event(evt: dict):
             events.append(evt)
-            if progress:
-                if evt["event_type"] == "calibration_started":
-                    print(f"[calibration] started user={evt['user_id']} type={evt['calibration_type']}")
-                elif evt["event_type"] == "calibration_phase_started":
-                    print(f"[phase {evt['phase_index']}/{evt['phase_count']}] {evt['phase']} ...")
-                elif evt["event_type"] == "calibration_progress":
-                    print(f"[progress] phase={evt['phase']} progress={evt['progress']:.2f} elapsed_ms={evt['elapsed_ms']}")
-                elif evt["event_type"] == "calibration_completed":
-                    print("[done] calibration_completed")
-                elif evt["event_type"] == "calibration_failed":
-                    print(f"[done] calibration_failed reason={evt['message']}")
+            if progress and evt["event_type"] == "calibration_phase_started":
+                print(f"[phase {evt['phase_index']}/{evt['phase_count']}] {evt['title']} ({evt['duration_hint']})")
+                print(f"  {evt['user_instruction']}")
+                print(f"  {evt['avoid_instruction']}")
+            if progress and evt["event_type"] == "calibration_progress" and not fast:
+                print(f"  progress={evt['progress']:.2f} elapsed_ms={evt['elapsed_ms']}")
 
         cp = cm.start_calibration(user, calibration_type, gyro, att, fast=fast, emit_event=on_event)
-        out["events"] = events
         sm.transition(SystemState.READY if cp.valid else SystemState.CALIBRATION_FAILED)
         out |= cp.to_dict()
         out["valid"] = bool(out["valid"])
         out["persisted"] = (user["user_type"] != "guest")
         out["profile.last_calibration_id"] = None if user["user_type"] == "guest" else pm.get_profile(user["user_id"])["last_calibration_id"]
+        out["user_recovery_hint"] = cm.get_recovery_hint(cp.failure_reason)
+        if verbose or json_events:
+            out["events"] = events
     elif action == "cancel":
         sm.transition(SystemState.CALIBRATING)
         cp = cm.cancel_calibration(user)
-        out["events"] = [{"event_type":"calibration_cancelled","user_id":user["user_id"],"cancellable":True,"message":"cancelled_by_user"}]
         sm.transition(SystemState.CALIBRATION_FAILED)
         out |= cp.to_dict()
         out["valid"] = False
         out["persisted"] = False
         out["profile.last_calibration_id"] = None if user["user_type"] == "guest" else pm.get_profile(user["user_id"])["last_calibration_id"]
+        out["user_recovery_hint"] = cm.get_recovery_hint(cp.failure_reason)
+        if verbose or json_events:
+            out["events"] = [{"event_type": "calibration_cancelled", "user_id": user["user_id"], "cancellable": True, "message": "cancelled_by_user"}]
+    elif action == "status":
+        out |= cm.get_calibration_status(user["user_id"])
     elif action == "list":
         items = [] if user["user_type"] == "guest" else cm.list_calibrations(user["user_id"])
         bound = None if profile is None else profile.get("last_calibration_id")
@@ -104,6 +103,7 @@ def run_calibration_action(action: str, mode: str | None, db_path: str, user_id:
     elif action == "latest":
         latest = None if user["user_type"] == "guest" else cm.get_latest_calibration(user["user_id"])
         out |= ({"latest": None} if latest is None else _with_bool_valid(latest))
+        out["user_recovery_hint"] = cm.get_recovery_hint(out.get("failure_reason"))
     elif action == "show":
         if not calibration_id:
             raise ValueError("--calibration-id is required")
@@ -114,6 +114,7 @@ def run_calibration_action(action: str, mode: str | None, db_path: str, user_id:
         out |= cp
         out["calibration_user_id"] = cp["user_id"]
         out.pop("user_id", None)
+        out["user_recovery_hint"] = cm.get_recovery_hint(cp.get("failure_reason"))
         if mode is not None:
             viewer, _ = _load_user(mode, user_id, um, pm)
             out["viewer_user_id"] = viewer["user_id"]
@@ -151,8 +152,13 @@ def main() -> None:
     p.add_argument("--fail", action="store_true")
     p.add_argument("--fast", action="store_true")
     p.add_argument("--no-progress", action="store_true")
+    p.add_argument("--verbose", action="store_true")
+    p.add_argument("--json-events", action="store_true")
     args = p.parse_args()
-    run_calibration_action(args.action, args.mode, args.db_path, args.user_id, args.calibration_type, args.calibration_id, args.fail, fast=args.fast, progress=not args.no_progress)
+    try:
+        run_calibration_action(args.action, args.mode, args.db_path, args.user_id, args.calibration_type, args.calibration_id, args.fail, fast=args.fast, progress=not args.no_progress, verbose=args.verbose, json_events=args.json_events)
+    except ValueError as e:
+        print(f"[error] {e}")
 
 
 if __name__ == "__main__":
