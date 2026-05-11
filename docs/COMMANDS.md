@@ -42,6 +42,29 @@
 - mock 校准结果不能作为真实注意力基线。
 - 真实 attention 基线至少需要 8 秒采样窗口。
 - 普通 CLI 会在每个校准阶段开始前实时输出提示（title / user_instruction / avoid_instruction / duration_hint）。
+- `failure_reason` 是按失败类型分类，不要求把所有 IPC 异常都归为 `ipc_stream_interrupted`。
+
+### 校准失败原因语义（Task5）
+
+- 连接类失败（仅在明确捕获 socket/bridge/receiver 断开事件时使用）：
+  - `ipc_stream_interrupted`
+  - `live_stream_disconnected`
+- 样本不足类失败（连接未明确断开，但窗口内有效样本不够）：
+  - `insufficient_valid_samples`
+- 注意力质量类失败（有 attention 数据，但质量或更新不足）：
+  - `attention_update_too_sparse`
+  - `attention_missing` / `attention_lost`（按实现语义）
+
+所有失败原因都满足以下约束：
+- `valid=False`
+- `persisted=False`
+- 不更新 `profile.last_calibration_id`
+- `source=ipc` 失败时不 fallback 到 `mock`
+
+用户恢复建议（按 failure_reason）：
+- `ipc_stream_interrupted` / `live_stream_disconnected`：检查平台是否仍在推流、端口是否正确、桥接进程/接收线程是否退出后重连重试。
+- `insufficient_valid_samples`：延长稳定采样时间、保持头部静止、确认佩戴贴合后重试。
+- `attention_update_too_sparse`：确认注意力值在窗口内持续更新，减少干扰动作并重试。
 
 | 命令 | 用途 | 入口文件 | 写数据库 | 连接平台 | 生成文件 | 典型输出字段 | 状态 |
 |---|---|---|---|---|---|---|---|
