@@ -22,9 +22,10 @@ class ControlStateEstimator:
         else:
             fi = float(fi_result.get("fi_smoothed", 0.0))
             s_imu = fi_result.get("s_imu")
+            behavior_ready = bool(fi_result.get("behavior_ready", False))
             if fi >= 80:
                 self._high_focus_streak += 1
-                state = "HIGH_FOCUS" if self._high_focus_streak >= 2 else "STABLE_FOCUS"
+                state = "HIGH_FOCUS" if (self._high_focus_streak >= 2 and behavior_ready) else "STABLE_FOCUS"
                 reason = "high_focus_confirmed" if state == "HIGH_FOCUS" else "high_focus_waiting"
             else:
                 self._high_focus_streak = 0
@@ -35,7 +36,7 @@ class ControlStateEstimator:
                 else:
                     self._low_fi_ms += tick_ms
                     s_b_source = fi_result.get("s_b_source")
-                    if self._low_fi_ms >= 10000 and s_imu is not None and s_imu < 0.2 and s_b_source != "neutral_default":
+                    if self._low_fi_ms >= 10000 and behavior_ready and s_imu is not None and s_imu < 0.45 and s_b_source != "neutral_default":
                         state = "FATIGUED"
                         reason = "fatigue_conservative"
                     else:

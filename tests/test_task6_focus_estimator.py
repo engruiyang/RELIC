@@ -46,8 +46,9 @@ def test_gyro_noise_zero_fallback():
 def test_behavior_default_source():
     f = FocusEstimator()
     r = f.estimate(_snap(), _profile(), _cal())
-    assert r["s_b"] == 0.5
+    assert r["s_b"] == 0.60
     assert r["s_b_source"] == "neutral_default"
+    assert r["behavior_ready"] is False
     assert "behavior_score_default" in r["fi_reasons"]
     assert r["fi_confidence"] in {"medium", "low"}
 
@@ -62,7 +63,7 @@ def test_valid_fi_range():
 
 def test_high_fi_requires_two_windows():
     c = ControlStateEstimator()
-    fi = {"fi_valid": True, "fi_confidence": "high", "fi_smoothed": 85, "s_imu": 0.9}
+    fi = {"fi_valid": True, "fi_confidence": "high", "fi_smoothed": 85, "s_imu": 0.9, "behavior_ready": True}
     s = {"estimation_allowed": True, "quality_state": "ok"}
     one = c.evaluate(s, fi)
     two = c.evaluate(s, fi)
@@ -84,6 +85,15 @@ def test_warning_forces_low_confidence():
     s = {"estimation_allowed": True, "quality_state": "warning"}
     r = c.evaluate(s, {"fi_valid": True, "fi_confidence": "high", "fi_smoothed": 90, "s_imu": 0.9})
     assert r["control_state"] == "LOW_CONFIDENCE"
+
+
+def test_no_behavior_cannot_enter_high_focus():
+    c = ControlStateEstimator()
+    s = {"estimation_allowed": True, "quality_state": "ok"}
+    a = c.evaluate(s, {"fi_valid": True, "fi_confidence": "high", "fi_smoothed": 90, "s_imu": 0.9, "behavior_ready": False})
+    b = c.evaluate(s, {"fi_valid": True, "fi_confidence": "high", "fi_smoothed": 90, "s_imu": 0.9, "behavior_ready": False})
+    assert a["control_state"] == "STABLE_FOCUS"
+    assert b["control_state"] == "STABLE_FOCUS"
 
 
 def test_s_imu_not_stuck_zero_on_live_like_fresh_stream():

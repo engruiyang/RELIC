@@ -41,6 +41,7 @@ class RealtimeSnapshot:
     s_imu: float | None = None
     s_b: float = 0.5
     s_b_source: str = "neutral_default"
+    behavior_ready: bool = False
     attention_normalization_method: str | None = None
     motion_energy: float | None = None
     fi_raw: float | None = None

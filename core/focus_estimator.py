@@ -16,19 +16,37 @@ class FocusEstimator:
 
     def estimate(self, runtime_snapshot: dict, user_profile: dict | None, calibration_profile: dict | None) -> dict:
         reasons: list[str] = []
-        s_b = 0.5
+        s_b = 0.60
         s_b_source = "neutral_default"
+        behavior_ready = False
         reasons.append("behavior_score_default")
+        behavior_sample = runtime_snapshot.get("behavior_sample")
+        if isinstance(behavior_sample, dict):
+            acc = behavior_sample.get("accuracy")
+            om = behavior_sample.get("omission")
+            fa = behavior_sample.get("false_action")
+            rt = behavior_sample.get("rt_stability")
+            if acc is None and behavior_sample.get("target_count") is not None:
+                t = max(float(behavior_sample.get("target_count", 0)), 1.0)
+                acc = float(behavior_sample.get("correct_count", 0.0)) / t
+                om = float(behavior_sample.get("omission_count", 0.0)) / t
+                fa = float(behavior_sample.get("false_action_count", 0.0)) / max(float(behavior_sample.get("action_count", 0.0)), 1.0)
+                rt = 0.5
+            if None not in (acc, om, fa, rt):
+                s_b = _clamp(0.35 * float(acc) + 0.20 * (1 - float(om)) + 0.15 * (1 - float(fa)) + 0.30 * float(rt), 0.0, 1.0)
+                s_b_source = "behavior_sample"
+                behavior_ready = True
+                reasons = [r for r in reasons if r != "behavior_score_default"]
         if not runtime_snapshot.get("estimation_allowed", False):
             reasons.append("estimation_not_allowed")
-            return {"s_eeg": None, "s_imu": None, "s_b": s_b, "s_b_source": s_b_source, "attention_normalization_method": None, "motion_energy": None, "fi_raw": None, "fi_smoothed": self._last_fi_smoothed, "fi_valid": False, "fi_confidence": "low", "fi_reasons": reasons + ["fi_invalid_no_update"]}
+            return {"s_eeg": None, "s_imu": None, "s_b": s_b, "s_b_source": s_b_source, "behavior_ready": behavior_ready, "attention_normalization_method": None, "motion_energy": None, "fi_raw": None, "fi_smoothed": self._last_fi_smoothed, "fi_valid": False, "fi_confidence": "low", "fi_reasons": reasons + ["fi_invalid_no_update"]}
 
         if not runtime_snapshot.get("attention_fresh", False):
             reasons.append("attention_not_fresh")
-            return {"s_eeg": None, "s_imu": None, "s_b": s_b, "s_b_source": s_b_source, "attention_normalization_method": None, "motion_energy": None, "fi_raw": None, "fi_smoothed": self._last_fi_smoothed, "fi_valid": False, "fi_confidence": "low", "fi_reasons": reasons + ["fi_hold_last_valid"]}
+            return {"s_eeg": None, "s_imu": None, "s_b": s_b, "s_b_source": s_b_source, "behavior_ready": behavior_ready, "attention_normalization_method": None, "motion_energy": None, "fi_raw": None, "fi_smoothed": self._last_fi_smoothed, "fi_valid": False, "fi_confidence": "low", "fi_reasons": reasons + ["fi_hold_last_valid"]}
         if not runtime_snapshot.get("gyro_fresh", False):
             reasons.append("gyro_not_fresh")
-            return {"s_eeg": None, "s_imu": None, "s_b": s_b, "s_b_source": s_b_source, "attention_normalization_method": None, "motion_energy": None, "fi_raw": None, "fi_smoothed": self._last_fi_smoothed, "fi_valid": False, "fi_confidence": "low", "fi_reasons": reasons + ["fi_hold_last_valid"]}
+            return {"s_eeg": None, "s_imu": None, "s_b": s_b, "s_b_source": s_b_source, "behavior_ready": behavior_ready, "attention_normalization_method": None, "motion_energy": None, "fi_raw": None, "fi_smoothed": self._last_fi_smoothed, "fi_valid": False, "fi_confidence": "low", "fi_reasons": reasons + ["fi_hold_last_valid"]}
 
         attention = float(runtime_snapshot.get("attention", 0.0))
         baseline = None if calibration_profile is None else calibration_profile.get("attention_baseline")
@@ -95,4 +113,4 @@ class FocusEstimator:
             conf = "medium"
         if "imu_short_window_fallback" in reasons and conf == "high":
             conf = "medium"
-        return {"s_eeg": s_eeg, "s_imu": s_imu, "s_b": s_b, "s_b_source": s_b_source, "attention_normalization_method": norm, "motion_energy": motion_energy, "fi_raw": _clamp(fi_raw, 0.0, 100.0), "fi_smoothed": _clamp(fi_smoothed, 0.0, 100.0), "fi_valid": True, "fi_confidence": conf, "fi_reasons": sorted(set(reasons))}
+        return {"s_eeg": s_eeg, "s_imu": s_imu, "s_b": s_b, "s_b_source": s_b_source, "behavior_ready": behavior_ready, "attention_normalization_method": norm, "motion_energy": motion_energy, "fi_raw": _clamp(fi_raw, 0.0, 100.0), "fi_smoothed": _clamp(fi_smoothed, 0.0, 100.0), "fi_valid": True, "fi_confidence": conf, "fi_reasons": sorted(set(reasons))}
