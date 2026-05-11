@@ -15,6 +15,8 @@
 |---|---|---|---|---|---|---|---|
 | `python -m ui_cli.run_core_debug --bridge mock` | 本地 mock 数据流调试 | `ui_cli/run_core_debug.py` | 否 | 否 | 否 | `tick`, `attention`, `gyro`, `quality`, `error_flags` | active |
 | `python -m ui_cli.run_core_debug --bridge live --host 127.0.0.1 --port 8000` | live 桥接调试 | `ui_cli/run_core_debug.py` | 否 | 是 | 否 | `connected`, `stream_alive`, `attention_fresh` | active |
+| `python -m ui_cli.run_core_debug --bridge live --mode user --user-id TEST` | live 桥接 + 指定用户上下文调试 QualityGate | `ui_cli/run_core_debug.py` | 否（仅读） | 是 | 否 | `current_user_id`, `profile.last_calibration_id`, `formal_training_allowed` | active |
+| `python -m ui_cli.run_core_debug --bridge mock --mode demo` | mock 桥接 + demo 用户上下文调试 QualityGate | `ui_cli/run_core_debug.py` | 否（仅读） | 否 | 否 | `bound_calibration_source`, `calibration_usable`, `quality_reasons` | active |
 | `python -m main` | 启动 AppController 主流程 | `main.py` | 可能（依配置） | 依配置 | 依模块 | 控制台 state/debug 输出 | unknown |
 
 ## Platform / live 调试命令
