@@ -37,6 +37,20 @@ class RealtimeSnapshot:
     formal_training_allowed: bool = False
     signal_reliable: bool = False
     estimation_allowed: bool = False
+    s_eeg: float | None = None
+    s_imu: float | None = None
+    s_b: float = 0.5
+    s_b_source: str = "neutral_default"
+    attention_normalization_method: str | None = None
+    motion_energy: float | None = None
+    fi_raw: float | None = None
+    fi_smoothed: float | None = None
+    fi_valid: bool = False
+    fi_confidence: str = "low"
+    fi_reasons: list[str] = field(default_factory=list)
+    control_state: str = "UNRELIABLE_SIGNAL"
+    control_state_reason: str = "estimation_not_allowed"
+    control_state_dwell_ms: int = 0
 
     # compatibility helper for callers that expect grouped gyro
     @property

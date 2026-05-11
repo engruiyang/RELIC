@@ -13,6 +13,8 @@ from game.game_manager import GameManager
 from runtime.local_runtime import LocalRuntime
 from storage.storage_manager import StorageManager
 from core.quality_gate import QualityGate
+from core.focus_estimator import FocusEstimator
+from core.control_state_estimator import ControlStateEstimator
 
 
 class AppController:
@@ -41,6 +43,8 @@ class AppController:
         self.runtime = LocalRuntime()
         self.quality_gate = QualityGate()
         self.current_user = None
+        self.focus_estimator = FocusEstimator()
+        self.control_state_estimator = ControlStateEstimator()
 
     def _bootstrap_user(self) -> None:
         mode = self.config.get("user", {}).get("startup_mode", "demo")
@@ -72,8 +76,12 @@ class AppController:
                 bound_cp = self.storage.get_calibration_profile(profile["last_calibration_id"])
             gate = self.quality_gate.evaluate(self.data_center.get_runtime_snapshot(), self.current_user, profile, bound_cp, self.data_center.get_snapshot().warning_flags, self.data_center.get_snapshot().error_flags)
             self.data_center.apply_quality_gate(gate)
+            fi = self.focus_estimator.estimate(self.data_center.get_runtime_snapshot(), profile, bound_cp)
+            cs = self.control_state_estimator.evaluate(self.data_center.get_runtime_snapshot(), fi, tick_ms=tick_interval_ms)
             if debug:
                 snapshot = self.data_center.get_runtime_snapshot()
+                snapshot.update(fi)
+                snapshot.update(cs)
                 print(
                     "[mock] "
                     f"t={snapshot['now_ms']} "

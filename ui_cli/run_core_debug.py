@@ -4,6 +4,8 @@ import time
 from data.data_center import DataCenter
 from relic_platform.platform_gateway import PlatformGateway
 from core.quality_gate import QualityGate
+from core.focus_estimator import FocusEstimator
+from core.control_state_estimator import ControlStateEstimator
 from storage.storage_manager import StorageManager
 from user.user_manager import UserManager
 from user.profile_manager import ProfileManager
@@ -46,6 +48,8 @@ def run_debug_loop(mode: str, host: str, port: int, ticks: int, interval: float,
     gateway = PlatformGateway(mode=mode, host=host, port=port)
     data_center = DataCenter()
     quality_gate = QualityGate()
+    focus_estimator = FocusEstimator()
+    control_estimator = ControlStateEstimator()
     current_user, profile, storage = _resolve_user_context(user_mode, user_id, db_path)
     gateway.start()
 
@@ -73,6 +77,10 @@ def run_debug_loop(mode: str, host: str, port: int, ticks: int, interval: float,
             gate = quality_gate.evaluate(s, current_user=current_user, user_profile=profile, bound_calibration_profile=bound, warning_flags=s.get("warning_flags"), error_flags=s.get("error_flags"))
             data_center.apply_quality_gate(gate)
             s = data_center.get_runtime_snapshot()
+            fi = focus_estimator.estimate(s, profile, bound)
+            cs = control_estimator.evaluate(s, fi, tick_ms=tick_ms)
+            s.update(fi)
+            s.update(cs)
             print(
                 f"tick={i} current_user_id={None if current_user is None else current_user['user_id']} "
                 f"user_type={None if current_user is None else current_user['user_type']} "
@@ -88,7 +96,10 @@ def run_debug_loop(mode: str, host: str, port: int, ticks: int, interval: float,
                 f"quality_reasons={s['quality_reasons']} warning_flags={s['warning_flags']} error_flags={s['error_flags']} "
                 f"sqi={s['sqi']} quality_state={s['quality_state']} calibration_usable={s['calibration_usable']} "
                 f"formal_training_allowed={s['formal_training_allowed']} signal_reliable={s['signal_reliable']} "
-                f"estimation_allowed={s['estimation_allowed']}"
+                f"estimation_allowed={s['estimation_allowed']} "
+                f"s_eeg={s['s_eeg']} s_imu={s['s_imu']} s_b={s['s_b']} fi_raw={s['fi_raw']} fi_smoothed={s['fi_smoothed']} "
+                f"fi_valid={s['fi_valid']} fi_confidence={s['fi_confidence']} control_state={s['control_state']} "
+                f"control_state_reason={s['control_state_reason']}"
             )
             time.sleep(interval)
     except KeyboardInterrupt:
