@@ -31,6 +31,12 @@ class RealtimeSnapshot:
     quality_reasons: list[str] = field(default_factory=list)
     warning_flags: list[str] = field(default_factory=list)
     error_flags: list[str] = field(default_factory=list)
+    sqi: float = 0.0
+    quality_state: str = "error"
+    calibration_usable: bool = False
+    formal_training_allowed: bool = False
+    signal_reliable: bool = False
+    estimation_allowed: bool = False
 
     # compatibility helper for callers that expect grouped gyro
     @property

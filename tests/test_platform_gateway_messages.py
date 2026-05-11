@@ -1,4 +1,4 @@
-from platform.platform_messages import PlatformMessageParser
+from relic_platform.platform_messages import PlatformMessageParser
 
 
 def test_platform_message_to_raw_events():

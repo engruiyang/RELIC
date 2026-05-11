@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from device.adapters.mock_adapter import MockAdapter
-from platform.platform_messages import PlatformMessageParser
+from relic_platform.platform_messages import PlatformMessageParser
 
 
 class PlatformGateway:
