@@ -139,3 +139,25 @@ def test_status_binding_consistent_requires_valid(tmp_path):
     _mk_user(db)
     st = run_calibration_action("status", "user", db, user_id="TEST", print_output=False)
     assert "binding_consistent" in st
+
+
+def test_ipc_default_start_phase_titles_print_once(tmp_path, monkeypatch, capsys):
+    db = str(tmp_path / "i.db")
+    _mk_user(db)
+    import ui_cli.run_calibration_debug as mod
+
+    def fake_collect(host, port, fast, phase_callback=None, sleeper=None):
+        for p in ["preparation", "gyro_static_baseline", "attention_quick_baseline", "result"]:
+            if phase_callback is not None:
+                phase_callback(p)
+        gyro = [{"gyro_x": 0.1, "gyro_y": 0.1, "gyro_z": 0.1, "gyro_fresh": True, "error_flags": []} for _ in range(20)]
+        att = [{"attention": 55 + (i % 3), "attention_fresh": True, "error_flags": []} for i in range(20)]
+        return gyro, att, {"ipc_connected": True, "ipc_connected_at_end": True, "stream_interrupted": False, "live_data_detected": True, "failure_reason": None}
+
+    monkeypatch.setattr(mod, "_collect_ipc_samples", fake_collect)
+    mod.run_calibration_action("start", "user", db, user_id="TEST", source="ipc", fast=False, progress=True, print_output=True)
+    out = capsys.readouterr().out
+    assert out.count("佩戴检查") == 1
+    assert out.count("静止姿态校准") == 1
+    assert out.count("注意力基线检查") == 1
+    assert out.count("结果计算") == 1

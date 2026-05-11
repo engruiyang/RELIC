@@ -113,7 +113,7 @@ def run_calibration_action(action: str, mode: str | None, db_path: str, user_id:
 
         def on_event(e):
             events.append(e)
-            if progress and e.get("event_type") == "calibration_phase_started":
+            if progress and resolved_source != "ipc" and e.get("event_type") == "calibration_phase_started":
                 print(f"[phase {e['phase_index']}/{e['phase_count']}] {e['title']}", flush=True)
                 print(f"  {e['user_instruction']}", flush=True)
                 print(f"  {e['avoid_instruction']}", flush=True)
