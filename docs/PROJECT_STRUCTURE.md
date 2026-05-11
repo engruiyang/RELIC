@@ -57,3 +57,7 @@
 - `games/`
 - `profiles/`（历史 phase-1，已废弃）
 - `relic_data_bridge.py`（仅兼容保留）
+
+## 命令文档同步规则
+
+- 后续任何任务如果新增、修改或废弃 CLI/debug/test 命令，必须同步更新 `docs/COMMANDS.md`。
