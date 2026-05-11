@@ -90,9 +90,6 @@ class CalibrationManager:
                 "progress": progress,
                 "elapsed_ms": elapsed_ms,
                 "remaining_ms": max(0, phase_ms * phase_count - elapsed_ms),
-                "collected_samples": int((len(gyro_snapshots) + len(attention_snapshots)) * progress),
-                "valid_attention_samples": sum(1 for x in attention_snapshots if x.get("attention_fresh") and not x.get("error_flags") and x.get("attention") is not None),
-                "valid_gyro_samples": sum(1 for x in gyro_snapshots if x.get("gyro_fresh") and not x.get("error_flags") and x.get("gyro_x") is not None),
                 "message": message,
                 "cancellable": True,
                 "title": prompt.get("title", phase),
@@ -114,10 +111,23 @@ class CalibrationManager:
         hist_base = history[-1].get("attention_baseline") if history else None
         cp = self.run_quick_calibration(user_id=user["user_id"], user_type=user["user_type"], device_id="mock_device", gyro_snapshots=gyro_snapshots, attention_snapshots=attention_snapshots, has_history=(resolved_type == "quick_check"), historical_baseline=hist_base)
         cp.calibration_type = resolved_type
+        final_stats = {
+            "collected_samples": len(gyro_snapshots) + len(attention_snapshots),
+            "valid_attention_samples": sum(1 for x in attention_snapshots if x.get("attention_fresh") and not x.get("error_flags") and x.get("attention") is not None),
+            "valid_gyro_samples": sum(1 for x in gyro_snapshots if x.get("gyro_fresh") and not x.get("error_flags") and x.get("gyro_x") is not None),
+            "attention_valid_sample_ratio": cp.attention_valid_sample_ratio,
+            "valid": cp.valid,
+            "failure_reason": cp.failure_reason,
+            "user_recovery_hint": self.get_recovery_hint(cp.failure_reason),
+        }
         if cp.valid:
             emit("calibration_completed", "result", phase_count, 1.0, "calibration completed")
+            if emit_event is not None:
+                emit_event(final_stats | {"event_type": "calibration_completed_summary", "user_id": user["user_id"], "calibration_type": resolved_type, "phase": "result", "phase_index": phase_count, "phase_count": phase_count, "progress": 1.0, "elapsed_ms": int((time.monotonic() - t0) * 1000), "remaining_ms": 0, "cancellable": False, "title": PHASE_PROMPTS["result"]["title"], "user_instruction": PHASE_PROMPTS["result"]["user_instruction"], "avoid_instruction": PHASE_PROMPTS["result"]["avoid_instruction"], "duration_hint": PHASE_PROMPTS["result"]["duration_hint"], "message": "final summary"})
         else:
             emit("calibration_failed", "result", phase_count, 1.0, cp.failure_reason or "calibration failed")
+            if emit_event is not None:
+                emit_event(final_stats | {"event_type": "calibration_failed_summary", "user_id": user["user_id"], "calibration_type": resolved_type, "phase": "result", "phase_index": phase_count, "phase_count": phase_count, "progress": 1.0, "elapsed_ms": int((time.monotonic() - t0) * 1000), "remaining_ms": 0, "cancellable": False, "title": PHASE_PROMPTS["result"]["title"], "user_instruction": PHASE_PROMPTS["result"]["user_instruction"], "avoid_instruction": PHASE_PROMPTS["result"]["avoid_instruction"], "duration_hint": PHASE_PROMPTS["result"]["duration_hint"], "message": "final summary"})
 
         if user["user_type"] != "guest":
             self.store.save_calibration_profile(cp.to_dict())

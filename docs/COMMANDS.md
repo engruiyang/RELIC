@@ -44,7 +44,7 @@
 | `python -m ui_cli.run_calibration_debug --action latest --mode user --user-id TEST` | 读取用户最新校准 | `ui_cli/run_calibration_debug.py` | 否（仅读） | 否 | 否 | `calibration_id`, `valid`, `failure_reason` | active |
 | `python -m ui_cli.run_calibration_debug --action show --calibration-id cal_xxx` | 读取指定 calibration 详情 | `ui_cli/run_calibration_debug.py` | 否（仅读） | 否 | 否 | `attention_baseline`, `gyro_noise_rms`, `signal_quality_baseline` | active |
 | `python -m ui_cli.run_calibration_debug --action bind --mode user --user-id TEST --calibration-id cal_xxx` | 绑定有效 calibration 到 profile | `ui_cli/run_calibration_debug.py` | 是（更新 `user_profiles.last_calibration_id`） | 否 | 否 | `old_last_calibration_id`, `new_last_calibration_id` | active |
-| `python -m ui_cli.run_calibration_debug --action start --mode user --user-id TEST --verbose` | 输出完整 events 列表（调试） | `ui_cli/run_calibration_debug.py` | demo/user: 是；guest: 否 | 否 | 否 | `events=[...]` | active |
+| `python -m ui_cli.run_calibration_debug --action start --mode user --user-id TEST --verbose-events` | 输出完整 events 列表（调试，人类可读） | `ui_cli/run_calibration_debug.py` | demo/user: 是；guest: 否 | 否 | 否 | `events=[...]` | active |
 | `python -m ui_cli.run_calibration_debug --action start --mode user --user-id TEST --json-events` | 以结构化事件输出（调试） | `ui_cli/run_calibration_debug.py` | demo/user: 是；guest: 否 | 否 | 否 | `events=[...]` | active |
 | `python -m ui_cli.run_calibration_debug --action start --mode user --user-id TEST --fast` | fast 模式（测试/开发快速完成） | `ui_cli/run_calibration_debug.py` | demo/user: 是；guest: 否 | 否 | 否 | `events`, `valid`, `calibration_id` | active |
 | `python -m ui_cli.run_calibration_debug --action start --mode user --user-id TEST --no-progress` | 关闭进度行输出，仅保留结果 | `ui_cli/run_calibration_debug.py` | demo/user: 是；guest: 否 | 否 | 否 | `valid`, `calibration_id` | active |
@@ -71,3 +71,7 @@
 
 - 默认校准（first_profile / quick_check）只要求静止和平视，不需要摆头动作。
 - `--mode user` 必须配合 `--user-id`。
+
+- 普通模式适合人类查看；`--json-events` / `--verbose-events` 适合 GUI 或调试工具读取事件。
+- `--calibration-type` 仅支持：auto / first_profile / quick_check / periodic / triggered。
+- `calibration_id` 示例中的尖括号仅为占位符，实际命令不要输入尖括号。

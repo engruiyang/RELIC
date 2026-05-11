@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 
 from calibration.calibration_manager import CalibrationManager
 from core.state_machine import StateMachine, SystemState
@@ -40,7 +41,7 @@ def _with_bool_valid(payload: dict) -> dict:
     return out
 
 
-def run_calibration_action(action: str, mode: str | None, db_path: str, user_id: str | None = None, calibration_type: str = "auto", calibration_id: str | None = None, fail: bool = False, fast: bool = True, progress: bool = True, verbose: bool = False, json_events: bool = False) -> dict:
+def run_calibration_action(action: str, mode: str | None, db_path: str, user_id: str | None = None, calibration_type: str = "auto", calibration_id: str | None = None, fail: bool = False, fast: bool = True, progress: bool = True, verbose_events: bool = False, json_events: bool = False, print_output: bool = True) -> dict:
     storage = StorageManager(sqlite_path=db_path)
     storage.initialize()
     sm = StateMachine()
@@ -80,7 +81,7 @@ def run_calibration_action(action: str, mode: str | None, db_path: str, user_id:
         out["persisted"] = (user["user_type"] != "guest")
         out["profile.last_calibration_id"] = None if user["user_type"] == "guest" else pm.get_profile(user["user_id"])["last_calibration_id"]
         out["user_recovery_hint"] = cm.get_recovery_hint(cp.failure_reason)
-        if verbose or json_events:
+        if verbose_events or json_events:
             out["events"] = events
     elif action == "cancel":
         sm.transition(SystemState.CALIBRATING)
@@ -91,7 +92,7 @@ def run_calibration_action(action: str, mode: str | None, db_path: str, user_id:
         out["persisted"] = False
         out["profile.last_calibration_id"] = None if user["user_type"] == "guest" else pm.get_profile(user["user_id"])["last_calibration_id"]
         out["user_recovery_hint"] = cm.get_recovery_hint(cp.failure_reason)
-        if verbose or json_events:
+        if verbose_events or json_events:
             out["events"] = [{"event_type": "calibration_cancelled", "user_id": user["user_id"], "cancellable": True, "message": "cancelled_by_user"}]
     elif action == "status":
         out |= cm.get_calibration_status(user["user_id"])
@@ -131,14 +132,15 @@ def run_calibration_action(action: str, mode: str | None, db_path: str, user_id:
         raise ValueError(f"unknown action: {action}")
 
     out["system_state"] = sm.state.value
-    for k, v in out.items():
-        print(f"{k}={v}")
+    if print_output:
+        for k, v in out.items():
+            print(f"{k}={v}")
     storage.shutdown()
     return out
 
 
 def run_calibration(mode: str, db_path: str, user_id: str | None = None, fail: bool = False) -> dict:
-    return run_calibration_action("start", mode, db_path, user_id=user_id, calibration_type="auto", fail=fail, fast=True, progress=False)
+    return run_calibration_action("start", mode, db_path, user_id=user_id, calibration_type="auto", fail=fail, fast=True, progress=False, print_output=False)
 
 
 def main() -> None:
@@ -152,11 +154,13 @@ def main() -> None:
     p.add_argument("--fail", action="store_true")
     p.add_argument("--fast", action="store_true")
     p.add_argument("--no-progress", action="store_true")
-    p.add_argument("--verbose", action="store_true")
+    p.add_argument("--verbose-events", action="store_true")
     p.add_argument("--json-events", action="store_true")
     args = p.parse_args()
     try:
-        run_calibration_action(args.action, args.mode, args.db_path, args.user_id, args.calibration_type, args.calibration_id, args.fail, fast=args.fast, progress=not args.no_progress, verbose=args.verbose, json_events=args.json_events)
+        result = run_calibration_action(args.action, args.mode, args.db_path, args.user_id, args.calibration_type, args.calibration_id, args.fail, fast=args.fast, progress=not args.no_progress, verbose_events=args.verbose_events, json_events=args.json_events, print_output=not args.json_events)
+        if args.json_events:
+            print(json.dumps(result.get("events", []), ensure_ascii=False))
     except ValueError as e:
         print(f"[error] {e}")
 

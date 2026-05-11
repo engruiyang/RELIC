@@ -87,17 +87,17 @@ def test_start_events_fast_and_progress_failure_and_cancel(tmp_path):
     um.create_local_user_if_absent("TEST", "Test")
     s.shutdown()
 
-    out = run_calibration_action("start", "user", db, user_id="TEST", calibration_type="auto", fast=True, progress=False, verbose=True)
+    out = run_calibration_action("start", "user", db, user_id="TEST", calibration_type="auto", fast=True, progress=False, verbose_events=True)
     event_types = [e["event_type"] for e in out["events"]]
     assert "calibration_started" in event_types
     assert "calibration_progress" in event_types
     assert "calibration_completed" in event_types
 
-    fail = run_calibration_action("start", "demo", db, calibration_type="auto", fail=True, fast=True, progress=False, verbose=True)
+    fail = run_calibration_action("start", "demo", db, calibration_type="auto", fail=True, fast=True, progress=False, verbose_events=True)
     fail_types = [e["event_type"] for e in fail["events"]]
     assert "calibration_failed" in fail_types
 
-    cancel = run_calibration_action("cancel", "user", db, user_id="TEST", fast=True, progress=False, verbose=True)
+    cancel = run_calibration_action("cancel", "user", db, user_id="TEST", fast=True, progress=False, verbose_events=True)
     cancel_types = [e["event_type"] for e in cancel["events"]]
     assert "calibration_cancelled" in cancel_types
 
@@ -113,7 +113,7 @@ def test_event_includes_user_instructions_and_default_no_events(tmp_path):
     out_default = run_calibration_action("start", "user", db, user_id="TEST", fast=True, progress=False)
     assert "events" not in out_default
 
-    out_verbose = run_calibration_action("start", "user", db, user_id="TEST", fast=True, progress=False, verbose=True)
+    out_verbose = run_calibration_action("start", "user", db, user_id="TEST", fast=True, progress=False, verbose_events=True)
     evt = next(e for e in out_verbose["events"] if e["event_type"] == "calibration_phase_started")
     assert evt["user_instruction"]
     assert evt["avoid_instruction"]
@@ -121,3 +121,32 @@ def test_event_includes_user_instructions_and_default_no_events(tmp_path):
 
     out_fail = run_calibration_action("start", "demo", db, fail=True, fast=True, progress=False)
     assert out_fail["user_recovery_hint"]
+
+
+def test_json_events_parseable_and_user_error_message(tmp_path, capsys):
+    import json
+    import sys
+    from ui_cli import run_calibration_debug as mod
+
+    db = str(tmp_path / "json.db")
+    s = StorageManager(sqlite_path=db)
+    s.initialize()
+    um = UserManager(s.sqlite)
+    um.create_local_user_if_absent("TEST", "Test")
+    s.shutdown()
+
+    old = sys.argv
+    try:
+        sys.argv = ["run_calibration_debug", "--action", "start", "--mode", "user", "--user-id", "TEST", "--db-path", db, "--json-events", "--fast"]
+        mod.main()
+        out = capsys.readouterr().out.strip().splitlines()[-1]
+        parsed = json.loads(out)
+        assert isinstance(parsed, list)
+
+        sys.argv = ["run_calibration_debug", "--action", "start", "--mode", "user", "--db-path", db]
+        mod.main()
+        err = capsys.readouterr().out
+        assert "traceback" not in err.lower()
+        assert "--mode user requires --user-id" in err
+    finally:
+        sys.argv = old
