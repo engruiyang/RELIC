@@ -25,6 +25,11 @@ def run_debug_loop(mode: str, host: str, port: int, ticks: int, interval: float)
         now_ms = 0
         tick_ms = int(interval * 1000)
         for i in range(1, ticks + 1):
+            if mode == "live":
+                h = gateway.health()
+                if not h.get("connected") or not h.get("alive"):
+                    print("Live bridge disconnected, exiting.")
+                    break
             now_ms += tick_ms
             events = gateway.poll_raw_events(now_ms=now_ms)
             data_center.ingest_events(events, now_ms=now_ms)
@@ -40,6 +45,8 @@ def run_debug_loop(mode: str, host: str, port: int, ticks: int, interval: float)
                 f"quality_reasons={s['quality_reasons']} warning_flags={s['warning_flags']} error_flags={s['error_flags']}"
             )
             time.sleep(interval)
+    except KeyboardInterrupt:
+        print("Interrupted, cleaning up...")
     finally:
         gateway.stop()
 
@@ -49,6 +56,8 @@ def main() -> None:
     mode = "mock" if a.mock else a.bridge
     try:
         run_debug_loop(mode=mode, host=a.host, port=a.port, ticks=a.ticks, interval=a.interval)
+    except KeyboardInterrupt:
+        print("Interrupted, cleaning up...")
     except Exception as e:
         print(f"[RELIC CORE] debug run failed: {e}. 建议先用 --bridge mock 验证。")
 
