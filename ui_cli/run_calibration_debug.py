@@ -25,7 +25,7 @@ def _build_samples(fail: bool = False) -> tuple[list[dict], list[dict]]:
 
 def _collect_ipc_samples(host: str, port: int, fast: bool) -> tuple[list[dict], list[dict], dict]:
     if fast:
-        return [], [], {"ipc_connected": False, "live_data_detected": False, "failure_reason": "ipc_stream_unavailable"}
+        return [], [], {"ipc_connected": False, "ipc_connected_at_end": False, "stream_interrupted": False, "live_data_detected": False, "failure_reason": "ipc_stream_unavailable"}
     phase_ms = {"preparation": 2000, "gyro": 3000, "attention": 8000, "result": 1000}
     gateway = PlatformGateway(mode="live", host=host, port=port)
     dc = DataCenter()
@@ -35,10 +35,15 @@ def _collect_ipc_samples(host: str, port: int, fast: bool) -> tuple[list[dict], 
         gateway.start()
         h = gateway.health()
         if not h.get("connected"):
-            return [], [], {"ipc_connected": False, "live_data_detected": False, "failure_reason": "ipc_stream_unavailable"}
+            return [], [], {"ipc_connected": False, "ipc_connected_at_end": False, "stream_interrupted": False, "live_data_detected": False, "failure_reason": "ipc_stream_unavailable"}
         total = sum(phase_ms.values())
         interval = 100
+        connected_once = True
+        interrupted = False
         while now < total:
+            if not gateway.health().get("alive", False):
+                interrupted = True
+                break
             now += interval
             events = gateway.poll_raw_events(now_ms=now)
             dc.ingest_events(events, now_ms=now)
@@ -48,7 +53,9 @@ def _collect_ipc_samples(host: str, port: int, fast: bool) -> tuple[list[dict], 
             if now > phase_ms["preparation"] + phase_ms["gyro"] and now <= phase_ms["preparation"] + phase_ms["gyro"] + phase_ms["attention"]:
                 att_samples.append(s)
             time.sleep(interval / 1000)
-        return gyro_samples, att_samples, {"ipc_connected": True, "live_data_detected": bool(gyro_samples or att_samples), "failure_reason": None}
+        if interrupted:
+            return gyro_samples, att_samples, {"ipc_connected": connected_once, "ipc_connected_at_end": False, "stream_interrupted": True, "live_data_detected": bool(gyro_samples or att_samples), "failure_reason": "ipc_stream_interrupted"}
+        return gyro_samples, att_samples, {"ipc_connected": connected_once, "ipc_connected_at_end": True, "stream_interrupted": False, "live_data_detected": bool(gyro_samples or att_samples), "failure_reason": None}
     finally:
         gateway.stop()
 
@@ -72,7 +79,7 @@ def _load_user(mode: str | None, user_id: str | None, um: UserManager, pm: Profi
     return user, pm.get_profile(user["user_id"])
 
 
-def run_calibration_action(action: str, mode: str | None, db_path: str, user_id: str | None = None, calibration_type: str = "auto", calibration_id: str | None = None, fail: bool = False, fast: bool = True, progress: bool = True, verbose_events: bool = False, json_events: bool = False, print_output: bool = True, source: str = "mock", host: str = "127.0.0.1", port: int = 8000) -> dict:
+def run_calibration_action(action: str, mode: str | None, db_path: str, user_id: str | None = None, calibration_type: str = "auto", calibration_id: str | None = None, fail: bool = False, fast: bool = True, progress: bool = True, verbose_events: bool = False, json_events: bool = False, print_output: bool = True, source: str = "auto", host: str = "127.0.0.1", port: int = 8000, allow_mock_bind: bool = False) -> dict:
     storage = StorageManager(sqlite_path=db_path)
     storage.initialize()
     sm = StateMachine()
@@ -81,16 +88,19 @@ def run_calibration_action(action: str, mode: str | None, db_path: str, user_id:
     cm = CalibrationManager(store=storage, profile_manager=pm)
     user = None
     profile = None
-    if action in {"status", "start", "cancel", "list", "latest", "bind"}:
+    if action in {"status", "start", "cancel", "list", "latest", "bind", "validate-bindings"}:
         user, profile = _load_user(mode, user_id, um, pm)
         sm.transition(SystemState.USER_READY)
+    resolved_source = source
+    if source == "auto":
+        resolved_source = "ipc" if (mode == "user") else "mock"
     out = {"db_path": db_path}
     if user is not None:
         out |= {"current_user_id": user["user_id"], "user_type": user["user_type"]}
 
     if action == "start":
         sm.transition(SystemState.CALIBRATING)
-        print(f"[calibration] source={source}" + (f" host={host} port={port}" if source == "ipc" else ""))
+        print(f"[calibration] source={resolved_source}" + (f" host={host} port={port}" if resolved_source == "ipc" else ""))
         events = []
 
         def on_event(e):
@@ -100,11 +110,11 @@ def run_calibration_action(action: str, mode: str | None, db_path: str, user_id:
                 print(f"  {e['user_instruction']}")
                 print(f"  {e['avoid_instruction']}")
 
-        if source == "ipc":
+        if resolved_source == "ipc":
             gyro, att, ipc_meta = _collect_ipc_samples(host, port, fast)
             out |= ipc_meta
             if ipc_meta.get("failure_reason"):
-                out.update({"valid": False, "persisted": False, "calibration_source": "ipc", "failure_reason": ipc_meta["failure_reason"], "user_recovery_hint": "未检测到平台 IPC 数据。请确认科创平台已启动、端口配置正确，并已进入范式页面。", "system_state": SystemState.CALIBRATION_FAILED.value})
+                out.update({"valid": False, "persisted": False, "calibration_source": "ipc", "stream_interrupted": ipc_meta.get("stream_interrupted", False), "ipc_connected_once": ipc_meta.get("ipc_connected", False), "ipc_connected_at_end": False, "failure_reason": ipc_meta["failure_reason"], "user_recovery_hint": "未检测到平台 IPC 数据。请确认科创平台已启动、端口配置正确，并已进入范式页面。", "system_state": SystemState.CALIBRATION_FAILED.value})
                 if verbose_events or json_events:
                     out["events"] = events
                 storage.shutdown()
@@ -123,18 +133,22 @@ def run_calibration_action(action: str, mode: str | None, db_path: str, user_id:
         cp = cm.start_calibration(user, calibration_type, gyro, att, fast=fast, emit_event=on_event, device_id=("ipc_device" if source=="ipc" else "mock_device"))
         out |= cp.to_dict()
         out["valid"] = bool(out["valid"])
-        out["calibration_source"] = source
+        out["calibration_source"] = resolved_source
         out["fast_mode"] = bool(fast)
         out["attention_window_ms"] = attention_window_ms
         out["gyro_window_ms"] = gyro_window_ms
         out["attention_sample_count"] = len(att)
         out["attention_unique_update_count"] = len({x.get("attention") for x in att if x.get("attention") is not None})
         out["gyro_sample_count"] = len(gyro)
-        out["baseline_confidence"] = "mock" if source == "mock" else ("high" if out["valid"] else "low")
+        out["baseline_confidence"] = "mock" if resolved_source == "mock" else ("high" if out["valid"] else "low")
         out["persisted"] = (user["user_type"] != "guest" and out["valid"])
-        out["profile.last_calibration_id"] = None if user["user_type"] == "guest" else pm.get_profile(user["user_id"])["last_calibration_id"]
+        old_profile = None if user["user_type"] == "guest" else pm.get_profile(user["user_id"])
+        out["profile.last_calibration_id"] = None if old_profile is None else old_profile["last_calibration_id"]
+        if resolved_source == "mock" and mode == "user" and old_profile and old_profile.get("last_calibration_id") and not allow_mock_bind:
+            pm.update_last_calibration_id(user["user_id"], old_profile["last_calibration_id"])
+            out["profile.last_calibration_id"] = old_profile["last_calibration_id"]
         out["user_recovery_hint"] = cm.get_recovery_hint(cp.failure_reason)
-        if source == "ipc":
+        if resolved_source == "ipc":
             if out["attention_window_ms"] < 8000:
                 out["valid"] = False; out["failure_reason"] = "attention_window_too_short"
             if out["gyro_window_ms"] < 3000:
@@ -171,6 +185,8 @@ def run_calibration_action(action: str, mode: str | None, db_path: str, user_id:
             out["old_last_calibration_id"], out["new_last_calibration_id"] = old, new
         elif action == "cancel":
             cp = cm.cancel_calibration(user); out |= cp.to_dict(); out["valid"] = False
+        elif action == "validate-bindings":
+            out |= cm.get_calibration_status(user["user_id"])
 
     out["system_state"] = sm.state.value
     if print_output:
@@ -185,7 +201,7 @@ def run_calibration(mode: str, db_path: str, user_id: str | None = None, fail: b
 
 def main() -> None:
     p = argparse.ArgumentParser()
-    p.add_argument("--action", choices=["status", "start", "cancel", "list", "latest", "show", "bind"], default="start")
+    p.add_argument("--action", choices=["status", "start", "cancel", "list", "latest", "show", "bind", "validate-bindings"], default="start")
     p.add_argument("--mode", choices=["demo", "user", "guest"], default=None)
     p.add_argument("--user-id")
     p.add_argument("--db-path", default="data/relic_local.db")
@@ -196,18 +212,19 @@ def main() -> None:
     p.add_argument("--no-progress", action="store_true")
     p.add_argument("--verbose-events", action="store_true")
     p.add_argument("--json-events", action="store_true")
-    p.add_argument("--source", choices=["mock", "ipc", "auto"], default="mock")
+    p.add_argument("--source", choices=["mock", "ipc", "auto"], default="auto")
+    p.add_argument("--allow-mock-bind", action="store_true")
     p.add_argument("--host")
     p.add_argument("--port", type=int)
     a = p.parse_args()
     cfg = load_config()
-    source = "mock" if a.source == "auto" else a.source
+    source = a.source
     default_host = cfg.get("platform", {}).get("ipc_host", cfg.get("platform", {}).get("host", "127.0.0.1"))
     default_port = int(cfg.get("platform", {}).get("ipc_port", cfg.get("platform", {}).get("port", 8000)))
     host = a.host or default_host
     port = a.port or default_port
     try:
-        r = run_calibration_action(a.action, a.mode, a.db_path, a.user_id, a.calibration_type, a.calibration_id, a.fail, fast=a.fast, progress=not a.no_progress, verbose_events=a.verbose_events, json_events=a.json_events, print_output=not a.json_events, source=source, host=host, port=port)
+        r = run_calibration_action(a.action, a.mode, a.db_path, a.user_id, a.calibration_type, a.calibration_id, a.fail, fast=a.fast, progress=not a.no_progress, verbose_events=a.verbose_events, json_events=a.json_events, print_output=not a.json_events, source=source, host=host, port=port, allow_mock_bind=a.allow_mock_bind)
         if a.json_events:
             print(json.dumps(r.get("events", []), ensure_ascii=False))
     except ValueError as e:

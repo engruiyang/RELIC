@@ -156,8 +156,26 @@ class CalibrationManager:
         latest = self.get_latest_calibration(user_id)
         profile = self.profile_manager.get_profile(user_id) if self.profile_manager else None
         bound_id = None if profile is None else profile.get("last_calibration_id")
-        bound_exists = bool(bound_id and self.get_calibration(bound_id))
-        return {"profile_loaded": profile is not None, "profile.last_calibration_id": bound_id, "bound_calibration_exists": bound_exists, "latest_calibration_id": None if latest is None else latest["calibration_id"], "latest_calibration_type": None if latest is None else latest["calibration_type"], "latest_valid": None if latest is None else bool(latest["valid"]) }
+        bound = self.get_calibration(bound_id) if bound_id else None
+        bound_exists = bound is not None
+        bound_valid = bool(bound["valid"]) if bound else False
+        bound_user_ok = (bound.get("user_id") == user_id) if bound else False
+        bound_source = None if not bound else ("mock" if bound.get("device_id") == "mock_device" else "ipc")
+        consistent = bool(bound_id and bound_exists and bound_valid and bound_user_ok)
+        hint = None if consistent else "检测到历史绑定不一致。请使用 bind 重新绑定有效校准。"
+        return {
+            "profile_loaded": profile is not None,
+            "profile.last_calibration_id": bound_id,
+            "bound_calibration_exists": bound_exists,
+            "bound_calibration_valid": bound_valid,
+            "bound_calibration_user_matches": bound_user_ok,
+            "bound_calibration_source": bound_source,
+            "binding_consistent": consistent,
+            "latest_calibration_id": None if latest is None else latest["calibration_id"],
+            "latest_calibration_type": None if latest is None else latest["calibration_type"],
+            "latest_valid": None if latest is None else bool(latest["valid"]),
+            "user_recovery_hint": hint,
+        }
 
     def run_quick_calibration(self, *, user_id: str, user_type: str, device_id: str, gyro_snapshots: list[dict], attention_snapshots: list[dict], has_history: bool, historical_baseline: float | None) -> CalibrationProfile:
         valid, failure_reason, metrics = self._compute_metrics(gyro_snapshots, attention_snapshots, historical_baseline)
