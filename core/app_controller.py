@@ -2,7 +2,7 @@ from core.state_machine import StateMachine, SystemState
 from core.system_clock import SystemClock
 from core.runtime_context import RuntimeContext
 from config.config_loader import load_config
-from platform.platform_gateway import PlatformGateway
+from relic_platform.platform_gateway import PlatformGateway
 from device.device_manager import DeviceManager
 from data.data_center import DataCenter
 from user.user_manager import UserManager

@@ -2,7 +2,7 @@ import argparse
 import time
 
 from data.data_center import DataCenter
-from platform.platform_gateway import PlatformGateway
+from relic_platform.platform_gateway import PlatformGateway
 from core.quality_gate import QualityGate
 
 

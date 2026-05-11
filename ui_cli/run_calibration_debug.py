@@ -7,7 +7,7 @@ import time
 from calibration.calibration_manager import CalibrationManager
 from core.state_machine import StateMachine, SystemState
 from data.data_center import DataCenter
-from platform.platform_gateway import PlatformGateway
+from relic_platform.platform_gateway import PlatformGateway
 from storage.storage_manager import StorageManager
 from config.config_loader import load_config
 from user.profile_manager import ProfileManager
