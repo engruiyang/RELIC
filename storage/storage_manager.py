@@ -12,3 +12,9 @@ class StorageManager:
 
     def shutdown(self) -> None:
         self.sqlite.close()
+
+    def save_calibration_profile(self, profile: dict) -> None:
+        self.sqlite.insert_calibration_profile(profile)
+
+    def list_calibration_profiles(self, user_id: str) -> list[dict]:
+        return self.sqlite.list_calibration_profiles(user_id)

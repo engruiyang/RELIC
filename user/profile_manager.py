@@ -34,3 +34,9 @@ class ProfileManager:
         payload["updated_at"] = self._now_iso()
         self.store.upsert_user_profile(payload)
         return payload
+
+
+    def update_last_calibration_id(self, user_id: str, calibration_id: str) -> dict:
+        profile = self.load_profile(user_id)
+        profile["last_calibration_id"] = calibration_id
+        return self.save_profile(profile)
