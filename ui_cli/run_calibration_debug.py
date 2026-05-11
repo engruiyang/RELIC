@@ -9,6 +9,7 @@ from core.state_machine import StateMachine, SystemState
 from data.data_center import DataCenter
 from platform.platform_gateway import PlatformGateway
 from storage.storage_manager import StorageManager
+from config.config_loader import load_config
 from user.profile_manager import ProfileManager
 from user.user_manager import UserManager
 
@@ -55,6 +56,8 @@ def _collect_ipc_samples(host: str, port: int, fast: bool) -> tuple[list[dict], 
 def _load_user(mode: str | None, user_id: str | None, um: UserManager, pm: ProfileManager):
     resolved_mode = mode or "demo"
     if resolved_mode == "guest":
+        if user_id:
+            raise ValueError("error: --mode guest 不允许提供 --user-id\nexample: python -m ui_cli.run_calibration_debug --action start --mode guest")
         return um.enter_guest_mode(), None
     if resolved_mode == "user":
         if not user_id:
@@ -63,6 +66,8 @@ def _load_user(mode: str | None, user_id: str | None, um: UserManager, pm: Profi
         if user is None:
             raise ValueError(f"user not found: {user_id}")
         return user, pm.get_profile(user["user_id"])
+    if user_id:
+        raise ValueError("error: --mode demo 不允许提供 --user-id\nexample: python -m ui_cli.run_calibration_debug --action start --mode demo")
     user = um.ensure_demo_user()
     return user, pm.get_profile(user["user_id"])
 
@@ -115,7 +120,7 @@ def run_calibration_action(action: str, mode: str | None, db_path: str, user_id:
             out["ipc_connected"] = False
             out["live_data_detected"] = False
 
-        cp = cm.start_calibration(user, calibration_type, gyro, att, fast=fast, emit_event=on_event)
+        cp = cm.start_calibration(user, calibration_type, gyro, att, fast=fast, emit_event=on_event, device_id=("ipc_device" if source=="ipc" else "mock_device"))
         out |= cp.to_dict()
         out["valid"] = bool(out["valid"])
         out["calibration_source"] = source
@@ -150,16 +155,16 @@ def run_calibration_action(action: str, mode: str | None, db_path: str, user_id:
         if action == "status": out |= cm.get_calibration_status(user["user_id"])
         elif action == "latest":
             latest = cm.get_latest_calibration(user["user_id"]) if user["user_type"] != "guest" else None
-            out |= ({"latest": None} if latest is None else {**latest, "valid": bool(latest["valid"])})
+            out |= ({"latest": None} if latest is None else {**latest, "valid": bool(latest["valid"]), "calibration_source": ("mock" if latest.get("device_id")=="mock_device" else "ipc")})
         elif action == "list":
             items = [] if user["user_type"] == "guest" else cm.list_calibrations(user["user_id"])
             bound = None if profile is None else profile.get("last_calibration_id")
-            out["calibrations"] = [{**i, "valid": bool(i["valid"]), "is_bound_to_profile": i["calibration_id"] == bound} for i in items]
+            out["calibrations"] = [{"calibration_id":i["calibration_id"],"user_id":i["user_id"],"calibration_type":i["calibration_type"],"valid": bool(i["valid"]),"calibration_source":("mock" if i.get("device_id")=="mock_device" else "ipc"),"is_bound_to_profile": i["calibration_id"] == bound} for i in items]
             out["calibration_count"] = len(items)
         elif action == "show":
             cp = cm.get_calibration(calibration_id)
             if cp is None: raise ValueError("calibration_not_found")
-            out |= {**cp, "valid": bool(cp["valid"]), "calibration_user_id": cp["user_id"]}
+            out |= {**cp, "valid": bool(cp["valid"]), "calibration_user_id": cp["user_id"], "calibration_source": ("mock" if cp.get("device_id")=="mock_device" else "ipc")}
             out.pop("user_id", None)
         elif action == "bind":
             old, new = cm.bind_calibration_to_profile(user["user_id"], calibration_id)
@@ -192,12 +197,17 @@ def main() -> None:
     p.add_argument("--verbose-events", action="store_true")
     p.add_argument("--json-events", action="store_true")
     p.add_argument("--source", choices=["mock", "ipc", "auto"], default="mock")
-    p.add_argument("--host", default="127.0.0.1")
-    p.add_argument("--port", type=int, default=8000)
+    p.add_argument("--host")
+    p.add_argument("--port", type=int)
     a = p.parse_args()
+    cfg = load_config()
     source = "mock" if a.source == "auto" else a.source
+    default_host = cfg.get("platform", {}).get("ipc_host", cfg.get("platform", {}).get("host", "127.0.0.1"))
+    default_port = int(cfg.get("platform", {}).get("ipc_port", cfg.get("platform", {}).get("port", 8000)))
+    host = a.host or default_host
+    port = a.port or default_port
     try:
-        r = run_calibration_action(a.action, a.mode, a.db_path, a.user_id, a.calibration_type, a.calibration_id, a.fail, fast=a.fast, progress=not a.no_progress, verbose_events=a.verbose_events, json_events=a.json_events, print_output=not a.json_events, source=source, host=a.host, port=a.port)
+        r = run_calibration_action(a.action, a.mode, a.db_path, a.user_id, a.calibration_type, a.calibration_id, a.fail, fast=a.fast, progress=not a.no_progress, verbose_events=a.verbose_events, json_events=a.json_events, print_output=not a.json_events, source=source, host=host, port=port)
         if a.json_events:
             print(json.dumps(r.get("events", []), ensure_ascii=False))
     except ValueError as e:

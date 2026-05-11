@@ -64,3 +64,29 @@ def test_verbose_events_and_error_message(tmp_path, capsys):
         assert "requires --user-id" in txt
     finally:
         sys.argv = old
+
+
+def test_mode_userid_validation_and_ipc_device_id(tmp_path):
+    db = str(tmp_path / "e.db")
+    _mk_user(db)
+    try:
+        run_calibration_action("start", "demo", db, user_id="TEST", print_output=False)
+        assert False
+    except ValueError as e:
+        assert "demo" in str(e)
+
+    out = run_calibration_action("start", "user", db, user_id="TEST", source="ipc", fast=True, progress=False, print_output=False)
+    assert out["calibration_source"] == "ipc"
+    assert out.get("persisted") is False
+
+
+def test_list_latest_show_include_source(tmp_path):
+    db = str(tmp_path / "f.db")
+    _mk_user(db)
+    m = run_calibration_action("start", "user", db, user_id="TEST", source="mock", fast=True, progress=False, print_output=False)
+    lst = run_calibration_action("list", "user", db, user_id="TEST", print_output=False)
+    assert "calibration_source" in lst["calibrations"][0]
+    lat = run_calibration_action("latest", "user", db, user_id="TEST", print_output=False)
+    assert lat["calibration_source"] in {"mock", "ipc"}
+    sh = run_calibration_action("show", None, db, calibration_id=m["calibration_id"], print_output=False)
+    assert sh["calibration_source"] in {"mock", "ipc"}

@@ -84,3 +84,7 @@
 
 - `--calibration-type` 仅支持 auto / first_profile / quick_check / periodic / triggered。
 - `calibration_id` 示例中的尖括号仅为占位符，请替换为真实 ID。
+
+- demo 模式不能带 `--user-id`；local 用户必须使用 `--mode user --user-id <ID>`。
+- IPC 推荐命令：`python -m ui_cli.run_calibration_debug --action start --mode user --user-id TEST --source ipc`。
+- `--host/--port` 省略时自动使用默认 `127.0.0.1:8000`，显式传参会覆盖默认。

@@ -63,7 +63,7 @@ class CalibrationManager:
             return None
         return RECOVERY_HINTS.get(failure_reason, "请检查佩戴、连接状态并重试。")
 
-    def start_calibration(self, user: dict, calibration_type: str, gyro_snapshots: list[dict], attention_snapshots: list[dict], *, fast: bool = True, emit_event: Callable[[dict], None] | None = None) -> CalibrationProfile:
+    def start_calibration(self, user: dict, calibration_type: str, gyro_snapshots: list[dict], attention_snapshots: list[dict], *, fast: bool = True, emit_event: Callable[[dict], None] | None = None, device_id: str = "mock_device") -> CalibrationProfile:
         if self.store is None:
             raise ValueError("store is required")
         history = self.list_calibrations(user["user_id"]) if user["user_type"] != "guest" else []
@@ -109,7 +109,7 @@ class CalibrationManager:
             emit("calibration_phase_completed", phase, i, i / phase_count, f"phase completed: {phase}")
 
         hist_base = history[-1].get("attention_baseline") if history else None
-        cp = self.run_quick_calibration(user_id=user["user_id"], user_type=user["user_type"], device_id="mock_device", gyro_snapshots=gyro_snapshots, attention_snapshots=attention_snapshots, has_history=(resolved_type == "quick_check"), historical_baseline=hist_base)
+        cp = self.run_quick_calibration(user_id=user["user_id"], user_type=user["user_type"], device_id=device_id, gyro_snapshots=gyro_snapshots, attention_snapshots=attention_snapshots, has_history=(resolved_type == "quick_check"), historical_baseline=hist_base)
         cp.calibration_type = resolved_type
         final_stats = {
             "collected_samples": len(gyro_snapshots) + len(attention_snapshots),
