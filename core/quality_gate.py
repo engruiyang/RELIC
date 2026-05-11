@@ -55,15 +55,24 @@ class QualityGate:
             quality_state = "error"
             signal_reliable = False
             estimation_allowed = False
+            formal_training_allowed = False
             reasons.extend(sorted(severe.intersection(error_flags)))
         elif "attention_stale" in warning_flags or "gyro_stale" in warning_flags:
             quality_state = "warning"
             signal_reliable = False
+            estimation_allowed = False
             reasons.extend([x for x in ("attention_stale", "gyro_stale") if x in warning_flags])
         elif "attention_missing" in warning_flags or "gyro_missing" in warning_flags:
             quality_state = "warning"
+            signal_reliable = False
+            estimation_allowed = False
             formal_training_allowed = False
             reasons.extend([x for x in ("attention_missing", "gyro_missing") if x in warning_flags])
+
+        blocking_flags = {"attention_lost", "gyro_lost", "attention_missing", "gyro_missing", "attention_stale", "gyro_stale"}
+        if calibration_usable and runtime_snapshot.get("attention_fresh") and runtime_snapshot.get("gyro_fresh") and not blocking_flags.intersection(set(warning_flags) | set(error_flags)):
+            signal_reliable = True
+            estimation_allowed = True
 
         if any(x in reasons for x in ("no_user", "no_profile", "no_calibration", "calibration_binding_inconsistent", "calibration_invalid")):
             quality_state = "error"

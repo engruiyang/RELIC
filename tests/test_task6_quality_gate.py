@@ -48,6 +48,7 @@ def test_attention_lost_blocks_estimation():
     q = QualityGate().evaluate(_base_snapshot(), {"user_id": "TEST"}, profile, cp, [], ["attention_lost"])
     assert q["quality_state"] == "error"
     assert q["estimation_allowed"] is False
+    assert q["formal_training_allowed"] is False
 
 
 def test_gyro_lost_blocks_estimation():
@@ -56,6 +57,35 @@ def test_gyro_lost_blocks_estimation():
     q = QualityGate().evaluate(_base_snapshot(), {"user_id": "TEST"}, profile, cp, [], ["gyro_lost"])
     assert q["quality_state"] == "error"
     assert q["estimation_allowed"] is False
+    assert q["formal_training_allowed"] is False
+
+
+def test_attention_missing_blocks_estimation_and_reliability():
+    profile = {"user_id": "TEST", "last_calibration_id": "cal_a"}
+    cp = {"calibration_id": "cal_a", "valid": True, "device_id": "ipc_device", "attention_std": 5}
+    q = QualityGate().evaluate({"attention_fresh": False, "gyro_fresh": True, "baseline_confidence": "high"}, {"user_id": "TEST"}, profile, cp, ["attention_missing"], [])
+    assert q["quality_state"] == "warning"
+    assert q["signal_reliable"] is False
+    assert q["estimation_allowed"] is False
+    assert q["formal_training_allowed"] is False
+
+
+def test_gyro_missing_blocks_estimation_and_reliability():
+    profile = {"user_id": "TEST", "last_calibration_id": "cal_a"}
+    cp = {"calibration_id": "cal_a", "valid": True, "device_id": "ipc_device", "attention_std": 5}
+    q = QualityGate().evaluate({"attention_fresh": True, "gyro_fresh": False, "baseline_confidence": "high"}, {"user_id": "TEST"}, profile, cp, ["gyro_missing"], [])
+    assert q["quality_state"] == "warning"
+    assert q["signal_reliable"] is False
+    assert q["estimation_allowed"] is False
+    assert q["formal_training_allowed"] is False
+
+
+def test_fresh_signals_with_usable_calibration_allow_estimation():
+    profile = {"user_id": "TEST", "last_calibration_id": "cal_a"}
+    cp = {"calibration_id": "cal_a", "valid": True, "device_id": "ipc_device", "attention_std": 5}
+    q = QualityGate().evaluate({"attention_fresh": True, "gyro_fresh": True, "baseline_confidence": "high"}, {"user_id": "TEST"}, profile, cp, [], [])
+    assert q["signal_reliable"] is True
+    assert q["estimation_allowed"] is True
 
 
 def test_attention_std_zero_adds_reason():
