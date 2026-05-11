@@ -120,3 +120,14 @@ class SqliteStore:
         conn = self._ensure_conn()
         rows = conn.execute("SELECT * FROM calibration_profiles WHERE user_id=? ORDER BY created_at", (user_id,)).fetchall()
         return [dict(r) for r in rows]
+
+
+    def get_latest_calibration_profile(self, user_id: str) -> dict[str, Any] | None:
+        conn = self._ensure_conn()
+        row = conn.execute("SELECT * FROM calibration_profiles WHERE user_id=? ORDER BY created_at DESC LIMIT 1", (user_id,)).fetchone()
+        return dict(row) if row else None
+
+    def list_calibration_profiles(self, user_id: str) -> list[dict[str, Any]]:
+        conn = self._ensure_conn()
+        rows = conn.execute("SELECT * FROM calibration_profiles WHERE user_id=? ORDER BY created_at", (user_id,)).fetchall()
+        return [dict(r) for r in rows]

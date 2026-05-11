@@ -18,3 +18,9 @@ class StorageManager:
 
     def list_calibration_profiles(self, user_id: str) -> list[dict]:
         return self.sqlite.list_calibration_profiles(user_id)
+
+    def get_calibration_profile(self, calibration_id: str) -> dict | None:
+        return self.sqlite.get_calibration_profile(calibration_id)
+
+    def get_latest_calibration_profile(self, user_id: str) -> dict | None:
+        return self.sqlite.get_latest_calibration_profile(user_id)

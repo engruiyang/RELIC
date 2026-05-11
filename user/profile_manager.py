@@ -40,3 +40,7 @@ class ProfileManager:
         profile = self.load_profile(user_id)
         profile["last_calibration_id"] = calibration_id
         return self.save_profile(profile)
+
+
+    def get_profile(self, user_id: str) -> dict:
+        return self.load_profile(user_id)
