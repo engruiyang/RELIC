@@ -6,6 +6,7 @@ class ControlStateEstimator:
         self._state = "UNRELIABLE_SIGNAL"
         self._dwell_ms = 0
         self._high_focus_streak = 0
+        self._low_fi_ms = 0
 
     def evaluate(self, runtime_snapshot: dict, fi_result: dict, tick_ms: int = 50) -> dict:
         reason = "fi_based"
@@ -32,8 +33,16 @@ class ControlStateEstimator:
                 elif fi >= 40:
                     state = "DISTRACTED"
                 else:
-                    state = "FATIGUED" if (s_imu is not None and s_imu < 0.2) else "DISTRACTED"
-                    reason = "fatigue_conservative" if state == "FATIGUED" else "low_fi"
+                    self._low_fi_ms += tick_ms
+                    s_b_source = fi_result.get("s_b_source")
+                    if self._low_fi_ms >= 10000 and s_imu is not None and s_imu < 0.2 and s_b_source != "neutral_default":
+                        state = "FATIGUED"
+                        reason = "fatigue_conservative"
+                    else:
+                        state = "DISTRACTED"
+                        reason = "low_fi"
+                if fi >= 40:
+                    self._low_fi_ms = 0
         if state == self._state:
             self._dwell_ms += tick_ms
         else:
