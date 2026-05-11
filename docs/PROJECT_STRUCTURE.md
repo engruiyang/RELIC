@@ -22,7 +22,7 @@
 
 - `relic_core/`：**历史路径（兼容保留）**。目前仍被历史测试与部分 live 适配调用引用，短期不删除；新增功能禁止写入。
 - `games/`：**历史原型路径（兼容保留）**。正式游戏目录为 `game/`；新增功能禁止写入 `games/`。
-- `profiles/`：仓库当前不存在；若后续出现同名历史目录，应视为废弃路径，不作为正式用户系统目录。
+- `profiles/`：历史 phase-1 路径（兼容保留），不属于正式用户系统；新用户相关功能统一写入 `user/ + storage/`。
 - `relic_data_bridge.py`：**兼容保留**。目前仍被 `relic_core.bridge_adapter` 的 live 兼容加载路径使用；新增业务逻辑不得写入。
 
 ## 重复职责审计结论
@@ -35,7 +35,7 @@
    - `games/` 仅保留历史原型兼容，不新增。
 3. `user/` vs `profiles/`
    - 正式用户系统为 `user/ + storage/`。
-   - `profiles/` 未使用，不建立新逻辑。
+   - `profiles/` 为历史 phase-1 目录，不再承载新功能。
 4. `platform/`、`device/`、`data/` 与 `relic_data_bridge.py`
    - 正式运行链路在 `platform/`、`device/`、`data/`。
    - `relic_data_bridge.py` 暂为 live 兼容桥接保留。
@@ -55,5 +55,5 @@
 
 - `relic_core/`
 - `games/`
-- `profiles/`（若未来出现）
+- `profiles/`（历史 phase-1，已废弃）
 - `relic_data_bridge.py`（仅兼容保留）
