@@ -1,7 +1,9 @@
 {
   "platform": {
     "host": "127.0.0.1",
-    "port": 8000
+    "port": 8000,
+    "ipc_host": "127.0.0.1",
+    "ipc_port": 8000
   },
   "app": {
     "tick_interval_ms": 50,
