@@ -35,6 +35,12 @@
 
 ## 校准命令
 
+- `--source mock`：开发/测试用 mock 校准。
+- `--source ipc`：真实平台 IPC 数据校准，要求平台已启动、端口正确并进入范式页面。
+- `--source ipc` 无数据会失败，不会自动回退到 mock。
+- mock 校准结果不能作为真实注意力基线。
+- 真实 attention 基线至少需要 8 秒采样窗口。
+
 | 命令 | 用途 | 入口文件 | 写数据库 | 连接平台 | 生成文件 | 典型输出字段 | 状态 |
 |---|---|---|---|---|---|---|---|
 | `python -m ui_cli.run_calibration_debug --action status --mode user --user-id TEST` | 查看当前用户校准绑定/最新状态 | `ui_cli/run_calibration_debug.py` | 否（仅读） | 否 | 否 | `profile.last_calibration_id`, `latest_calibration_id`, `latest_valid` | active |
@@ -75,3 +81,6 @@
 - 普通模式适合人类查看；`--json-events` / `--verbose-events` 适合 GUI 或调试工具读取事件。
 - `--calibration-type` 仅支持：auto / first_profile / quick_check / periodic / triggered。
 - `calibration_id` 示例中的尖括号仅为占位符，实际命令不要输入尖括号。
+
+- `--calibration-type` 仅支持 auto / first_profile / quick_check / periodic / triggered。
+- `calibration_id` 示例中的尖括号仅为占位符，请替换为真实 ID。
