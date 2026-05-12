@@ -2,7 +2,7 @@ from core.state_machine import StateMachine, SystemState
 from core.system_clock import SystemClock
 from core.runtime_context import RuntimeContext
 from config.config_loader import load_config
-from platform.platform_gateway import PlatformGateway
+from relic_platform.platform_gateway import PlatformGateway
 from device.device_manager import DeviceManager
 from data.data_center import DataCenter
 from user.user_manager import UserManager
@@ -12,6 +12,9 @@ from session.session_manager import SessionManager
 from game.game_manager import GameManager
 from runtime.local_runtime import LocalRuntime
 from storage.storage_manager import StorageManager
+from core.quality_gate import QualityGate
+from core.focus_estimator import FocusEstimator
+from core.control_state_estimator import ControlStateEstimator
 
 
 class AppController:
@@ -38,6 +41,10 @@ class AppController:
         self.session_manager = SessionManager()
         self.game_manager = GameManager()
         self.runtime = LocalRuntime()
+        self.quality_gate = QualityGate()
+        self.current_user = None
+        self.focus_estimator = FocusEstimator()
+        self.control_state_estimator = ControlStateEstimator()
 
     def _bootstrap_user(self) -> None:
         mode = self.config.get("user", {}).get("startup_mode", "demo")
@@ -46,6 +53,7 @@ class AppController:
         else:
             user = self.user_manager.ensure_demo_user()
             self.profile_manager.load_profile(user["user_id"])
+        self.current_user = user
         old, new = self.state_machine.transition(SystemState.USER_READY)
         print(f"[AppController] state: {old.value} -> {new.value} user={user['user_id']} type={user['user_type']}")
 
@@ -62,14 +70,27 @@ class AppController:
             now_ms += tick_interval_ms
             events = self.device_manager.poll_events()
             self.data_center.ingest_events(events, now_ms=now_ms)
+            profile = None if self.current_user is None or self.current_user["user_type"] == "guest" else self.profile_manager.get_profile(self.current_user["user_id"])
+            bound_cp = None
+            if profile and profile.get("last_calibration_id"):
+                bound_cp = self.storage.get_calibration_profile(profile["last_calibration_id"])
+            gate = self.quality_gate.evaluate(self.data_center.get_runtime_snapshot(), self.current_user, profile, bound_cp, self.data_center.get_snapshot().warning_flags, self.data_center.get_snapshot().error_flags)
+            self.data_center.apply_quality_gate(gate)
+            fi = self.focus_estimator.estimate(self.data_center.get_runtime_snapshot(), profile, bound_cp)
+            cs = self.control_state_estimator.evaluate(self.data_center.get_runtime_snapshot(), fi, tick_ms=tick_interval_ms)
             if debug:
                 snapshot = self.data_center.get_runtime_snapshot()
+                snapshot.update(fi)
+                snapshot.update(cs)
                 print(
                     "[mock] "
                     f"t={snapshot['now_ms']} "
                     f"att={snapshot['attention']} age={snapshot['attention_age_ms']} fresh={snapshot['attention_fresh']} "
                     f"gyro_age={snapshot['gyro_age_ms']} fresh={snapshot['gyro_fresh']} "
-                    f"q={snapshot['quality']} train={snapshot['training_data_valid']} ctrl={snapshot['control_data_valid']}"
+                    f"q={snapshot['quality']} train={snapshot['training_data_valid']} ctrl={snapshot['control_data_valid']} "
+                    f"sqi={snapshot['sqi']} quality_state={snapshot['quality_state']} quality_reasons={snapshot['quality_reasons']} "
+                    f"calibration_usable={snapshot['calibration_usable']} formal_training_allowed={snapshot['formal_training_allowed']} "
+                    f"signal_reliable={snapshot['signal_reliable']} estimation_allowed={snapshot['estimation_allowed']}"
                 )
 
     def shutdown(self) -> None:
