@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+<<<<<<< codex/define-runtime-api-contract-between-tasks-h3xxs4
+from dataclasses import asdict, dataclass, field, fields
+=======
 from dataclasses import asdict, dataclass, field
+>>>>>>> main
 from typing import Any, ClassVar, Mapping
 import json
 
@@ -49,10 +53,21 @@ class RuntimeSnapshotView:
     control_state_reason: str | None = None
     warning_flags: list[str] | None = None
     error_flags: list[str] | None = None
+<<<<<<< codex/define-runtime-api-contract-between-tasks-h3xxs4
+    behavior_ready: bool | None = None
+    interval_ms: int | None = None
+    delta_ms: int | None = None
+
+    @classmethod
+    def from_dict(cls, data: Mapping[str, Any]) -> "RuntimeSnapshotView":
+        allowed = {f.name for f in fields(cls)}
+        return cls(**{k: v for k, v in dict(data).items() if k in allowed})
+=======
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> "RuntimeSnapshotView":
         return cls(**dict(data))
+>>>>>>> main
 
     def to_dict(self) -> dict[str, Any]:
         data = asdict(self)
