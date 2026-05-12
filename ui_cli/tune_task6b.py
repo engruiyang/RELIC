@@ -44,8 +44,11 @@ def main():
     p.add_argument("--base-config", required=True)
     p.add_argument("--trials", type=int, default=300)
     p.add_argument("--method", choices=["random", "optuna"], default="random")
+    p.add_argument("--seed", type=int, default=42)
     p.add_argument("--out", required=True)
+    p.add_argument("--report")
     a = p.parse_args()
+    random.seed(a.seed)
     rows = _load_jsonl(glob.glob(a.input))
     labels = _load_labels(glob.glob(a.labels))
     if yaml is None:
@@ -59,7 +62,10 @@ def main():
         r = evaluate(rows, labels, cfg)
         results.append({"config": cfg, **{k: r[k] for k in ("score", "macro_f1", "transition_jitter", "latency_penalty", "false_fatigue", "false_high_focus", "hard_rule_violation")}})
     top = sorted(results, key=lambda x: x["score"], reverse=True)[:10]
-    Path(a.out).write_text(json.dumps({"top_candidates": top}, ensure_ascii=False, indent=2), encoding="utf-8")
+    payload = {"top_candidates": top}
+    Path(a.out).write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    if a.report:
+        Path(a.report).write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps({"top_candidates": top[:3]}, ensure_ascii=False))
 
 
