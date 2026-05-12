@@ -1,0 +1,6 @@
+sqi_ok_threshold: 0.75
+sqi_invalid_threshold: 0.60
+fi_ema_alpha: 0.70
+attention_low_fallback: 40
+attention_high_fallback: 70
+default_behavior_score: 0.60
