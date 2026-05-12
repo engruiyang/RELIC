@@ -51,3 +51,16 @@ def test_record_generates_label_template(tmp_path):
     subprocess.run([sys.executable, "-m", "ui_cli.run_core_debug", "--bridge", "mock", "--mode", "demo", "--duration-sec", "1", "--session-id", "task6b_mock_demo_smoke_20260512_000000", "--record-jsonl", str(out_log), "--frame-label-template", str(out_lbl), "--frame-sec", "3"], check=True)
     assert out_log.exists()
     assert out_lbl.exists()
+
+
+def test_evaluate_task6b_smoke_output_file(tmp_path):
+    log = tmp_path / "s.jsonl"
+    lbl = tmp_path / "s.frames.csv"
+    cfg = tmp_path / "cfg.yaml"
+    out = tmp_path / "report.json"
+    log.write_text(json.dumps({"session_id": "S", "now_ms": 1000, "attention": 65, "attention_seen_once": True, "attention_age_ms": 200, "attention_fresh": True, "gyro_x": 0.1, "gyro_y": 0.1, "gyro_z": 0.1, "gyro_seen_once": True, "gyro_age_ms": 100, "gyro_fresh": True, "device_connected": True, "stream_alive": True, "q_motion": None, "warning_flags": [], "error_flags": []}) + "\n", encoding="utf-8")
+    lbl.write_text("session_id,frame_id,start_ms,end_ms,start_sec,end_sec,label,confidence,note\nS,0,0,3000,0,3,STABLE_FOCUS,low,\n", encoding="utf-8")
+    cfg.write_text("fi_ema_alpha: 0.7\n", encoding="utf-8")
+    import subprocess, sys
+    subprocess.run([sys.executable, "-m", "ui_cli.evaluate_task6b", "--input", str(log), "--labels", str(lbl), "--config", str(cfg), "--out", str(out)], check=True)
+    assert out.exists()

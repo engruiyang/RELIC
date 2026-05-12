@@ -108,3 +108,10 @@ def test_runtime_snapshot_quality_fields_serializable():
     dc.apply_quality_gate({"sqi": 0.9, "quality_state": "ok", "quality_reasons": [], "calibration_usable": True, "formal_training_allowed": True, "signal_reliable": True, "estimation_allowed": True})
     s = dc.get_runtime_snapshot()
     assert "sqi" in s and "quality_state" in s and "estimation_allowed" in s
+
+
+def test_quality_gate_q_motion_none_fallback():
+    profile = {"user_id": "TEST", "last_calibration_id": "cal_a"}
+    cp = {"calibration_id": "cal_a", "valid": True, "device_id": "ipc_device", "attention_std": 5}
+    q = QualityGate().evaluate({"q_motion": None}, {"user_id": "TEST"}, profile, cp, [], [])
+    assert q["q_motion"] == 1.0

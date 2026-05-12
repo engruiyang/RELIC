@@ -96,7 +96,21 @@ class QualityGate:
             reasons.append("stream_dead")
             error_flags = list(error_flags) + ["stream_dead"]
 
-        q_motion = float(runtime_snapshot.get("q_motion", 1.0))
+        def _safe_float(value, default: float) -> float:
+            try:
+                if value is None or value == "":
+                    return default
+                f = float(value)
+                if f != f:  # NaN
+                    return default
+                return f
+            except Exception:  # noqa: BLE001
+                return default
+
+        q_attention = _safe_float(runtime_snapshot.get("q_attention"), q_attention)
+        q_gyro = _safe_float(runtime_snapshot.get("q_gyro"), q_gyro)
+        q_motion = _safe_float(runtime_snapshot.get("q_motion"), 1.0)
+        q_stream = _safe_float(runtime_snapshot.get("q_stream"), q_stream)
         sqi = max(0.0, min(1.0, 0.45 * q_attention + 0.25 * q_gyro + 0.20 * q_motion + 0.10 * q_stream))
         quality_state = "ok" if sqi >= self.sqi_ok_threshold else ("warning" if sqi >= self.sqi_invalid_threshold else "invalid")
 

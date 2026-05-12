@@ -83,13 +83,20 @@ def evaluate(rows: list[dict], labels: list[dict], cfg: dict, label_meta: dict |
     false_fatigue = false_high = unreliable_miss = hard_viol = 0
     prev_state = None
     transition_count = 0
+    warning_count = 0
+    skipped_rows = 0
     preds = []
     for r in rows:
-        t = int(r.get("now_ms", 0))
-        gate = qg.evaluate(r, {"user_id": "offline"}, {"last_calibration_id": "offline"}, {"calibration_id": "offline", "valid": True, "device_id": "ipc_device", "attention_std": 1.0}, r.get("warning_flags", []), r.get("error_flags", []))
-        s = dict(r) | gate
-        fi = fe.estimate(s, {"attention_low_threshold": cfg.get("attention_low_fallback", 40), "attention_high_threshold": cfg.get("attention_high_fallback", 70)}, {"attention_baseline": 55, "attention_std": 1.0, "gyro_noise_rms": 0.5, "gyro_bias_x": 0, "gyro_bias_y": 0, "gyro_bias_z": 0})
-        state = cs.evaluate(s, fi, tick_ms=1000).get("control_state")
+        try:
+            t = int(r.get("now_ms", 0))
+            gate = qg.evaluate(r, {"user_id": "offline"}, {"last_calibration_id": "offline"}, {"calibration_id": "offline", "valid": True, "device_id": "ipc_device", "attention_std": 1.0}, r.get("warning_flags", []), r.get("error_flags", []))
+            s = dict(r) | gate
+            fi = fe.estimate(s, {"attention_low_threshold": cfg.get("attention_low_fallback", 40), "attention_high_threshold": cfg.get("attention_high_fallback", 70)}, {"attention_baseline": 55, "attention_std": 1.0, "gyro_noise_rms": 0.5, "gyro_bias_x": 0, "gyro_bias_y": 0, "gyro_bias_z": 0})
+            state = cs.evaluate(s, fi, tick_ms=1000).get("control_state")
+        except Exception:  # noqa: BLE001
+            skipped_rows += 1
+            warning_count += 1
+            continue
         preds.append((t, state))
         label = _label_at(t, labels, (label_meta or {}).get("time_unit", "ms")) if (label_meta or {}).get("mode") != "frames" else None
         if label == "IGNORE":
@@ -153,7 +160,7 @@ def evaluate(rows: list[dict], labels: list[dict], cfg: dict, label_meta: dict |
     transition_jitter = transition_count / max(total, 1)
     latency_penalty = 0.0
     score = 1.0 * macro_f1 - 0.3 * transition_jitter - 0.5 * latency_penalty - 2.0 * false_fatigue - 1.5 * false_high - 1.0 * unreliable_miss - 3.0 * hard_viol
-    return {"overall": {"total_labeled_frames": total, "frame_accuracy": acc, "macro_f1": macro_f1, "confusion_matrix": confusion, "state_switches": transition_count, "transition_jitter": transition_jitter, "false_fatigue": false_fatigue, "false_high_focus": false_high, "unreliable_miss": unreliable_miss, "hard_rule_violation": hard_viol, "score": score}, "per_session": [{"session_id": (rows[0].get("session_id") if rows else None), "total_labeled_frames": total, "frame_accuracy": acc, "macro_f1": macro_f1, "confusion_matrix": confusion, "score": score}]}
+    return {"overall": {"total_labeled_frames": total, "frame_accuracy": acc, "macro_f1": macro_f1, "confusion_matrix": confusion, "state_switches": transition_count, "transition_jitter": transition_jitter, "false_fatigue": false_fatigue, "false_high_focus": false_high, "unreliable_miss": unreliable_miss, "hard_rule_violation": hard_viol, "warning_count": warning_count, "skipped_rows": skipped_rows, "score": score}, "per_session": [{"session_id": (rows[0].get("session_id") if rows else None), "total_labeled_frames": total, "frame_accuracy": acc, "macro_f1": macro_f1, "confusion_matrix": confusion, "score": score}]}
 
 
 def main():

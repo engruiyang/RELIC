@@ -9,6 +9,16 @@ class ControlStateEstimator:
         self._low_fi_ms = 0
 
     def evaluate(self, runtime_snapshot: dict, fi_result: dict, tick_ms: int = 50) -> dict:
+        def _safe_float(v, d=0.0):
+            try:
+                if v is None or v == "":
+                    return d
+                f = float(v)
+                if f != f:
+                    return d
+                return f
+            except Exception:  # noqa: BLE001
+                return d
         reason = "fi_based"
         if not runtime_snapshot.get("estimation_allowed", False):
             state = "UNRELIABLE_SIGNAL"
@@ -20,7 +30,7 @@ class ControlStateEstimator:
             state = "LOW_CONFIDENCE"
             reason = "quality_warning"
         else:
-            fi = float(fi_result.get("fi_smoothed", 0.0))
+            fi = _safe_float(fi_result.get("fi_smoothed", 0.0), 0.0)
             s_imu = fi_result.get("s_imu")
             behavior_ready = bool(fi_result.get("behavior_ready", False))
             if fi >= 80:
