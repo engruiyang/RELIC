@@ -1,18 +1,14 @@
 # TASK6B Simple Tuning
 
-## 步骤 1：录制 5 段数据
+## 步骤 1：录制数据（自动生成 JSONL + 帧级 CSV）
 
 ```bash
-bash scripts/task6b_record.sh live TEST 60 startup
-bash scripts/task6b_record.sh live TEST 90 distracted
-bash scripts/task6b_record.sh live TEST 90 stable_focus
-bash scripts/task6b_record.sh live TEST 120 distracted_to_focus
-bash scripts/task6b_record.sh live TEST 90 gyro_motion
+bash scripts/task6b_record.sh live TEST 90 stable_focus --frame-sec 3
 ```
 
-## 步骤 2：编辑 `labels/task6b/*.yaml`
+## 步骤 2：编辑 `labels/task6b/*.frames.csv`
 
-只改 `label`、`start`、`end`、`note`。不确定就标 `IGNORE`。
+只改 `label`、`confidence`、`note`。不确定就标 `IGNORE`。
 
 ## 步骤 3：评测
 

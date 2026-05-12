@@ -10,8 +10,8 @@ def test_evaluate_task6b_basic(tmp_path):
     ]
     labels = [{"start_ms": 0, "end_ms": 2000, "label": "STABLE_FOCUS"}]
     out = evaluate(rows, labels, {"fi_ema_alpha": 0.7})
-    assert "macro_f1" in out
-    assert "confusion_matrix" in out
+    assert "overall" in out
+    assert "macro_f1" in out["overall"]
 
 
 def test_evaluate_sec_label_and_session_match(tmp_path):
@@ -21,7 +21,14 @@ def test_evaluate_sec_label_and_session_match(tmp_path):
     ]
     labels = [{"start": 0, "end": 2, "label": "STABLE_FOCUS"}]
     out = evaluate([r for r in rows if r["session_id"] == "A"], labels, {"fi_ema_alpha": 0.7}, label_meta={"time_unit": "sec", "session_id": "A"})
-    assert out["state_accuracy"] >= 0.0
+    assert out["overall"]["frame_accuracy"] >= 0.0
+
+
+def test_evaluate_ignore_frame():
+    rows = [{"session_id": "A", "now_ms": 1000, "attention": 65, "attention_seen_once": True, "attention_age_ms": 200, "attention_fresh": True, "gyro_x": 0.1, "gyro_y": 0.1, "gyro_z": 0.1, "gyro_seen_once": True, "gyro_age_ms": 100, "gyro_fresh": True, "device_connected": True, "stream_alive": True, "warning_flags": [], "error_flags": []}]
+    labels = [{"session_id": "A", "start_ms": 0, "end_ms": 3000, "label": "IGNORE"}]
+    out = evaluate(rows, labels, {"fi_ema_alpha": 0.7}, label_meta={"mode": "frames"})
+    assert out["overall"]["total_labeled_frames"] == 0
 
 
 def test_tune_task6b_runs(tmp_path):
@@ -40,7 +47,7 @@ def test_tune_task6b_runs(tmp_path):
 def test_record_generates_label_template(tmp_path):
     import subprocess, sys
     out_log = tmp_path / "x.jsonl"
-    out_lbl = tmp_path / "x.yaml"
-    subprocess.run([sys.executable, "-m", "ui_cli.run_core_debug", "--bridge", "mock", "--mode", "demo", "--duration-sec", "1", "--session-id", "task6b_mock_demo_smoke_20260512_000000", "--record-jsonl", str(out_log), "--label-template", str(out_lbl)], check=True)
+    out_lbl = tmp_path / "x.frames.csv"
+    subprocess.run([sys.executable, "-m", "ui_cli.run_core_debug", "--bridge", "mock", "--mode", "demo", "--duration-sec", "1", "--session-id", "task6b_mock_demo_smoke_20260512_000000", "--record-jsonl", str(out_log), "--frame-label-template", str(out_lbl), "--frame-sec", "3"], check=True)
     assert out_log.exists()
     assert out_lbl.exists()

@@ -50,7 +50,7 @@ def main():
     a = p.parse_args()
     random.seed(a.seed)
     rows = _load_jsonl(glob.glob(a.input))
-    labels = _load_labels(glob.glob(a.labels))
+    labels, label_meta = _load_labels(glob.glob(a.labels))
     if yaml is None:
         base = json.loads(Path(a.base_config).read_text(encoding="utf-8"))
     else:
@@ -59,8 +59,10 @@ def main():
     for _ in range(a.trials):
         cfg = dict(base)
         cfg.update(_sample())
-        r = evaluate(rows, labels, cfg)
-        results.append({"config": cfg, **{k: r[k] for k in ("score", "macro_f1", "transition_jitter", "latency_penalty", "false_fatigue", "false_high_focus", "hard_rule_violation")}})
+        r = evaluate(rows, labels, cfg, label_meta=label_meta)
+        o = r["overall"]
+        keys = ("score", "macro_f1", "transition_jitter", "latency_penalty", "false_fatigue", "false_high_focus", "hard_rule_violation")
+        results.append({"config": cfg, **{k: o.get(k, 0) for k in keys}})
     top = sorted(results, key=lambda x: x["score"], reverse=True)[:10]
     payload = {"top_candidates": top}
     Path(a.out).write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")

@@ -1,4 +1,5 @@
 import argparse
+import csv
 import json
 import time
 from pathlib import Path
@@ -28,6 +29,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--session-id")
     p.add_argument("--duration-sec", type=int)
     p.add_argument("--label-template")
+    p.add_argument("--frame-label-template")
+    p.add_argument("--frame-sec", type=int, default=3)
     return p
 
 
@@ -50,7 +53,7 @@ def _resolve_user_context(mode: str | None, user_id: str | None, db_path: str):
     return u, pm.get_profile(u["user_id"]), storage
 
 
-def run_debug_loop(mode: str, host: str, port: int, ticks: int, interval: float, user_mode: str | None = None, user_id: str | None = None, db_path: str = "data/relic_local.db", record_jsonl: str | None = None, session_id: str | None = None, duration_sec: int | None = None, label_template: str | None = None) -> None:
+def run_debug_loop(mode: str, host: str, port: int, ticks: int, interval: float, user_mode: str | None = None, user_id: str | None = None, db_path: str = "data/relic_local.db", record_jsonl: str | None = None, session_id: str | None = None, duration_sec: int | None = None, label_template: str | None = None, frame_label_template: str | None = None, frame_sec: int = 3) -> None:
     gateway = PlatformGateway(mode=mode, host=host, port=port)
     data_center = DataCenter()
     quality_gate = QualityGate()
@@ -129,6 +132,18 @@ def run_debug_loop(mode: str, host: str, port: int, ticks: int, interval: float,
             seg = [{"start": i, "end": min(i + 30, dur), "label": "IGNORE", "note": "fill manually"} for i in range(0, dur, 30)]
             tpl = {"session_id": session_id, "source_log": record_jsonl, "user_id": None if current_user is None else current_user["user_id"], "time_unit": "sec", "tag": session_id.split("_")[3] if "_" in session_id else "tag", "notes": "", "segments": seg}
             Path(label_template).write_text(json.dumps(tpl, ensure_ascii=False, indent=2), encoding="utf-8")
+        if frame_label_template and session_id:
+            Path(frame_label_template).parent.mkdir(parents=True, exist_ok=True)
+            dur = duration_sec if duration_sec is not None else int(ticks * interval)
+            with open(frame_label_template, "w", newline="", encoding="utf-8") as f:
+                w = csv.writer(f)
+                w.writerow(["session_id", "frame_id", "start_ms", "end_ms", "start_sec", "end_sec", "label", "confidence", "note"])
+                fid = 0
+                ms = frame_sec * 1000
+                for s0 in range(0, dur * 1000, ms):
+                    s1 = min(s0 + ms, dur * 1000)
+                    w.writerow([session_id, fid, s0, s1, s0 // 1000, s1 // 1000, "IGNORE", "low", ""])
+                    fid += 1
     except KeyboardInterrupt:
         print("Interrupted, cleaning up...")
     finally:
@@ -141,7 +156,7 @@ def main() -> None:
     a = build_parser().parse_args()
     mode = "mock" if a.mock else a.bridge
     try:
-        run_debug_loop(mode=mode, host=a.host, port=a.port, ticks=a.ticks, interval=a.interval, user_mode=a.mode, user_id=a.user_id, db_path=a.db_path, record_jsonl=a.record_jsonl, session_id=a.session_id, duration_sec=a.duration_sec, label_template=a.label_template)
+        run_debug_loop(mode=mode, host=a.host, port=a.port, ticks=a.ticks, interval=a.interval, user_mode=a.mode, user_id=a.user_id, db_path=a.db_path, record_jsonl=a.record_jsonl, session_id=a.session_id, duration_sec=a.duration_sec, label_template=a.label_template, frame_label_template=a.frame_label_template, frame_sec=a.frame_sec)
     except KeyboardInterrupt:
         print("Interrupted, cleaning up...")
     except ValueError as e:

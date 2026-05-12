@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import glob
 import json
 from pathlib import Path
@@ -26,16 +27,39 @@ def _load_jsonl(paths: list[str]) -> list[dict]:
     return rows
 
 
-def _load_labels(paths: list[str]) -> list[dict]:
+def load_structured_file(path: str) -> dict:
+    text = Path(path).read_text(encoding="utf-8")
+    if path.endswith(".json"):
+        return json.loads(text)
+    if yaml is not None:
+        return yaml.safe_load(text) or {}
+    if path.endswith(".yaml") or path.endswith(".yml"):
+        out = {}
+        for ln in text.splitlines():
+            if ":" in ln and not ln.strip().startswith("-"):
+                k, v = ln.split(":", 1)
+                out[k.strip()] = v.strip().strip('"')
+        if out:
+            return out
+        raise ValueError("Cannot parse YAML config. Please install PyYAML or use JSON config.")
+    return json.loads(text)
+
+
+def _load_labels(paths: list[str]) -> tuple[list[dict], dict]:
+    if paths and paths[0].endswith(".frames.csv"):
+        frames = []
+        meta = {}
+        for p in paths:
+            with open(p, "r", encoding="utf-8") as f:
+                for row in csv.DictReader(f):
+                    frames.append(row)
+                    meta["session_id"] = row.get("session_id")
+        return frames, {"mode": "frames", **meta}
     items = []
     for p in paths:
-        with open(p, "r", encoding="utf-8") as f:
-            if yaml is None:
-                data = json.loads(f.read())
-            else:
-                data = yaml.safe_load(f) or {}
-            items.extend(data.get("segments", []))
-    return items
+        data = load_structured_file(p)
+        items.extend(data.get("segments", []))
+    return items, {"mode": "segments", "time_unit": (load_structured_file(paths[0]).get("time_unit", "ms") if paths else "ms"), "session_id": (load_structured_file(paths[0]).get("session_id") if paths else None)}
 
 
 def _label_at(ts: int, segments: list[dict], time_unit: str = "ms") -> str | None:
@@ -59,13 +83,15 @@ def evaluate(rows: list[dict], labels: list[dict], cfg: dict, label_meta: dict |
     false_fatigue = false_high = unreliable_miss = hard_viol = 0
     prev_state = None
     transition_count = 0
+    preds = []
     for r in rows:
         t = int(r.get("now_ms", 0))
         gate = qg.evaluate(r, {"user_id": "offline"}, {"last_calibration_id": "offline"}, {"calibration_id": "offline", "valid": True, "device_id": "ipc_device", "attention_std": 1.0}, r.get("warning_flags", []), r.get("error_flags", []))
         s = dict(r) | gate
         fi = fe.estimate(s, {"attention_low_threshold": cfg.get("attention_low_fallback", 40), "attention_high_threshold": cfg.get("attention_high_fallback", 70)}, {"attention_baseline": 55, "attention_std": 1.0, "gyro_noise_rms": 0.5, "gyro_bias_x": 0, "gyro_bias_y": 0, "gyro_bias_z": 0})
         state = cs.evaluate(s, fi, tick_ms=1000).get("control_state")
-        label = _label_at(t, labels, (label_meta or {}).get("time_unit", "ms"))
+        preds.append((t, state))
+        label = _label_at(t, labels, (label_meta or {}).get("time_unit", "ms")) if (label_meta or {}).get("mode") != "frames" else None
         if label == "IGNORE":
             continue
         if label:
@@ -84,6 +110,35 @@ def evaluate(rows: list[dict], labels: list[dict], cfg: dict, label_meta: dict |
         prev_state = state
         if state == "FATIGUED" and ("attention_lost" in s.get("quality_reasons", []) or "gyro_lost" in s.get("quality_reasons", []) or "stream_dead" in s.get("quality_reasons", [])):
             hard_viol += 1
+    if (label_meta or {}).get("mode") == "frames":
+        total = correct = 0
+        confusion = {}
+        for fr in labels:
+            if fr.get("label") == "IGNORE":
+                continue
+            sid = fr.get("session_id")
+            if sid and rows and rows[0].get("session_id") and sid != rows[0].get("session_id"):
+                continue
+            a, b = int(fr.get("start_ms", 0)), int(fr.get("end_ms", 0))
+            in_frame = [s for t, s in preds if a <= int(t) < b]
+            if not in_frame:
+                continue
+            counts = {}
+            for s in in_frame:
+                counts[s] = counts.get(s, 0) + 1
+            best = sorted(counts.items(), key=lambda x: (x[1], in_frame[::-1].index(x[0])), reverse=True)[0][0]
+            label = fr.get("label")
+            total += 1
+            correct += int(best == label)
+            confusion.setdefault(label, {}).setdefault(best, 0)
+            confusion[label][best] += 1
+            if best == "FATIGUED" and label != "FATIGUED":
+                false_fatigue += 1
+            if best == "HIGH_FOCUS" and label != "HIGH_FOCUS":
+                false_high += 1
+            if label != "UNRELIABLE_SIGNAL" and best == "UNRELIABLE_SIGNAL":
+                unreliable_miss += 1
+        transition_count = 0
     acc = (correct / total) if total else 0.0
     per_f1 = []
     classes = set(confusion.keys()) | {p for d in confusion.values() for p in d.keys()}
@@ -97,8 +152,8 @@ def evaluate(rows: list[dict], labels: list[dict], cfg: dict, label_meta: dict |
     macro_f1 = sum(per_f1) / max(len(per_f1), 1)
     transition_jitter = transition_count / max(total, 1)
     latency_penalty = 0.0
-    score = 1.0 * macro_f1 - 0.3 * transition_jitter - 0.5 * latency_penalty - 2.0 * false_fatigue - 1.5 * false_high - 3.0 * hard_viol
-    return {"confusion_matrix": confusion, "state_accuracy": acc, "macro_f1": macro_f1, "state_switches": transition_count, "avg_latency": 0.0, "hard_rule_violation": hard_viol, "false_fatigue": false_fatigue, "false_high_focus": false_high, "unreliable_miss": unreliable_miss, "transition_jitter": transition_jitter, "latency_penalty": latency_penalty, "score": score}
+    score = 1.0 * macro_f1 - 0.3 * transition_jitter - 0.5 * latency_penalty - 2.0 * false_fatigue - 1.5 * false_high - 1.0 * unreliable_miss - 3.0 * hard_viol
+    return {"overall": {"total_labeled_frames": total, "frame_accuracy": acc, "macro_f1": macro_f1, "confusion_matrix": confusion, "state_switches": transition_count, "transition_jitter": transition_jitter, "false_fatigue": false_fatigue, "false_high_focus": false_high, "unreliable_miss": unreliable_miss, "hard_rule_violation": hard_viol, "score": score}, "per_session": [{"session_id": (rows[0].get("session_id") if rows else None), "total_labeled_frames": total, "frame_accuracy": acc, "macro_f1": macro_f1, "confusion_matrix": confusion, "score": score}]}
 
 
 def main():
@@ -110,16 +165,8 @@ def main():
     a = p.parse_args()
     rows = _load_jsonl(glob.glob(a.input))
     label_paths = glob.glob(a.labels)
-    labels = _load_labels(label_paths)
-    label_meta = {}
-    if label_paths:
-        txt = Path(label_paths[0]).read_text(encoding="utf-8")
-        meta = json.loads(txt) if yaml is None else (yaml.safe_load(txt) or {})
-        label_meta = {"session_id": meta.get("session_id"), "time_unit": meta.get("time_unit", "ms")}
-    if yaml is None:
-        cfg = json.loads(Path(a.config).read_text(encoding="utf-8"))
-    else:
-        cfg = yaml.safe_load(Path(a.config).read_text(encoding="utf-8")) or {}
+    labels, label_meta = _load_labels(label_paths)
+    cfg = load_structured_file(a.config)
     if label_meta.get("session_id"):
         rows = [r for r in rows if r.get("session_id") == label_meta["session_id"]]
     out = evaluate(rows, labels, cfg, label_meta=label_meta)
