@@ -55,6 +55,35 @@ class SqliteStore:
             )
             """
         )
+
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS training_sessions (
+                session_id TEXT PRIMARY KEY,
+                user_id TEXT,
+                game_id TEXT,
+                calibration_id TEXT,
+                started_at TEXT,
+                ended_at TEXT,
+                status TEXT,
+                log_path TEXT,
+                valid_duration_ms INTEGER,
+                warning_duration_ms INTEGER,
+                unreliable_duration_ms INTEGER,
+                error_count INTEGER,
+                final_fi_avg REAL,
+                final_sqi_avg REAL,
+                control_state_summary TEXT,
+                score REAL,
+                end_reason TEXT,
+                estimator_version TEXT,
+                task6b_config_path TEXT,
+                task6b_config_snapshot TEXT,
+                behavior_ready_ratio REAL,
+                has_behavior_samples INTEGER
+            )
+            """
+        )
         conn.commit()
 
     def upsert_user(self, user: dict[str, Any]) -> None:
@@ -142,3 +171,45 @@ class SqliteStore:
         conn = self._ensure_conn()
         rows = conn.execute("SELECT * FROM calibration_profiles WHERE user_id=? ORDER BY created_at", (user_id,)).fetchall()
         return [dict(r) for r in rows]
+
+
+    def upsert_training_session(self, summary: dict[str, Any]) -> None:
+        conn = self._ensure_conn()
+        conn.execute(
+            """
+            INSERT INTO training_sessions (
+                session_id, user_id, game_id, calibration_id, started_at, ended_at, status, log_path,
+                valid_duration_ms, warning_duration_ms, unreliable_duration_ms, error_count,
+                final_fi_avg, final_sqi_avg, control_state_summary, score, end_reason,
+                estimator_version, task6b_config_path, task6b_config_snapshot,
+                behavior_ready_ratio, has_behavior_samples
+            ) VALUES (
+                :session_id, :user_id, :game_id, :calibration_id, :started_at, :ended_at, :status, :log_path,
+                :valid_duration_ms, :warning_duration_ms, :unreliable_duration_ms, :error_count,
+                :final_fi_avg, :final_sqi_avg, :control_state_summary, :score, :end_reason,
+                :estimator_version, :task6b_config_path, :task6b_config_snapshot,
+                :behavior_ready_ratio, :has_behavior_samples
+            )
+            ON CONFLICT(session_id) DO UPDATE SET
+                ended_at=excluded.ended_at,
+                status=excluded.status,
+                valid_duration_ms=excluded.valid_duration_ms,
+                warning_duration_ms=excluded.warning_duration_ms,
+                unreliable_duration_ms=excluded.unreliable_duration_ms,
+                error_count=excluded.error_count,
+                final_fi_avg=excluded.final_fi_avg,
+                final_sqi_avg=excluded.final_sqi_avg,
+                control_state_summary=excluded.control_state_summary,
+                score=excluded.score,
+                end_reason=excluded.end_reason,
+                behavior_ready_ratio=excluded.behavior_ready_ratio,
+                has_behavior_samples=excluded.has_behavior_samples
+            """,
+            summary,
+        )
+        conn.commit()
+
+    def get_training_session(self, session_id: str) -> dict[str, Any] | None:
+        conn = self._ensure_conn()
+        row = conn.execute("SELECT * FROM training_sessions WHERE session_id=?", (session_id,)).fetchone()
+        return dict(row) if row else None
