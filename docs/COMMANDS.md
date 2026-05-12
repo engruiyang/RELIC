@@ -82,6 +82,28 @@
 | `python -m ui_cli.run_calibration_debug --action start --mode user --user-id TEST --fast` | fast 模式（测试/开发快速完成） | `ui_cli/run_calibration_debug.py` | demo/user: 是；guest: 否 | 否 | 否 | `events`, `valid`, `calibration_id` | active |
 | `python -m ui_cli.run_calibration_debug --action start --mode user --user-id TEST --no-progress` | 关闭进度行输出，仅保留结果 | `ui_cli/run_calibration_debug.py` | demo/user: 是；guest: 否 | 否 | 否 | `valid`, `calibration_id` | active |
 
+
+## Task6B 调参与评估命令（mock + 真实）
+
+> 以下命令覆盖 Task6B 的完整调参链路：录制数据 → 标注 → 评估 → 搜参。
+
+| 命令 | 用途 | 入口文件 | 写数据库 | 连接平台 | 生成文件 | 典型输出字段 | 状态 |
+|---|---|---|---|---|---|---|---|
+| `bash scripts/task6b_record.sh mock demo 180 baseline` | 使用 mock 数据录制 Task6B 样本（demo 上下文） | `scripts/task6b_record.sh` / `ui_cli/run_core_debug.py` | 否 | 否 | `logs/task6b/*.jsonl`, `labels/task6b/*.yaml`, `labels/task6b/*.frames.csv` | `session_id`, `quality`, `focus_index`, `control_state` | active |
+| `bash scripts/task6b_record.sh live TEST 180 real_trial` | 使用真实 IPC 数据录制 Task6B 样本（local user） | `scripts/task6b_record.sh` / `ui_cli/run_core_debug.py` | 否（仅读 profile） | 是（默认 `127.0.0.1:8000`） | `logs/task6b/*.jsonl`, `labels/task6b/*.yaml`, `labels/task6b/*.frames.csv` | `connected`, `stream_alive`, `quality_reasons` | active |
+| `bash scripts/task6b_record.sh mock demo 180 baseline --frame-sec 2` | mock 录制并设置标注窗口长度 | `scripts/task6b_record.sh` / `ui_cli/run_core_debug.py` | 否 | 否 | 同上 | `frame_start_ms`, `frame_end_ms` | active |
+| `python -m ui_cli.evaluate_task6b --input "logs/task6b/*.jsonl" --labels "labels/task6b/*.frames.csv" --config config/task6b.yaml --out reports/task6b_eval.json` | 对已标注样本做离线评估 | `ui_cli/evaluate_task6b.py` | 否 | 否 | `reports/task6b_eval.json` | `frame_accuracy`, `macro_f1`, `confusion_matrix`, `score` | active |
+| `bash scripts/task6b_eval.sh` | 评估脚本快捷入口（默认路径） | `scripts/task6b_eval.sh` / `ui_cli/evaluate_task6b.py` | 否 | 否 | `reports/task6b_eval.json` | `overall`, `per_session` | active |
+| `python -m ui_cli.tune_task6b --input "logs/task6b/*.jsonl" --labels "labels/task6b/*.frames.csv" --base-config config/task6b.yaml --trials 300 --method random --seed 42 --out config/task6b_tuned_candidates.json --report reports/task6b_tune_report.json` | 对 Task6B 参数做随机搜索调参 | `ui_cli/tune_task6b.py` | 否 | 否 | `config/task6b_tuned_candidates.json`, `reports/task6b_tune_report.json` | `top_candidates`, `score`, `macro_f1`, `validation` | active |
+| `bash scripts/task6b_tune.sh` | 调参脚本快捷入口（`TASK6B_TRIALS` 可覆盖 trials） | `scripts/task6b_tune.sh` / `ui_cli/tune_task6b.py` | 否 | 否 | `config/task6b_tuned_candidates.json`, `reports/task6b_tune_report.json` | `top_candidates` | active |
+
+### Task6B 实操建议
+
+- **mock 调参流程**：`task6b_record.sh mock` → 人工编辑 `labels/task6b/*.frames.csv` → `task6b_eval.sh` → `task6b_tune.sh`。
+- **真实调参流程**：确认平台推流后执行 `task6b_record.sh live`，再执行相同评估/调参步骤。
+- `task6b_record.sh` 参数：`<bridge> <user_id> <duration_sec> <tag>`，其中 `bridge` 仅支持 `mock` 或 `live`。
+- 真实录制建议使用 `--mode user` 对应的有效本地用户 ID，避免使用 guest。
+
 ## 后续 planned 命令
 
 | 命令 | 用途 | 入口文件 | 写数据库 | 连接平台 | 生成文件 | 典型输出字段 | 状态 |
