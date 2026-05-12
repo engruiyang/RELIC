@@ -31,10 +31,22 @@ SPACE = {
 
 
 def _sample():
-    cfg = {}
-    for k, (a, b) in SPACE.items():
-        cfg[k] = random.uniform(a, b)
-    return cfg
+    while True:
+        cfg = {}
+        for k, (a, b) in SPACE.items():
+            cfg[k] = random.uniform(a, b)
+        if _validate(cfg):
+            return cfg
+
+
+def _validate(cfg: dict) -> bool:
+    return (
+        cfg["imu_rate_soft_mult"] < cfg["imu_rate_bad_mult"]
+        and cfg["imu_jitter_soft_mult"] < cfg["imu_jitter_bad_mult"]
+        and cfg["stable_exit"] <= cfg["stable_enter"]
+        and cfg["distracted_enter"] < cfg["stable_enter"]
+        and cfg["attention_low_fallback"] + 20 <= cfg["attention_high_fallback"]
+    )
 
 
 def main():
@@ -62,7 +74,7 @@ def main():
         r = evaluate(rows, labels, cfg, label_meta=label_meta)
         o = r["overall"]
         keys = ("score", "macro_f1", "transition_jitter", "latency_penalty", "false_fatigue", "false_high_focus", "hard_rule_violation")
-        results.append({"config": cfg, **{k: o.get(k, 0) for k in keys}})
+        results.append({"config": cfg, "validation": _validate(cfg), **{k: o.get(k, 0) for k in keys}})
     top = sorted(results, key=lambda x: x["score"], reverse=True)[:10]
     payload = {"top_candidates": top}
     Path(a.out).write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")

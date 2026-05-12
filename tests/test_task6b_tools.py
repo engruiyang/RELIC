@@ -42,6 +42,16 @@ def test_tune_task6b_runs(tmp_path):
     import subprocess, sys
     r = subprocess.run([sys.executable, "-m", "ui_cli.tune_task6b", "--input", str(log), "--labels", str(label), "--base-config", str(cfg), "--trials", "50", "--method", "random", "--out", str(out)], check=True)
     assert out.exists()
+    payload = json.loads(out.read_text(encoding="utf-8"))
+    assert payload["top_candidates"]
+    assert all(c["validation"] for c in payload["top_candidates"])
+    for c in payload["top_candidates"]:
+        cfgv = c["config"]
+        assert cfgv["imu_rate_soft_mult"] < cfgv["imu_rate_bad_mult"]
+        assert cfgv["imu_jitter_soft_mult"] < cfgv["imu_jitter_bad_mult"]
+        assert cfgv["stable_exit"] <= cfgv["stable_enter"]
+        assert cfgv["distracted_enter"] < cfgv["stable_enter"]
+        assert cfgv["attention_low_fallback"] + 20 <= cfgv["attention_high_fallback"]
 
 
 def test_record_generates_label_template(tmp_path):
