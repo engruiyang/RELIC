@@ -73,7 +73,7 @@ def test_ipc_interrupted_flags(tmp_path, monkeypatch):
     _mk_user(db)
     import ui_cli.run_calibration_debug as mod
 
-    def fake_collect(host, port, fast):
+    def fake_collect(host, port, fast, phase_callback=None, sleeper=None):
         return [], [], {"ipc_connected": True, "ipc_connected_at_end": False, "stream_interrupted": True, "live_data_detected": True, "failure_reason": "ipc_stream_interrupted"}
 
     monkeypatch.setattr(mod, "_collect_ipc_samples", fake_collect)
@@ -82,6 +82,56 @@ def test_ipc_interrupted_flags(tmp_path, monkeypatch):
     assert out["stream_interrupted"] is True
     assert out["ipc_connected_at_end"] is False
     assert out["persisted"] is False
+    assert out["failure_reason"] != "attention_update_too_sparse"
+
+
+def test_ipc_interrupted_reason_priority_over_attention(tmp_path, monkeypatch):
+    db = str(tmp_path / "h.db")
+    _mk_user(db)
+    import ui_cli.run_calibration_debug as mod
+
+    def fake_collect(host, port, fast, phase_callback=None, sleeper=None):
+        return [{"gyro_x": 0.1, "gyro_y": 0.1, "gyro_z": 0.1, "gyro_fresh": True, "error_flags": []}], [{"attention": 50, "attention_fresh": True, "error_flags": []}], {"ipc_connected": True, "ipc_connected_at_end": False, "stream_interrupted": True, "live_data_detected": True, "failure_reason": "ipc_stream_interrupted"}
+
+    monkeypatch.setattr(mod, "_collect_ipc_samples", fake_collect)
+    out = mod.run_calibration_action("start", "user", db, user_id="TEST", source="ipc", fast=False, progress=False, print_output=False)
+    assert out["failure_reason"] == "ipc_stream_interrupted"
+    assert out["valid"] is False
+    assert out["persisted"] is False
+
+
+def test_ipc_phase_prompt_realtime_order_and_flush(monkeypatch):
+    import io
+    import ui_cli.run_calibration_debug as mod
+
+    order = []
+
+    class FakeGateway:
+        def __init__(self, mode="live", host="", port=0):
+            self.connected = True
+
+        def start(self):
+            return None
+
+        def stop(self):
+            return None
+
+        def health(self):
+            return {"connected": True, "alive": True}
+
+        def poll_raw_events(self, now_ms):
+            return []
+
+    def fake_sleep(_):
+        order.append("sleep")
+
+    out = io.StringIO()
+    monkeypatch.setattr(mod, "PlatformGateway", FakeGateway)
+    phases = []
+    gyro, att, meta = mod._collect_ipc_samples("127.0.0.1", 8000, fast=False, phase_callback=lambda p: phases.append(p), sleeper=fake_sleep)
+    assert phases[:4] == ["preparation", "gyro_static_baseline", "attention_quick_baseline", "result"]
+    assert order[0] == "sleep"
+    assert meta["failure_reason"] is None
 
 
 def test_status_binding_consistent_requires_valid(tmp_path):
@@ -89,3 +139,25 @@ def test_status_binding_consistent_requires_valid(tmp_path):
     _mk_user(db)
     st = run_calibration_action("status", "user", db, user_id="TEST", print_output=False)
     assert "binding_consistent" in st
+
+
+def test_ipc_default_start_phase_titles_print_once(tmp_path, monkeypatch, capsys):
+    db = str(tmp_path / "i.db")
+    _mk_user(db)
+    import ui_cli.run_calibration_debug as mod
+
+    def fake_collect(host, port, fast, phase_callback=None, sleeper=None):
+        for p in ["preparation", "gyro_static_baseline", "attention_quick_baseline", "result"]:
+            if phase_callback is not None:
+                phase_callback(p)
+        gyro = [{"gyro_x": 0.1, "gyro_y": 0.1, "gyro_z": 0.1, "gyro_fresh": True, "error_flags": []} for _ in range(20)]
+        att = [{"attention": 55 + (i % 3), "attention_fresh": True, "error_flags": []} for i in range(20)]
+        return gyro, att, {"ipc_connected": True, "ipc_connected_at_end": True, "stream_interrupted": False, "live_data_detected": True, "failure_reason": None}
+
+    monkeypatch.setattr(mod, "_collect_ipc_samples", fake_collect)
+    mod.run_calibration_action("start", "user", db, user_id="TEST", source="ipc", fast=False, progress=True, print_output=True)
+    out = capsys.readouterr().out
+    assert out.count("佩戴检查") == 1
+    assert out.count("静止姿态校准") == 1
+    assert out.count("注意力基线检查") == 1
+    assert out.count("结果计算") == 1
