@@ -11,7 +11,11 @@ from game.game_manifest import GameManifest
 from game.game_pipeline import GamePipelineRunner, LiveSnapshotProvider, MockSnapshotProvider
 from runtime.local_runtime import LocalRuntime
 from session.session_manager import SessionManager
+from storage.storage_manager import StorageManager
 from storage.sqlite_store import SqliteStore
+from user.profile_manager import ProfileManager
+from user.user_manager import UserManager
+from ui_cli.evaluate_task6b import load_structured_file, _resolve_task6b_predictor_params
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -28,6 +32,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--user-id", default="demo_user")
     p.add_argument("--db-path", default="data/relic_task8a.db")
     p.add_argument("--game-id", default="fake_game")
+    p.add_argument("--task6b-config", default="config/task6b.yaml")
     return p
 
 
@@ -35,8 +40,22 @@ def main() -> None:
     a = build_parser().parse_args()
     store = SqliteStore(db_path=a.db_path)
     store.connect()
+    task6b_cfg_raw = load_structured_file(a.task6b_config)
+    task6b_cfg_active = _resolve_task6b_predictor_params(task6b_cfg_raw)
     session_manager = SessionManager(sqlite_store=store)
-    ok, reason, session = session_manager.start_session(a.user_id, a.game_id, None, task6b_config_path="config/task6b.yaml", task6b_config_snapshot={"source": f"task8c_{a.bridge}"})
+    ok, reason, session = session_manager.start_session(
+        a.user_id,
+        a.game_id,
+        None,
+        task6b_config_path=a.task6b_config,
+        task6b_config_snapshot={
+            "source": f"task8c_{a.bridge}",
+            "task6b_config_loaded": bool(task6b_cfg_raw),
+            "task6b_config_accepted": bool(task6b_cfg_raw.get("accepted", True)),
+            "predictor_version": "task6b_predictor_v1",
+            "active_params": task6b_cfg_active,
+        },
+    )
     if not ok or not session:
         print(f"start_session failed: {reason}")
         store.close()
@@ -62,7 +81,21 @@ def main() -> None:
     pipeline_path = a.record_pipeline_jsonl
     if pipeline_path is None and a.print_jsonl:
         pipeline_path = f"logs/game_debug/{session.session_id}.pipeline.jsonl"
-    provider = LiveSnapshotProvider(a.host, a.port) if a.bridge == "live" else MockSnapshotProvider()
+    provider = MockSnapshotProvider()
+    user_storage = None
+    if a.bridge == "live":
+        user_storage = StorageManager(sqlite_path=a.db_path)
+        user_storage.initialize()
+        um, pm = UserManager(user_storage.sqlite), ProfileManager(user_storage.sqlite)
+        if a.mode == "demo":
+            current_user = um.ensure_demo_user()
+            user_profile = pm.get_profile(current_user["user_id"])
+        else:
+            current_user = um.load_user(a.user_id)
+            if current_user is None:
+                raise ValueError(f"user not found: {a.user_id}")
+            user_profile = pm.get_profile(current_user["user_id"])
+        provider = LiveSnapshotProvider(a.host, a.port, current_user=current_user, user_profile=user_profile, calibration_store=user_storage)
     runner = GamePipelineRunner(runtime=runtime, game_manager=manager, session_manager=session_manager, session_id=session.session_id, user_id=a.user_id, game_id=a.game_id, pipeline_jsonl_path=pipeline_path)
 
     try:
@@ -83,10 +116,16 @@ def main() -> None:
         if hasattr(provider, "close"):
             provider.close()
         runner.close()
+        if user_storage is not None:
+            user_storage.shutdown()
 
     summary = store.get_training_session(session.session_id)
     print(json.dumps({
         "session_id": session.session_id,
+        "task6b_config_path": a.task6b_config,
+        "task6b_config_loaded": bool(task6b_cfg_raw),
+        "task6b_config_accepted": bool(task6b_cfg_raw.get("accepted", True)),
+        "predictor_version": "task6b_predictor_v1",
         "score": summary.get("score") if summary else None,
         "game_event_count": summary.get("game_event_count") if summary else None,
         "behavior_sample_count": summary.get("behavior_sample_count") if summary else None,

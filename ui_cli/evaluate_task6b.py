@@ -15,6 +15,7 @@ except Exception:  # noqa: BLE001
 from core.quality_gate import QualityGate
 from core.focus_estimator import FocusEstimator
 from core.control_state_estimator import ControlStateEstimator
+from core.task6b_predictor import predict_task6b_frame
 
 
 def _load_jsonl(paths: list[str]) -> list[dict]:
@@ -73,6 +74,15 @@ def _load_labels(paths: list[str]) -> tuple[list[dict], dict]:
     return items, {"mode": "segments", "time_unit": time_unit, "session_ids": sorted(session_ids)}
 
 
+
+def _resolve_task6b_predictor_params(cfg: dict) -> dict:
+    selected = cfg.get("selected_params") if isinstance(cfg.get("selected_params"), dict) else {}
+    for key in ("transition", "fi", "reliability_gate"):
+        cand = selected.get(key)
+        if isinstance(cand, dict) and cand:
+            return cand
+    return cfg
+
 def _label_at(ts: int, segments: list[dict], time_unit: str = "ms") -> str | None:
     for s in segments:
         if "start_ms" in s:
@@ -86,6 +96,7 @@ def _label_at(ts: int, segments: list[dict], time_unit: str = "ms") -> str | Non
 
 
 def evaluate(rows: list[dict], labels: list[dict], cfg: dict, label_meta: dict | None = None, use_recorded_prediction: bool = False) -> dict:
+    predictor_params = _resolve_task6b_predictor_params(cfg)
     qg = QualityGate(sqi_ok_threshold=cfg.get("sqi_ok_threshold", 0.75), sqi_invalid_threshold=cfg.get("sqi_invalid_threshold", 0.60))
     fe = FocusEstimator(alpha=cfg.get("fi_ema_alpha", 0.7))
     cs = ControlStateEstimator()
@@ -93,6 +104,7 @@ def evaluate(rows: list[dict], labels: list[dict], cfg: dict, label_meta: dict |
     correct = total = 0
     false_fatigue = false_high = unreliable_miss = hard_viol = 0
     prev_state = None
+    predictor_runtime_by_session = {}
     transition_count = 0
     warning_count = 0
     skipped_rows = 0
@@ -104,12 +116,19 @@ def evaluate(rows: list[dict], labels: list[dict], cfg: dict, label_meta: dict |
             gate = qg.evaluate(r, {"user_id": "offline"}, {"last_calibration_id": "offline"}, {"calibration_id": "offline", "valid": True, "device_id": "ipc_device", "attention_std": 1.0}, r.get("warning_flags", []), r.get("error_flags", []))
             s = dict(r) | gate
             fi = fe.estimate(s, {"attention_low_threshold": cfg.get("attention_low_fallback", 40), "attention_high_threshold": cfg.get("attention_high_fallback", 70)}, {"attention_baseline": 55, "attention_std": 1.0, "gyro_noise_rms": 0.5, "gyro_bias_x": 0, "gyro_bias_y": 0, "gyro_bias_z": 0})
-            state = r.get("control_state") if use_recorded_prediction else cs.evaluate(s, fi, tick_ms=1000).get("control_state")
+            sid = r.get("session_id")
+            runtime_state = predictor_runtime_by_session.setdefault(sid, {})
+            if use_recorded_prediction:
+                pred = {"predicted_label": r.get("control_state"), "fi_raw": fi.get("fi_raw"), "fi_smoothed": fi.get("fi_smoothed")}
+            else:
+                pred = predict_task6b_frame(s, predictor_params, prev_state=runtime_state.get("state", prev_state), runtime_state=runtime_state)
+                if not pred.get("predicted_label"):
+                    pred = {"predicted_label": cs.evaluate(s, fi, tick_ms=1000).get("control_state"), "fi_raw": fi.get("fi_raw"), "fi_smoothed": fi.get("fi_smoothed")}
+            state = pred.get("predicted_label")
         except Exception:  # noqa: BLE001
             skipped_rows += 1
             warning_count += 1
             continue
-        sid = r.get("session_id")
         preds_by_session.setdefault(sid, []).append((t, state))
         frame_events_by_session.setdefault(sid, []).append({
             "timestamp_ms": t,
@@ -138,8 +157,8 @@ def evaluate(rows: list[dict], labels: list[dict], cfg: dict, label_meta: dict |
             "p_offset": s.get("p_offset"),
             "warning_flags": r.get("warning_flags"),
             "error_flags": r.get("error_flags"),
-            "fi_raw": fi.get("fi_raw"),
-            "fi_smoothed": fi.get("fi_smoothed"),
+            "fi_raw": pred.get("fi_raw", fi.get("fi_raw")),
+            "fi_smoothed": pred.get("fi_smoothed", fi.get("fi_smoothed")),
             "fi_valid": fi.get("fi_valid"),
         })
         label = _label_at(t, labels, (label_meta or {}).get("time_unit", "ms")) if (label_meta or {}).get("mode") != "frames" else None
