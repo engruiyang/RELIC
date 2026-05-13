@@ -177,7 +177,6 @@ def test_calibrate_cli_smoke(tmp_path):
     assert "dataset_meta" in payload and "base_result" in payload and "best_result" in payload and "accepted" in payload and "warnings" in payload
 
 
-
 def test_grid_calibrate_cli_smoke(tmp_path):
     import subprocess, sys
     (tmp_path / "a.jsonl").write_text(json.dumps({"session_id": "A", "now_ms": 1000, "attention": 10, "attention_seen_once": True, "attention_age_ms": 100, "attention_fresh": True, "gyro_fresh": True, "p_rate": 0.1, "p_jitter": 0.1, "p_offset": 0.1, "warning_flags": [], "error_flags": []}) + "\n" + json.dumps({"session_id": "B", "now_ms": 1000, "attention": 80, "attention_seen_once": True, "attention_age_ms": 100, "attention_fresh": True, "gyro_fresh": True, "p_rate": 0.1, "p_jitter": 0.1, "p_offset": 0.1, "warning_flags": [], "error_flags": []}) + "\n", encoding="utf-8")
@@ -192,4 +191,3 @@ def test_grid_calibrate_cli_smoke(tmp_path):
     r = json.loads(report.read_text(encoding="utf-8"))
     assert "active_grid" in r and "feature_distribution_summary" in r and "top_candidates" in r
     assert r["search_summary"]["total_combinations_evaluated"] > 0
-
