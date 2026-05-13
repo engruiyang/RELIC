@@ -4,6 +4,7 @@ import argparse
 import csv
 import glob
 import json
+import statistics
 from pathlib import Path
 
 try:
