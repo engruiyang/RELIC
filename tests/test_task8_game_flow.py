@@ -88,3 +88,15 @@ def test_live_provider_fallback_exposes_reason(monkeypatch) -> None:
     p.close()
     assert snap["provider_fallback_used"] is True
     assert "estimation_exception" in (snap["provider_fallback_reason"] or "")
+
+
+def test_inspect_task8c_live_script(tmp_path) -> None:
+    pipeline = tmp_path / "p.jsonl"
+    rows = [
+        {"input": {"quality_state": "ok", "control_state": "STABLE_FOCUS", "provider_fallback_used": False, "calibration_loaded": True, "calibration_usable": True, "estimation_allowed": True, "fi_valid": True}, "output": {"behavior_sample_count": 1, "score": 10.0}},
+        {"input": {"quality_state": "warning", "control_state": "DISTRACTED", "provider_fallback_used": False, "calibration_loaded": True, "calibration_usable": True, "estimation_allowed": True, "fi_valid": True}, "output": {"behavior_sample_count": 1, "score": 12.0}},
+    ]
+    pipeline.write_text("\n".join(json.dumps(r, ensure_ascii=False) for r in rows) + "\n", encoding="utf-8")
+    p = subprocess.run([sys.executable, "tools/inspect_task8c_live.py", str(pipeline)], capture_output=True, text=True, check=True)
+    assert "tick_count=2" in p.stdout
+    assert "Final Verdict=PASS" in p.stdout
