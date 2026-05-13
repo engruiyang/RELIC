@@ -59,6 +59,7 @@ def main():
     p.add_argument("--seed", type=int, default=42)
     p.add_argument("--out", required=True)
     p.add_argument("--report")
+    p.add_argument("--prediction-mode", choices=["recompute", "recorded"], default="recompute")
     a = p.parse_args()
     random.seed(a.seed)
     input_paths = sorted(glob.glob(a.input))
@@ -73,13 +74,13 @@ def main():
     for _ in range(a.trials):
         cfg = dict(base)
         cfg.update(_sample())
-        r = evaluate(rows, labels, cfg, label_meta=label_meta)
+        r = evaluate(rows, labels, cfg, label_meta=label_meta, use_recorded_prediction=(a.prediction_mode == "recorded"))
         o = r["overall"]
         keys = ("score", "macro_f1", "transition_jitter", "latency_penalty", "false_fatigue", "false_high_focus", "hard_rule_violation", "unreliable_miss")
         results.append({"config": cfg, "validation": _validate(cfg), **{k: o.get(k, 0) for k in keys}})
     top = sorted(results, key=lambda x: x["score"], reverse=True)[:10]
     best_cfg = top[0]["config"] if top else dict(base)
-    best_eval = evaluate(rows, labels, best_cfg, label_meta=label_meta)
+    best_eval = evaluate(rows, labels, best_cfg, label_meta=label_meta, use_recorded_prediction=(a.prediction_mode == "recorded"))
     log_sessions = sorted({r.get("session_id") for r in rows if r.get("session_id")})
     label_sessions = sorted({l.get("session_id") for l in labels if l.get("session_id")})
     matched = sorted(set(log_sessions) & set(label_sessions))
@@ -100,6 +101,8 @@ def main():
         warnings.append("matched_session_ids less than label session count")
     if len(matched) == 1 and len(label_paths) > 1:
         warnings.append("only one session matched while multiple label files were provided")
+    if a.prediction_mode == "recorded":
+        warnings.append("evaluation uses recorded prediction; tuning cannot change predictions.")
     top_evals = [evaluate(rows, labels, c["config"], label_meta=label_meta) for c in top[:3]]
     if len(top_evals) >= 2:
         base_map = {(x.get("session_id"), x.get("frame_id"), x.get("start_ms"), x.get("end_ms")): x.get("predicted_label") for x in top_evals[0].get("frame_predictions", [])}

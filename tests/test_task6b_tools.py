@@ -122,6 +122,7 @@ def test_evaluate_debug_misclassified_csv(tmp_path):
     cfg.write_text("fi_ema_alpha: 0.7\n", encoding="utf-8")
     subprocess.run([sys.executable, "-m", "ui_cli.evaluate_task6b", "--input", str(log), "--labels", str(lbl), "--config", str(cfg), "--out", str(out), "--debug-misclassified-out", str(dbg)], check=True)
     assert dbg.exists()
+    subprocess.run([sys.executable, "-m", "ui_cli.evaluate_task6b", "--input", str(log), "--labels", str(lbl), "--config", str(cfg), "--out", str(out), "--prediction-mode", "recorded"], check=True)
 
 
 def test_diagnose_sensitivity_warning_when_no_change(tmp_path):
@@ -157,3 +158,20 @@ def test_tune_report_contains_required_fields(tmp_path):
     payload = json.loads(out.read_text(encoding="utf-8"))
     assert "dataset_meta" in payload and "session_count" in payload and "total_labeled_frames" in payload
     assert "unreliable_miss" in payload and "warnings" in payload
+
+
+def test_calibrate_cli_smoke(tmp_path):
+    import subprocess, sys
+    log = tmp_path / "a.jsonl"
+    lbl = tmp_path / "a.frames.csv"
+    cfg = tmp_path / "cfg.json"
+    out_cfg = tmp_path / "calibrated.yaml"
+    report = tmp_path / "report.json"
+    mis = tmp_path / "mis.csv"
+    log.write_text(json.dumps({"session_id": "A", "now_ms": 1000, "attention": 65, "attention_seen_once": True, "attention_age_ms": 100, "attention_fresh": True, "gyro_x": 0.0, "gyro_y": 0.0, "gyro_z": 0.0, "gyro_seen_once": True, "gyro_age_ms": 100, "gyro_fresh": True, "device_connected": True, "stream_alive": True, "warning_flags": [], "error_flags": []}) + "\n", encoding="utf-8")
+    lbl.write_text("session_id,frame_id,start_ms,end_ms,start_sec,end_sec,label,confidence,note\nA,0,0,2000,0,2,STABLE_FOCUS,low,\n", encoding="utf-8")
+    cfg.write_text(json.dumps({"fi_ema_alpha": 0.7}), encoding="utf-8")
+    subprocess.run([sys.executable, "-m", "ui_cli.calibrate_task6b", "--input", str(log), "--labels", str(lbl), "--base-config", str(cfg), "--trials", "10", "--method", "random", "--seed", "42", "--out-config", str(out_cfg), "--report", str(report), "--misclassified-out", str(mis)], check=True)
+    assert out_cfg.exists() and report.exists() and mis.exists()
+    payload = json.loads(report.read_text(encoding="utf-8"))
+    assert "dataset_meta" in payload and "base_result" in payload and "best_result" in payload and "accepted" in payload and "warnings" in payload
