@@ -133,6 +133,27 @@ def test_diagnose_sensitivity_warning_when_no_change(tmp_path):
     log.write_text(json.dumps({"session_id": "A", "now_ms": 1000, "attention": 65, "attention_seen_once": True, "attention_age_ms": 100, "attention_fresh": True, "gyro_x": 0.0, "gyro_y": 0.0, "gyro_z": 0.0, "gyro_seen_once": True, "gyro_age_ms": 100, "gyro_fresh": True, "device_connected": True, "stream_alive": True, "warning_flags": [], "error_flags": []}) + "\n", encoding="utf-8")
     lbl.write_text("session_id,frame_id,start_ms,end_ms,start_sec,end_sec,label,confidence,note\nA,0,0,2000,0,2,STABLE_FOCUS,low,\n", encoding="utf-8")
     cfg.write_text(json.dumps({"fi_ema_alpha": 0.7}), encoding="utf-8")
-    subprocess.run([sys.executable, "-m", "ui_cli.diagnose_task6b_sensitivity", "--input", str(log), "--labels", str(lbl), "--base-config", str(cfg), "--out", str(out), "--gyro-out", str(tmp_path / "g.json")], check=True)
+    subprocess.run([sys.executable, "-m", "ui_cli.diagnose_task6b_sensitivity", "--input", str(log), "--labels", str(lbl), "--base-config", str(cfg), "--out", str(out)], check=True)
     payload = json.loads(out.read_text(encoding="utf-8"))
     assert "changed_prediction_count" in payload
+    assert "pairwise_changed_prediction_count" in payload
+    assert "per_config_results" in payload
+    assert "gyro_motion_diagnosis" in payload
+
+
+def test_diagnose_module_importable():
+    import ui_cli.diagnose_task6b_sensitivity as mod
+    assert mod is not None
+
+
+def test_tune_report_contains_required_fields(tmp_path):
+    import subprocess, sys
+    (tmp_path / "a.jsonl").write_text(json.dumps({"session_id": "A", "now_ms": 1000, "attention": 65, "attention_seen_once": True, "attention_age_ms": 100, "attention_fresh": True, "gyro_x": 0.0, "gyro_y": 0.0, "gyro_z": 0.0, "gyro_seen_once": True, "gyro_age_ms": 100, "gyro_fresh": True, "device_connected": True, "stream_alive": True, "warning_flags": [], "error_flags": []}) + "\n", encoding="utf-8")
+    (tmp_path / "a.frames.csv").write_text("session_id,frame_id,start_ms,end_ms,start_sec,end_sec,label,confidence,note\nA,0,0,2000,0,2,STABLE_FOCUS,low,\n", encoding="utf-8")
+    cfg = tmp_path / "cfg.json"
+    cfg.write_text(json.dumps({"fi_ema_alpha": 0.7}), encoding="utf-8")
+    out = tmp_path / "out.json"
+    subprocess.run([sys.executable, "-m", "ui_cli.tune_task6b", "--input", str(tmp_path / "*.jsonl"), "--labels", str(tmp_path / "*.frames.csv"), "--base-config", str(cfg), "--trials", "5", "--method", "random", "--out", str(out), "--report", str(out)], check=True)
+    payload = json.loads(out.read_text(encoding="utf-8"))
+    assert "dataset_meta" in payload and "session_count" in payload and "total_labeled_frames" in payload
+    assert "unreliable_miss" in payload and "warnings" in payload

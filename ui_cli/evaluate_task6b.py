@@ -168,6 +168,7 @@ def evaluate(rows: list[dict], labels: list[dict], cfg: dict, label_meta: dict |
         per_session_stats = {}
         misclassified_rows = []
         prediction_distribution = {}
+        frame_predictions = []
         for fr in labels:
             if fr.get("label") == "IGNORE":
                 continue
@@ -184,6 +185,7 @@ def evaluate(rows: list[dict], labels: list[dict], cfg: dict, label_meta: dict |
                 counts[s] = counts.get(s, 0) + 1
             best = sorted(counts.items(), key=lambda x: (x[1], in_frame[::-1].index(x[0])), reverse=True)[0][0]
             label = fr.get("label")
+            frame_predictions.append({"session_id": sid, "frame_id": fr.get("frame_id", ""), "start_ms": a, "end_ms": b, "true_label": label, "predicted_label": best})
             prediction_distribution[best] = prediction_distribution.get(best, 0) + 1
             total += 1
             correct += int(best == label)
@@ -246,7 +248,7 @@ def evaluate(rows: list[dict], labels: list[dict], cfg: dict, label_meta: dict |
             per_session.append({"session_id": sid, "total_labeled_frames": st_total, "frame_accuracy": st_acc, "confusion_matrix": st["confusion"], "unreliable_miss": st["unreliable_miss"]})
     else:
         per_session = [{"session_id": (rows[0].get("session_id") if rows else None), "total_labeled_frames": total, "frame_accuracy": acc, "macro_f1": macro_f1, "confusion_matrix": confusion, "score": score}]
-    return {"overall": {"total_labeled_frames": total, "frame_accuracy": acc, "macro_f1": macro_f1, "confusion_matrix": confusion, "state_switches": transition_count, "transition_jitter": transition_jitter, "false_fatigue": false_fatigue, "false_high_focus": false_high, "unreliable_miss": unreliable_miss, "hard_rule_violation": hard_viol, "warning_count": warning_count, "skipped_rows": skipped_rows, "score": score}, "per_session": per_session, "misclassified_frames": misclassified_rows, "prediction_distribution": prediction_distribution}
+    return {"overall": {"total_labeled_frames": total, "frame_accuracy": acc, "macro_f1": macro_f1, "confusion_matrix": confusion, "state_switches": transition_count, "transition_jitter": transition_jitter, "false_fatigue": false_fatigue, "false_high_focus": false_high, "unreliable_miss": unreliable_miss, "hard_rule_violation": hard_viol, "warning_count": warning_count, "skipped_rows": skipped_rows, "score": score}, "per_session": per_session, "misclassified_frames": misclassified_rows, "prediction_distribution": prediction_distribution, "frame_predictions": (frame_predictions if (label_meta or {}).get("mode") == "frames" else [])}
 
 
 def main():
