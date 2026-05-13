@@ -175,3 +175,22 @@ def test_calibrate_cli_smoke(tmp_path):
     assert out_cfg.exists() and report.exists() and mis.exists()
     payload = json.loads(report.read_text(encoding="utf-8"))
     assert "dataset_meta" in payload and "base_result" in payload and "best_result" in payload and "accepted" in payload and "warnings" in payload
+<<<<<<< codex/fix-evaluate_task6b-multi-session-aggregation-xl8nh3
+
+
+def test_grid_calibrate_cli_smoke(tmp_path):
+    import subprocess, sys
+    (tmp_path / "a.jsonl").write_text(json.dumps({"session_id": "A", "now_ms": 1000, "attention": 10, "attention_seen_once": True, "attention_age_ms": 100, "attention_fresh": True, "gyro_fresh": True, "p_rate": 0.1, "p_jitter": 0.1, "p_offset": 0.1, "warning_flags": [], "error_flags": []}) + "\n" + json.dumps({"session_id": "B", "now_ms": 1000, "attention": 80, "attention_seen_once": True, "attention_age_ms": 100, "attention_fresh": True, "gyro_fresh": True, "p_rate": 0.1, "p_jitter": 0.1, "p_offset": 0.1, "warning_flags": [], "error_flags": []}) + "\n", encoding="utf-8")
+    (tmp_path / "a.frames.csv").write_text("session_id,frame_id,start_ms,end_ms,start_sec,end_sec,label,confidence,note\nA,0,0,2000,0,2,DISTRACTED,low,\nB,0,0,2000,0,2,STABLE_FOCUS,low,\n", encoding="utf-8")
+    cfg = tmp_path / "cfg.json"
+    cfg.write_text(json.dumps({"fi_ema_alpha": 0.7, "attention_low_fallback": 40, "attention_high_fallback": 70, "stable_enter": 60, "distracted_enter": 50}), encoding="utf-8")
+    out_cfg = tmp_path / "grid_cfg.yaml"
+    report = tmp_path / "grid_report.json"
+    mis = tmp_path / "grid_mis.csv"
+    subprocess.run([sys.executable, "-m", "ui_cli.grid_calibrate_task6b", "--input", str(tmp_path / "*.jsonl"), "--labels", str(tmp_path / "*.frames.csv"), "--base-config", str(cfg), "--out-config", str(out_cfg), "--report", str(report), "--misclassified-out", str(mis), "--top-k", "5", "--cv-mode", "leave-one-session-out"], check=True)
+    assert out_cfg.exists() and report.exists() and mis.exists()
+    r = json.loads(report.read_text(encoding="utf-8"))
+    assert "active_grid" in r and "feature_distribution_summary" in r and "top_candidates" in r
+    assert r["search_summary"]["total_combinations_evaluated"] > 0
+=======
+>>>>>>> main
