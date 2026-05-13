@@ -49,13 +49,22 @@ class SessionManager:
         payload = (snapshot if isinstance(snapshot, RuntimeSnapshotView) else RuntimeSnapshotView.from_dict(snapshot)).to_dict()
         self._logger.write_event("runtime_snapshot", self._active_session.session_id, payload)
         s = self._active_session; s.tick_count += 1; s.observed_tick_count += 1
-        tick_ms = int(payload.get("delta_ms") or payload.get("interval_ms") or self._default_tick_ms)
+        tick_ms_raw = payload.get("delta_ms")
+        if tick_ms_raw in (None, ""):
+            tick_ms_raw = payload.get("interval_ms")
+        if tick_ms_raw in (None, ""):
+            tick_ms = int(self._default_tick_ms)
+        else:
+            try:
+                tick_ms = int(tick_ms_raw)
+            except (TypeError, ValueError):
+                tick_ms = int(self._default_tick_ms)
         s.total_duration_ms += tick_ms
-        q = payload.get("quality_state")
+        q = payload.get("quality_state") or "unknown"
         if q:
             s.quality_state_summary[q] = s.quality_state_summary.get(q, 0) + 1
             s.quality_state_duration_summary[q] = s.quality_state_duration_summary.get(q, 0) + tick_ms
-        c = payload.get("control_state")
+        c = payload.get("control_state") or "unknown"
         if c:
             s.control_state_summary[c] = s.control_state_summary.get(c, 0) + 1
             s.control_state_duration_summary[c] = s.control_state_duration_summary.get(c, 0) + tick_ms
@@ -65,13 +74,25 @@ class SessionManager:
             s.warning_duration_ms += tick_ms; s.warning_tick_count += 1
         if c == "UNRELIABLE_SIGNAL" or q in {"invalid", "error"}:
             s.unreliable_duration_ms += tick_ms; s.unreliable_tick_count += 1
-        if payload.get("error_flags"): s.error_count += len(payload.get("error_flags") or [])
+        error_flags = payload.get("error_flags")
+        if isinstance(error_flags, list):
+            s.error_count += len(error_flags)
+        elif error_flags:
+            s.error_count += 1
         fi = payload.get("fi_smoothed")
-        if isinstance(fi, (int, float)):
+        try:
+            fi = float(fi)
+        except (TypeError, ValueError):
+            fi = None
+        if fi is not None:
             fi = float(fi); self._fi_sum += fi; self._fi_count += 1; s.fi_last = fi
             s.fi_min = fi if s.fi_min is None else min(s.fi_min, fi); s.fi_max = fi if s.fi_max is None else max(s.fi_max, fi)
         sqi = payload.get("sqi")
-        if isinstance(sqi, (int, float)):
+        try:
+            sqi = float(sqi)
+        except (TypeError, ValueError):
+            sqi = None
+        if sqi is not None:
             sqi = float(sqi); self._sqi_sum += sqi; self._sqi_count += 1; s.sqi_last = sqi
             s.sqi_min = sqi if s.sqi_min is None else min(s.sqi_min, sqi); s.sqi_max = sqi if s.sqi_max is None else max(s.sqi_max, sqi)
         if payload.get("behavior_ready") is True: self._behavior_ready_ticks += 1
@@ -104,7 +125,9 @@ class SessionManager:
         elif event.event_type == "game_completed":
             s.game_completed = True; s.game_completion_reason = event.payload.get("reason")
             fs = event.payload.get("final_score")
-            if isinstance(fs, (int, float)): s.score_last = float(fs); s.score = s.score_last
+            if isinstance(fs, (int, float)):
+                s.score_last = float(fs); s.score = s.score_last
+                s.score_max = s.score_last if s.score_max is None else max(s.score_max, s.score_last)
         return True
 
     def record_warning(self, reason: str, payload: dict[str, Any] | None = None) -> None:
