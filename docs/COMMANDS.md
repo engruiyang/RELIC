@@ -143,3 +143,8 @@
 - IPC 推荐：`python -m ui_cli.run_calibration_debug --action start --mode user --user-id TEST --source ipc`。
 - source=ipc 默认使用配置中的 `127.0.0.1:8000`，无数据/断流不会 fallback 到 mock。
 - 如需只读检查绑定一致性：`--action validate-bindings`。
+
+## Task6B / Runtime / Session 命令补充
+
+更多命令见：
+- docs/COMMANDS_TASK6B_RUNTIME_SESSION.md
