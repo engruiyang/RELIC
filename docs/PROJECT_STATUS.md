@@ -19,7 +19,7 @@
   - `evaluate_task6b`
   - `tune_task6b`
 - 未完成：live 数据人工复核后的参数最终选择。
-- 状态：**implementation closed, parameter tuning pending**。
+- 状态：**implementation closed, supervised calibration tooling in progress**。
 - 边界：后续只通过 config 调参，不随意改公式实现。
 
 ## Runtime Contract
