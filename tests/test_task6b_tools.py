@@ -175,7 +175,7 @@ def test_calibrate_cli_smoke(tmp_path):
     assert out_cfg.exists() and report.exists() and mis.exists()
     payload = json.loads(report.read_text(encoding="utf-8"))
     assert "dataset_meta" in payload and "base_result" in payload and "best_result" in payload and "accepted" in payload and "warnings" in payload
-<<<<<<< codex/fix-evaluate_task6b-multi-session-aggregation-xl8nh3
+
 
 
 def test_grid_calibrate_cli_smoke(tmp_path):
@@ -192,5 +192,4 @@ def test_grid_calibrate_cli_smoke(tmp_path):
     r = json.loads(report.read_text(encoding="utf-8"))
     assert "active_grid" in r and "feature_distribution_summary" in r and "top_candidates" in r
     assert r["search_summary"]["total_combinations_evaluated"] > 0
-=======
->>>>>>> main
+
