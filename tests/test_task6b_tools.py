@@ -74,3 +74,37 @@ def test_evaluate_task6b_smoke_output_file(tmp_path):
     import subprocess, sys
     subprocess.run([sys.executable, "-m", "ui_cli.evaluate_task6b", "--input", str(log), "--labels", str(lbl), "--config", str(cfg), "--out", str(out)], check=True)
     assert out.exists()
+
+
+def test_evaluate_multi_session_and_unreliable_miss(tmp_path):
+    rows = [
+        {"session_id": "A", "now_ms": 1000, "attention": 65, "attention_seen_once": True, "attention_age_ms": 100, "attention_fresh": True, "gyro_x": 0.0, "gyro_y": 0.0, "gyro_z": 0.0, "gyro_seen_once": True, "gyro_age_ms": 100, "gyro_fresh": True, "device_connected": True, "stream_alive": True, "warning_flags": [], "error_flags": []},
+        {"session_id": "B", "now_ms": 1000, "attention": 65, "attention_seen_once": True, "attention_age_ms": 100, "attention_fresh": True, "gyro_x": 0.0, "gyro_y": 0.0, "gyro_z": 0.0, "gyro_seen_once": True, "gyro_age_ms": 100, "gyro_fresh": True, "device_connected": True, "stream_alive": True, "warning_flags": [], "error_flags": []},
+    ]
+    labels = [
+        {"session_id": "A", "start_ms": 0, "end_ms": 2000, "label": "STABLE_FOCUS"},
+        {"session_id": "B", "start_ms": 0, "end_ms": 2000, "label": "UNRELIABLE_SIGNAL"},
+    ]
+    payload = evaluate(rows, labels, {"fi_ema_alpha": 0.7}, label_meta={"mode": "frames"})
+    assert {x["session_id"] for x in payload["per_session"]} == {"A", "B"}
+    assert payload["overall"]["total_labeled_frames"] == 2
+    assert payload["overall"]["unreliable_miss"] > 0
+
+
+def test_tune_task6b_multi_session_report_meta(tmp_path):
+    import subprocess, sys
+    (tmp_path / "a.jsonl").write_text(json.dumps({"session_id": "A", "now_ms": 1000, "attention": 65, "attention_seen_once": True, "attention_age_ms": 100, "attention_fresh": True, "gyro_x": 0.0, "gyro_y": 0.0, "gyro_z": 0.0, "gyro_seen_once": True, "gyro_age_ms": 100, "gyro_fresh": True, "device_connected": True, "stream_alive": True, "warning_flags": [], "error_flags": []}) + "\n", encoding="utf-8")
+    (tmp_path / "b.jsonl").write_text(json.dumps({"session_id": "B", "now_ms": 1000, "attention": 65, "attention_seen_once": True, "attention_age_ms": 100, "attention_fresh": True, "gyro_x": 0.0, "gyro_y": 0.0, "gyro_z": 0.0, "gyro_seen_once": True, "gyro_age_ms": 100, "gyro_fresh": True, "device_connected": True, "stream_alive": True, "warning_flags": [], "error_flags": []}) + "\n", encoding="utf-8")
+    (tmp_path / "a.frames.csv").write_text("session_id,frame_id,start_ms,end_ms,start_sec,end_sec,label,confidence,note\nA,0,0,2000,0,2,STABLE_FOCUS,low,\n", encoding="utf-8")
+    (tmp_path / "b.frames.csv").write_text("session_id,frame_id,start_ms,end_ms,start_sec,end_sec,label,confidence,note\nB,0,0,2000,0,2,STABLE_FOCUS,low,\n", encoding="utf-8")
+    cfg = tmp_path / "cfg.yaml"
+    out = tmp_path / "out.json"
+    report = tmp_path / "report.json"
+    cfg.write_text(json.dumps({"fi_ema_alpha": 0.7}), encoding="utf-8")
+    subprocess.run([sys.executable, "-m", "ui_cli.tune_task6b", "--input", str(tmp_path / "*.jsonl"), "--labels", str(tmp_path / "*.frames.csv"), "--base-config", str(cfg), "--trials", "5", "--method", "random", "--out", str(out), "--report", str(report)], check=True)
+    payload = json.loads(report.read_text(encoding="utf-8"))
+    assert payload["dataset_meta"]["input_files_count"] == 2
+    assert payload["dataset_meta"]["label_files_count"] == 2
+    assert payload["session_count"] == 2
+    assert payload["total_labeled_frames"] == 2
+    assert payload["top_candidates"]
