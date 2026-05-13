@@ -124,3 +124,8 @@
 - game_completed 只作为事件，不直接结束 session。
 - difficulty_request 只作为请求，不直接修改 profile。
 - behavior_sample 仍暂不直接接入 FocusEstimator。
+
+## 15. Task8C 双向 live pipeline
+- RuntimeSnapshotView 是游戏输入主通道；GameEvent 是游戏反馈主通道。
+- CLI / pipeline JSONL 仅是该主通道的观察镜像。
+- GameEvent 必须经过 GameManager session_id/game_id 校验再记录。

@@ -64,3 +64,8 @@
 
 ## Task8C
 - 状态：尚未开始。
+
+## Task8C
+- 状态：in progress（双向 live game pipeline 接入中）。
+- 已完成：GamePipelineRunner、per-tick PipelineTickResult、mock/live 桥接参数、pipeline JSONL 输出。
+- 未完成：真实 renderer、真实游戏玩法、S_B 正式接入。

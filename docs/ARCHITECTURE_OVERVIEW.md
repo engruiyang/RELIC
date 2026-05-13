@@ -42,3 +42,8 @@ RuntimeSnapshotView -> LocalRuntime.publish_snapshot() -> FakeGameClient -> Game
 - GameViewState 作为唯一稳定渲染出口。
 - RendererAdapter 仅消费 GameViewState / RuntimeSnapshotView。
 - Renderer 输入回流为 RuntimeCommand 或 GameEvent.user_action。
+
+## Task8C 双向 Live Pipeline
+- 主系统输入（RuntimeSnapshotView）持续进入 GameManager/FakeGameClient。
+- 游戏输出（GameEvent）持续由 GameManager 校验后转发到 SessionManager。
+- GamePipelineRunner 产出 PipelineTickResult 作为观察镜像，可写 `logs/game_debug/*.pipeline.jsonl`。

@@ -33,3 +33,10 @@ python -m ui_cli.run_game_debug --mode demo --duration-sec 5 --user-id demo_user
 pytest -q tests/test_game_view_state.py tests/test_renderer_contract.py
 python -m ui_cli.run_game_debug --mode demo --duration-sec 5 --user-id demo_user --db-path data/relic_task8b.db
 ```
+
+## Task8C live pipeline 验证
+```bash
+pytest -q tests/test_task8_live_game_pipeline.py
+python -m ui_cli.run_game_debug --bridge mock --mode demo --duration-sec 5 --user-id demo_user --db-path data/relic_task8c_mock.db --game-id fake_game --print-jsonl
+python -m ui_cli.run_game_debug --bridge live --mode user --user-id TEST --host 127.0.0.1 --port 8000 --duration-sec 60 --db-path data/relic_local.db --game-id fake_game --print-jsonl
+```

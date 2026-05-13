@@ -11,3 +11,5 @@
 9. 渲染层不直接写训练摘要。
 10. Pygame/Web/平台嵌入是 renderer adapter，不改变 Runtime Contract。
 11. GameViewState 是游戏层到渲染层的唯一稳定出口。
+
+12. Task8C 增加双向 live pipeline runner，但仍不实现真实 renderer。
