@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from collections.abc import Callable
-
 from game.fake_game_client import FakeGameClient
 from game.game_manifest import GameManifest
 from game.game_view_state import GameViewState
+from game.renderer_adapter import RendererAdapter
 from runtime.local_runtime import LocalRuntime
 from runtime.runtime_messages import GameEvent, RuntimeCommand, RuntimeSnapshotView
 
@@ -19,6 +18,7 @@ class GameManager:
         self._current_session_id: str | None = None
         self._event_buffer: list[GameEvent] = []
         self._runtime_subscribed = False
+        self._renderers: list[RendererAdapter] = []
 
     def register_game(self, manifest: GameManifest, client: FakeGameClient) -> None:
         self._manifests[manifest.game_id] = manifest
@@ -64,6 +64,10 @@ class GameManager:
     def get_buffered_events(self) -> list[GameEvent]:
         return list(self._event_buffer)
 
+    def register_renderer(self, renderer: RendererAdapter) -> None:
+        renderer.attach_runtime(self.runtime)
+        self._renderers.append(renderer)
+
     def _on_command(self, command: RuntimeCommand) -> None:
         client = self._clients.get(command.game_id)
         if not client:
@@ -78,6 +82,7 @@ class GameManager:
             return
         for event in client.on_snapshot(snapshot):
             self._handle_event(event)
+        self._notify_renderers(client.get_view_state(), snapshot)
 
     def _current_client(self) -> FakeGameClient | None:
         if not self._current_game_id:
@@ -92,3 +97,8 @@ class GameManager:
         self._event_buffer.append(event)
         if self.session_manager and getattr(self.session_manager, "has_active_session", lambda: False)():
             self.session_manager.record_game_event(event)
+
+    def _notify_renderers(self, view_state: GameViewState, snapshot: RuntimeSnapshotView) -> None:
+        for renderer in self._renderers:
+            renderer.on_view_state(view_state)
+            renderer.on_runtime_snapshot(snapshot)

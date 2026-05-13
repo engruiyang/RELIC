@@ -27,3 +27,9 @@ python -m ui_cli.run_session_debug --show-session <SESSION_ID> --db-path data/re
 pytest -q tests/test_game_manager.py tests/test_fake_game_client.py tests/test_task8_game_flow.py
 python -m ui_cli.run_game_debug --mode demo --duration-sec 5 --user-id demo_user --db-path data/relic_task8a.db
 ```
+
+## Task8B 契约测试
+```bash
+pytest -q tests/test_game_view_state.py tests/test_renderer_contract.py
+python -m ui_cli.run_game_debug --mode demo --duration-sec 5 --user-id demo_user --db-path data/relic_task8b.db
+```

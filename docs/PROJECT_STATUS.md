@@ -53,6 +53,14 @@
 - 进入条件：Pre-Task8 Cleanup 完成且回归测试与 CLI 验证通过。
 
 ## Task8A
-- 状态：in progress（本轮实现 Headless GameManager + FakeGameClient 最小闭环）。
+- 状态：functionally closed（Headless GameManager + FakeGameClient 最小闭环已完成）。
 - 已完成：GameManager 注册/选择/启动/停止，FakeGameClient 事件发射，GameViewState 中立视图模型，run_game_debug CLI。
 - 未完成：Pygame/Web 渲染适配器与正式动态难度策略。
+
+## Task8B
+- 状态：in progress（冻结 GameViewState/RendererAdapter 契约）。
+- 目标：统一 Pygame/Web/平台嵌入未来渲染边界，保持 headless 可测试。
+- 边界：Task8B 不实现真实 renderer。
+
+## Task8C
+- 状态：尚未开始。

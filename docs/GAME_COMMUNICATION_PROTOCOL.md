@@ -109,3 +109,18 @@
 - `difficulty_request` 仅作为请求记录，不直接改用户 difficulty。
 - `game_completed` 仅作为事件，不直接结束 session。
 - `behavior_sample` 在 Task8A 只进入 SessionManager 记录链路，暂不接入 FocusEstimator。
+
+## 12. RuntimeSnapshotView / GameViewState / GameEvent 分工
+- RuntimeSnapshotView：主程序给游戏层的运行时状态输入。
+- GameViewState：游戏层给渲染层的中立视图输出（不含具体渲染对象）。
+- GameEvent：游戏层给主程序的行为与分数事件输出。
+
+## 13. Renderer 输入回流
+- 控制类输入（pause/resume/stop/set_feedback_mode）转换为 RuntimeCommand。
+- 用户动作输入（click/drag/keypress/hover/hold）转换为 GameEvent.user_action。
+- Renderer 不直接修改游戏状态，不直接结束 session，不直接写 SQLite。
+
+## 14. Task8B 约束提醒
+- game_completed 只作为事件，不直接结束 session。
+- difficulty_request 只作为请求，不直接修改 profile。
+- behavior_sample 仍暂不直接接入 FocusEstimator。

@@ -37,3 +37,8 @@ JSONL + SQLite Summary
 RuntimeSnapshotView -> LocalRuntime.publish_snapshot() -> FakeGameClient -> GameEvent -> GameManager -> SessionManager.record_game_event().
 
 渲染预留链路：FakeGameClient -> GameViewState -> GameManager.get_current_view_state() -> Future Renderer。
+
+## Task8B Renderer Contract 冻结
+- GameViewState 作为唯一稳定渲染出口。
+- RendererAdapter 仅消费 GameViewState / RuntimeSnapshotView。
+- Renderer 输入回流为 RuntimeCommand 或 GameEvent.user_action。
