@@ -1,18 +1,17 @@
-# Task6B Grid Calibration v2
+# Task6B Grid Calibration v3 (Memory-safe Streaming)
 
-v2 使用 **deterministic coarse-to-fine grid search**（默认），并支持纯 grid。
-参数候选来自本地标注数据分布，不使用“脑补固定参数”作为主路径。
+v3 采用 memory-safe streaming search：
+- 不在内存中保存全量候选或全量结果。
+- 默认 `n_jobs=1`。
+- Windows 上多进程可能复制内存。
+- 可用 `--candidate-log` 将候选摘要逐行落盘 JSONL。
+- report 仅保留 top-k 与摘要。
+- `frame_predictions` 默认关闭（`--include-frame-predictions` 才开启）。
 
-- 不覆盖 `config/task6b.yaml`。
-- 输出 `accepted / reject_reasons / weak_sessions / tradeoff_analysis`。
-- `accepted=false` 不等于无提升，表示未通过验收门槛。
-- 可查看：best overall、best worst-session、best transition、safest unreliable 等 tradeoff 视图。
-- 可通过 `transition_session_diagnosis` 定位 `distracted_to_focus` 弱项。
-- 只有 `accepted=true` 才建议进入后续 Task8C live pipeline；否则作为 experimental config。
+建议从 50000 combinations 起步，逐步增加；不要同时提高 `n_jobs` 与 `stage1_top_k`。
 
-> Codex 无法读取你的真实本地数据。真实校准结果必须在你本地运行验证。
+> Codex 无法访问你的真实本地数据，真实运行与验收需在本地完成。
 
-示例：
 ```bash
 python -m ui_cli.grid_calibrate_task6b \
   --input "logs/task6b/task6b_live_TEST_*.jsonl" \
@@ -24,7 +23,10 @@ python -m ui_cli.grid_calibrate_task6b \
   --top-k 30 \
   --cv-mode leave-one-session-out \
   --search-mode coarse-to-fine \
-  --max-combinations 200000 \
-  --n-jobs 8 \
-  --rank-by balanced
+  --max-combinations 50000 \
+  --batch-size 1000 \
+  --max-stored-candidates 300 \
+  --n-jobs 1 \
+  --rank-by balanced \
+  --candidate-log reports/task6b_grid_candidates.jsonl
 ```
