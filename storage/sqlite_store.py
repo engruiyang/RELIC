@@ -87,3 +87,45 @@ class SqliteStore:
     def list_training_sessions(self, limit: int = 20) -> list[dict[str, Any]]:
         rows = self._ensure_conn().execute("SELECT * FROM training_sessions ORDER BY started_at DESC LIMIT ?", (limit,)).fetchall()
         return [dict(r) for r in rows]
+
+
+    def upsert_training_session(self, summary: dict[str, Any]) -> None:
+        conn = self._ensure_conn()
+        conn.execute(
+            """
+            INSERT INTO training_sessions (
+                session_id, user_id, game_id, calibration_id, started_at, ended_at, status, log_path,
+                valid_duration_ms, warning_duration_ms, unreliable_duration_ms, error_count,
+                final_fi_avg, final_sqi_avg, control_state_summary, score, end_reason,
+                estimator_version, task6b_config_path, task6b_config_snapshot,
+                behavior_ready_ratio, has_behavior_samples
+            ) VALUES (
+                :session_id, :user_id, :game_id, :calibration_id, :started_at, :ended_at, :status, :log_path,
+                :valid_duration_ms, :warning_duration_ms, :unreliable_duration_ms, :error_count,
+                :final_fi_avg, :final_sqi_avg, :control_state_summary, :score, :end_reason,
+                :estimator_version, :task6b_config_path, :task6b_config_snapshot,
+                :behavior_ready_ratio, :has_behavior_samples
+            )
+            ON CONFLICT(session_id) DO UPDATE SET
+                ended_at=excluded.ended_at,
+                status=excluded.status,
+                valid_duration_ms=excluded.valid_duration_ms,
+                warning_duration_ms=excluded.warning_duration_ms,
+                unreliable_duration_ms=excluded.unreliable_duration_ms,
+                error_count=excluded.error_count,
+                final_fi_avg=excluded.final_fi_avg,
+                final_sqi_avg=excluded.final_sqi_avg,
+                control_state_summary=excluded.control_state_summary,
+                score=excluded.score,
+                end_reason=excluded.end_reason,
+                behavior_ready_ratio=excluded.behavior_ready_ratio,
+                has_behavior_samples=excluded.has_behavior_samples
+            """,
+            summary,
+        )
+        conn.commit()
+
+    def get_training_session(self, session_id: str) -> dict[str, Any] | None:
+        conn = self._ensure_conn()
+        row = conn.execute("SELECT * FROM training_sessions WHERE session_id=?", (session_id,)).fetchone()
+        return dict(row) if row else None
