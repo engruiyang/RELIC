@@ -1,7 +1,8 @@
 import json
 from pathlib import Path
 
-from ui_cli.evaluate_task6b import evaluate
+from ui_cli.evaluate_task6b import evaluate, _resolve_task6b_predictor_params
+from core.task6b_predictor import predict_task6b_frame
 
 
 def test_evaluate_task6b_basic(tmp_path):
@@ -191,3 +192,43 @@ def test_grid_calibrate_cli_smoke(tmp_path):
     r = json.loads(report.read_text(encoding="utf-8"))
     assert "active_grid" in r and "feature_distribution_summary" in r and "top_candidates" in r
     assert r["search_summary"]["total_combinations_evaluated"] > 0
+
+
+def test_staged_config_priority_resolution():
+    cfg = {
+        "selected_params": {
+            "reliability_gate": {"motion_unreliable_threshold": 0.99},
+            "fi": {"attention_low": 35},
+            "transition": {"attention_low": 41, "stable_enter": 66},
+        },
+        "attention_low": 1,
+    }
+    resolved = _resolve_task6b_predictor_params(cfg)
+    assert resolved["attention_low"] == 41
+    assert resolved["stable_enter"] == 66
+
+
+def test_evaluate_recompute_uses_predictor_consistently():
+    rows = [
+        {"session_id": "S1", "now_ms": 1000, "attention": 30, "attention_fresh": True, "gyro_fresh": True, "p_rate": 0.1, "p_jitter": 0.1, "p_offset": 0.1, "warning_flags": [], "error_flags": []},
+        {"session_id": "S1", "now_ms": 2000, "attention": 80, "attention_fresh": True, "gyro_fresh": True, "p_rate": 0.1, "p_jitter": 0.1, "p_offset": 0.1, "warning_flags": [], "error_flags": []},
+    ]
+    staged_cfg = {"selected_params": {"transition": {"attention_low": 40, "attention_high": 70, "stable_enter": 60, "distracted_enter": 50, "stable_enter_count": 1, "distracted_enter_count": 1, "motion_unreliable_threshold": 0.8}}}
+    labels = [
+        {"session_id": "S1", "frame_id": "f1", "start_ms": 900, "end_ms": 1500, "label": "DISTRACTED"},
+        {"session_id": "S1", "frame_id": "f2", "start_ms": 1900, "end_ms": 2500, "label": "STABLE_FOCUS"},
+    ]
+    out = evaluate(rows, labels, staged_cfg, label_meta={"mode": "frames"})
+    params = _resolve_task6b_predictor_params(staged_cfg)
+    runtime = {}
+    expected = [predict_task6b_frame(r, params, prev_state=runtime.get("state"), runtime_state=runtime)["predicted_label"] for r in rows]
+    actual = [x["predicted_label"] for x in out["frame_predictions"]]
+    assert actual == expected
+
+
+def test_evaluate_flat_config_compatibility():
+    rows = [{"session_id": "S1", "now_ms": 1000, "attention": 80, "attention_fresh": True, "gyro_fresh": True, "p_rate": 0.0, "p_jitter": 0.0, "p_offset": 0.0, "warning_flags": [], "error_flags": []}]
+    labels = [{"session_id": "S1", "start_ms": 0, "end_ms": 2000, "label": "STABLE_FOCUS"}]
+    flat_cfg = {"attention_low": 40, "attention_high": 70, "stable_enter": 60, "distracted_enter": 50}
+    out = evaluate(rows, labels, flat_cfg, label_meta={"mode": "frames"})
+    assert out["overall"]["total_labeled_frames"] == 1
