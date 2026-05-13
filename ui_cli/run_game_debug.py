@@ -12,6 +12,7 @@ from game.game_pipeline import GamePipelineRunner, LiveSnapshotProvider, MockSna
 from runtime.local_runtime import LocalRuntime
 from session.session_manager import SessionManager
 from storage.sqlite_store import SqliteStore
+from ui_cli.evaluate_task6b import load_structured_file, _resolve_task6b_predictor_params
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -28,6 +29,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--user-id", default="demo_user")
     p.add_argument("--db-path", default="data/relic_task8a.db")
     p.add_argument("--game-id", default="fake_game")
+    p.add_argument("--task6b-config", default="config/task6b.yaml")
     return p
 
 
@@ -35,8 +37,22 @@ def main() -> None:
     a = build_parser().parse_args()
     store = SqliteStore(db_path=a.db_path)
     store.connect()
+    task6b_cfg_raw = load_structured_file(a.task6b_config)
+    task6b_cfg_active = _resolve_task6b_predictor_params(task6b_cfg_raw)
     session_manager = SessionManager(sqlite_store=store)
-    ok, reason, session = session_manager.start_session(a.user_id, a.game_id, None, task6b_config_path="config/task6b.yaml", task6b_config_snapshot={"source": f"task8c_{a.bridge}"})
+    ok, reason, session = session_manager.start_session(
+        a.user_id,
+        a.game_id,
+        None,
+        task6b_config_path=a.task6b_config,
+        task6b_config_snapshot={
+            "source": f"task8c_{a.bridge}",
+            "task6b_config_loaded": bool(task6b_cfg_raw),
+            "task6b_config_accepted": bool(task6b_cfg_raw.get("accepted", True)),
+            "predictor_version": "task6b_predictor_v1",
+            "active_params": task6b_cfg_active,
+        },
+    )
     if not ok or not session:
         print(f"start_session failed: {reason}")
         store.close()
@@ -87,6 +103,10 @@ def main() -> None:
     summary = store.get_training_session(session.session_id)
     print(json.dumps({
         "session_id": session.session_id,
+        "task6b_config_path": a.task6b_config,
+        "task6b_config_loaded": bool(task6b_cfg_raw),
+        "task6b_config_accepted": bool(task6b_cfg_raw.get("accepted", True)),
+        "predictor_version": "task6b_predictor_v1",
         "score": summary.get("score") if summary else None,
         "game_event_count": summary.get("game_event_count") if summary else None,
         "behavior_sample_count": summary.get("behavior_sample_count") if summary else None,

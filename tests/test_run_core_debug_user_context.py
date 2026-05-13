@@ -92,3 +92,9 @@ def test_run_core_debug_user_no_calibration(tmp_path, monkeypatch, capsys):
     run_debug_loop(mode="mock", host="127.0.0.1", port=8000, ticks=1, interval=0.001, user_mode="user", user_id="TEST", db_path=db)
     out = capsys.readouterr().out
     assert "no_calibration" in out
+
+
+def test_run_core_debug_help_has_task6b_config():
+    import subprocess, sys
+    p = subprocess.run([sys.executable, "-m", "ui_cli.run_core_debug", "-h"], capture_output=True, text=True, check=True)
+    assert "--task6b-config" in p.stdout
