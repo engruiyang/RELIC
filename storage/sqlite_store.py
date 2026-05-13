@@ -4,6 +4,19 @@ import sqlite3
 from pathlib import Path
 from typing import Any
 
+TRAINING_SESSION_COLUMNS: list[tuple[str, str]] = [
+    ("session_id", "TEXT PRIMARY KEY"),
+    ("user_id", "TEXT"), ("game_id", "TEXT"), ("calibration_id", "TEXT"), ("started_at", "TEXT"), ("ended_at", "TEXT"), ("status", "TEXT"), ("log_path", "TEXT"),
+    ("valid_duration_ms", "INTEGER"), ("warning_duration_ms", "INTEGER"), ("unreliable_duration_ms", "INTEGER"), ("error_count", "INTEGER"),
+    ("final_fi_avg", "REAL"), ("final_sqi_avg", "REAL"), ("control_state_summary", "TEXT"), ("score", "REAL"), ("end_reason", "TEXT"),
+    ("estimator_version", "TEXT"), ("task6b_config_path", "TEXT"), ("task6b_config_snapshot", "TEXT"), ("behavior_ready_ratio", "REAL"), ("has_behavior_samples", "INTEGER"),
+    ("total_duration_ms", "INTEGER"), ("observed_tick_count", "INTEGER"), ("valid_tick_count", "INTEGER"), ("warning_tick_count", "INTEGER"), ("unreliable_tick_count", "INTEGER"),
+    ("quality_state_summary", "TEXT"), ("quality_state_duration_summary", "TEXT"), ("control_state_duration_summary", "TEXT"),
+    ("fi_min", "REAL"), ("fi_max", "REAL"), ("fi_last", "REAL"), ("sqi_min", "REAL"), ("sqi_max", "REAL"), ("sqi_last", "REAL"),
+    ("game_event_count", "INTEGER"), ("score_update_count", "INTEGER"), ("behavior_sample_count", "INTEGER"), ("user_action_count", "INTEGER"), ("game_error_count", "INTEGER"),
+    ("score_last", "REAL"), ("score_max", "REAL"), ("score_total_delta", "REAL"), ("game_completed", "INTEGER"), ("game_completion_reason", "TEXT"),
+]
+
 
 class SqliteStore:
     def __init__(self, db_path: str = "data/relic_local.db"):
@@ -34,19 +47,8 @@ class SqliteStore:
         conn.commit()
 
     def _ensure_training_sessions_columns(self, conn: sqlite3.Connection) -> None:
-        required = {
-            "user_id": "TEXT", "game_id": "TEXT", "calibration_id": "TEXT", "started_at": "TEXT", "ended_at": "TEXT", "status": "TEXT", "log_path": "TEXT",
-            "valid_duration_ms": "INTEGER", "warning_duration_ms": "INTEGER", "unreliable_duration_ms": "INTEGER", "error_count": "INTEGER",
-            "final_fi_avg": "REAL", "final_sqi_avg": "REAL", "control_state_summary": "TEXT", "score": "REAL", "end_reason": "TEXT",
-            "estimator_version": "TEXT", "task6b_config_path": "TEXT", "task6b_config_snapshot": "TEXT", "behavior_ready_ratio": "REAL", "has_behavior_samples": "INTEGER",
-            "total_duration_ms": "INTEGER", "observed_tick_count": "INTEGER", "valid_tick_count": "INTEGER", "warning_tick_count": "INTEGER", "unreliable_tick_count": "INTEGER",
-            "quality_state_summary": "TEXT", "quality_state_duration_summary": "TEXT", "control_state_duration_summary": "TEXT",
-            "fi_min": "REAL", "fi_max": "REAL", "fi_last": "REAL", "sqi_min": "REAL", "sqi_max": "REAL", "sqi_last": "REAL",
-            "game_event_count": "INTEGER", "score_update_count": "INTEGER", "behavior_sample_count": "INTEGER", "user_action_count": "INTEGER", "game_error_count": "INTEGER",
-            "score_last": "REAL", "score_max": "REAL", "score_total_delta": "REAL", "game_completed": "INTEGER", "game_completion_reason": "TEXT",
-        }
         cols = {r[1] for r in conn.execute("PRAGMA table_info(training_sessions)").fetchall()}
-        for name, typ in required.items():
+        for name, typ in TRAINING_SESSION_COLUMNS:
             if name not in cols:
                 conn.execute(f"ALTER TABLE training_sessions ADD COLUMN {name} {typ}")
 
@@ -73,11 +75,12 @@ class SqliteStore:
 
     def upsert_training_session(self, summary: dict[str, Any]) -> None:
         conn = self._ensure_conn()
-        keys = list(summary.keys())
-        cols = ",".join(keys)
-        vals = ",".join([f":{k}" for k in keys])
-        updates = ",".join([f"{k}=excluded.{k}" for k in keys if k != "session_id"])
-        conn.execute(f"INSERT INTO training_sessions ({cols}) VALUES ({vals}) ON CONFLICT(session_id) DO UPDATE SET {updates}", summary)
+        column_names = [name for name, _ in TRAINING_SESSION_COLUMNS]
+        payload = {name: summary.get(name) for name in column_names}
+        cols = ",".join(column_names)
+        vals = ",".join([f":{k}" for k in column_names])
+        updates = ",".join([f"{k}=excluded.{k}" for k in column_names if k != "session_id"])
+        conn.execute(f"INSERT INTO training_sessions ({cols}) VALUES ({vals}) ON CONFLICT(session_id) DO UPDATE SET {updates}", payload)
         conn.commit()
 
     def get_training_session(self, session_id: str) -> dict[str, Any] | None:
@@ -87,45 +90,3 @@ class SqliteStore:
     def list_training_sessions(self, limit: int = 20) -> list[dict[str, Any]]:
         rows = self._ensure_conn().execute("SELECT * FROM training_sessions ORDER BY started_at DESC LIMIT ?", (limit,)).fetchall()
         return [dict(r) for r in rows]
-
-
-    def upsert_training_session(self, summary: dict[str, Any]) -> None:
-        conn = self._ensure_conn()
-        conn.execute(
-            """
-            INSERT INTO training_sessions (
-                session_id, user_id, game_id, calibration_id, started_at, ended_at, status, log_path,
-                valid_duration_ms, warning_duration_ms, unreliable_duration_ms, error_count,
-                final_fi_avg, final_sqi_avg, control_state_summary, score, end_reason,
-                estimator_version, task6b_config_path, task6b_config_snapshot,
-                behavior_ready_ratio, has_behavior_samples
-            ) VALUES (
-                :session_id, :user_id, :game_id, :calibration_id, :started_at, :ended_at, :status, :log_path,
-                :valid_duration_ms, :warning_duration_ms, :unreliable_duration_ms, :error_count,
-                :final_fi_avg, :final_sqi_avg, :control_state_summary, :score, :end_reason,
-                :estimator_version, :task6b_config_path, :task6b_config_snapshot,
-                :behavior_ready_ratio, :has_behavior_samples
-            )
-            ON CONFLICT(session_id) DO UPDATE SET
-                ended_at=excluded.ended_at,
-                status=excluded.status,
-                valid_duration_ms=excluded.valid_duration_ms,
-                warning_duration_ms=excluded.warning_duration_ms,
-                unreliable_duration_ms=excluded.unreliable_duration_ms,
-                error_count=excluded.error_count,
-                final_fi_avg=excluded.final_fi_avg,
-                final_sqi_avg=excluded.final_sqi_avg,
-                control_state_summary=excluded.control_state_summary,
-                score=excluded.score,
-                end_reason=excluded.end_reason,
-                behavior_ready_ratio=excluded.behavior_ready_ratio,
-                has_behavior_samples=excluded.has_behavior_samples
-            """,
-            summary,
-        )
-        conn.commit()
-
-    def get_training_session(self, session_id: str) -> dict[str, Any] | None:
-        conn = self._ensure_conn()
-        row = conn.execute("SELECT * FROM training_sessions WHERE session_id=?", (session_id,)).fetchone()
-        return dict(row) if row else None
