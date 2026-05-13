@@ -23,3 +23,10 @@ def test_run_game_debug_flow(tmp_path) -> None:
     assert row is not None
     assert row["game_event_count"] > 0
     assert row["behavior_sample_count"] > 0
+    assert out["task6b_config_path"] == "config/task6b.yaml"
+    assert "predictor_version" in out
+
+
+def test_run_game_debug_help_has_task6b_config() -> None:
+    p = subprocess.run([sys.executable, "-m", "ui_cli.run_game_debug", "-h"], capture_output=True, text=True, check=True)
+    assert "--task6b-config" in p.stdout
