@@ -12,6 +12,7 @@ from core.control_state_estimator import ControlStateEstimator
 from storage.storage_manager import StorageManager
 from user.user_manager import UserManager
 from user.profile_manager import ProfileManager
+from ui_cli.evaluate_task6b import load_structured_file, _resolve_task6b_predictor_params
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -31,6 +32,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--label-template")
     p.add_argument("--frame-label-template")
     p.add_argument("--frame-sec", type=int, default=3)
+    p.add_argument("--task6b-config", default="config/task6b.yaml")
     return p
 
 
@@ -53,7 +55,16 @@ def _resolve_user_context(mode: str | None, user_id: str | None, db_path: str):
     return u, pm.get_profile(u["user_id"]), storage
 
 
-def run_debug_loop(mode: str, host: str, port: int, ticks: int, interval: float, user_mode: str | None = None, user_id: str | None = None, db_path: str = "data/relic_local.db", record_jsonl: str | None = None, session_id: str | None = None, duration_sec: int | None = None, label_template: str | None = None, frame_label_template: str | None = None, frame_sec: int = 3) -> None:
+def run_debug_loop(mode: str, host: str, port: int, ticks: int, interval: float, user_mode: str | None = None, user_id: str | None = None, db_path: str = "data/relic_local.db", record_jsonl: str | None = None, session_id: str | None = None, duration_sec: int | None = None, label_template: str | None = None, frame_label_template: str | None = None, frame_sec: int = 3, task6b_config: str = "config/task6b.yaml") -> None:
+    task6b_cfg_raw = load_structured_file(task6b_config)
+    task6b_predictor_params = _resolve_task6b_predictor_params(task6b_cfg_raw)
+    print(json.dumps({
+        "task6b_config_path": task6b_config,
+        "task6b_config_loaded": bool(task6b_cfg_raw),
+        "task6b_config_accepted": bool(task6b_cfg_raw.get("accepted", True)),
+        "predictor_version": "task6b_predictor_v1",
+        "task6b_active_params": task6b_predictor_params,
+    }, ensure_ascii=False))
     gateway = PlatformGateway(mode=mode, host=host, port=port)
     data_center = DataCenter()
     quality_gate = QualityGate()
@@ -156,7 +167,7 @@ def main() -> None:
     a = build_parser().parse_args()
     mode = "mock" if a.mock else a.bridge
     try:
-        run_debug_loop(mode=mode, host=a.host, port=a.port, ticks=a.ticks, interval=a.interval, user_mode=a.mode, user_id=a.user_id, db_path=a.db_path, record_jsonl=a.record_jsonl, session_id=a.session_id, duration_sec=a.duration_sec, label_template=a.label_template, frame_label_template=a.frame_label_template, frame_sec=a.frame_sec)
+        run_debug_loop(mode=mode, host=a.host, port=a.port, ticks=a.ticks, interval=a.interval, user_mode=a.mode, user_id=a.user_id, db_path=a.db_path, record_jsonl=a.record_jsonl, session_id=a.session_id, duration_sec=a.duration_sec, label_template=a.label_template, frame_label_template=a.frame_label_template, frame_sec=a.frame_sec, task6b_config=a.task6b_config)
     except KeyboardInterrupt:
         print("Interrupted, cleaning up...")
     except ValueError as e:
