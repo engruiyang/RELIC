@@ -148,3 +148,18 @@
 
 更多命令见：
 - docs/COMMANDS_TASK6B_RUNTIME_SESSION.md
+
+## Task7 / Task8 命令补充
+
+更多命令见：
+- docs/COMMANDS_TASK6B_RUNTIME_SESSION.md
+- docs/TASK8_LIVE_GAME_PIPELINE.md
+
+| 命令 | 用途 | 入口文件 | 写数据库 | 连接平台 | 生成文件 | 典型输出字段 | 状态 |
+|---|---|---|---|---|---|---|---|
+| `python -m ui_cli.run_session_debug --mode demo --duration-sec 1 --user-id demo_user --db-path data/relic_task7b.db` | Task7 session 最小闭环验证 | `ui_cli/run_session_debug.py` | 是（SQLite summary） | 否 | `logs/sessions/*.jsonl` | `session_id`, `game_event_count` | active |
+| `python -m ui_cli.run_session_debug --list-sessions --db-path data/relic_task7b.db` | Task7 session 列表查询 | `ui_cli/run_session_debug.py` | 否（仅读） | 否 | 否 | `session_id`, `status`, `score` | active |
+| `python -m ui_cli.run_session_debug --show-session <SESSION_ID> --db-path data/relic_task7b.db` | Task7 session 摘要查询 | `ui_cli/run_session_debug.py` | 否（仅读） | 否 | 否 | `behavior_sample_count`, `game_event_count` | active |
+| `python -m ui_cli.run_game_debug --bridge mock --mode demo --duration-sec 5 --user-id demo_user --db-path data/relic_task8c_mock.db --game-id fake_game --print-jsonl` | Task8C mock 双向 pipeline 验证 | `ui_cli/run_game_debug.py` | 是（SQLite summary） | 否 | `logs/sessions/*.jsonl`, `logs/game_debug/*.pipeline.jsonl` | `tick`, `event_types`, `view_state` | active |
+| `python -m ui_cli.run_game_debug --bridge live --mode user --user-id TEST --host 127.0.0.1 --port 8000 --duration-sec 60 --db-path data/relic_local.db --game-id fake_game --print-jsonl` | Task8C live 双向 pipeline 验证 | `ui_cli/run_game_debug.py` | 是（SQLite summary） | 是 | `logs/sessions/*.jsonl`, `logs/game_debug/*.pipeline.jsonl` | `tick`, `sqi`, `fi_smoothed`, `event_types` | active |
+| `python -m ui_cli.run_game_debug --bridge live --mode user --user-id TEST --host 127.0.0.1 --port 8000 --duration-sec 60 --db-path data/relic_local.db --game-id fake_game --record-pipeline-jsonl logs/game_debug/live_TEST_pipeline.jsonl` | Task8C live pipeline JSONL 落盘 | `ui_cli/run_game_debug.py` | 是（SQLite summary） | 是 | `logs/game_debug/live_TEST_pipeline.jsonl` | `input`, `output`, `warnings`, `errors` | active |
