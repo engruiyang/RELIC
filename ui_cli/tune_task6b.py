@@ -61,8 +61,10 @@ def main():
     p.add_argument("--report")
     a = p.parse_args()
     random.seed(a.seed)
-    rows = _load_jsonl(glob.glob(a.input))
-    labels, label_meta = _load_labels(glob.glob(a.labels))
+    input_paths = sorted(glob.glob(a.input))
+    label_paths = sorted(glob.glob(a.labels))
+    rows = _load_jsonl(input_paths)
+    labels, label_meta = _load_labels(label_paths)
     if yaml is None:
         base = json.loads(Path(a.base_config).read_text(encoding="utf-8"))
     else:
@@ -73,10 +75,52 @@ def main():
         cfg.update(_sample())
         r = evaluate(rows, labels, cfg, label_meta=label_meta)
         o = r["overall"]
-        keys = ("score", "macro_f1", "transition_jitter", "latency_penalty", "false_fatigue", "false_high_focus", "hard_rule_violation")
+        keys = ("score", "macro_f1", "transition_jitter", "latency_penalty", "false_fatigue", "false_high_focus", "hard_rule_violation", "unreliable_miss")
         results.append({"config": cfg, "validation": _validate(cfg), **{k: o.get(k, 0) for k in keys}})
     top = sorted(results, key=lambda x: x["score"], reverse=True)[:10]
-    payload = {"top_candidates": top}
+    best_cfg = top[0]["config"] if top else dict(base)
+    best_eval = evaluate(rows, labels, best_cfg, label_meta=label_meta)
+    log_sessions = sorted({r.get("session_id") for r in rows if r.get("session_id")})
+    label_sessions = sorted({l.get("session_id") for l in labels if l.get("session_id")})
+    matched = sorted(set(log_sessions) & set(label_sessions))
+    dataset_meta = {
+        "input_files_count": len(input_paths),
+        "label_files_count": len(label_paths),
+        "session_ids_from_logs": log_sessions,
+        "session_ids_from_labels": label_sessions,
+        "matched_session_ids": matched,
+        "unmatched_log_sessions": sorted(set(log_sessions) - set(label_sessions)),
+        "unmatched_label_sessions": sorted(set(label_sessions) - set(log_sessions)),
+        "total_labeled_frames": best_eval["overall"]["total_labeled_frames"],
+    }
+    warnings = []
+    if label_meta.get("mode") == "frames" and dataset_meta["total_labeled_frames"] == 0:
+        raise ValueError("No labeled frames matched between logs and labels.")
+    if len(matched) < len(label_sessions):
+        warnings.append("matched_session_ids less than label session count")
+    if len(matched) == 1 and len(label_paths) > 1:
+        warnings.append("only one session matched while multiple label files were provided")
+    top_evals = [evaluate(rows, labels, c["config"], label_meta=label_meta) for c in top[:3]]
+    if len(top_evals) >= 2:
+        base_map = {(x.get("session_id"), x.get("frame_id"), x.get("start_ms"), x.get("end_ms")): x.get("predicted_label") for x in top_evals[0].get("frame_predictions", [])}
+        same = True
+        for rep in top_evals[1:]:
+            cur = {(x.get("session_id"), x.get("frame_id"), x.get("start_ms"), x.get("end_ms")): x.get("predicted_label") for x in rep.get("frame_predictions", [])}
+            if cur != base_map:
+                same = False
+                break
+        if same:
+            warnings.append("top candidate predictions are identical; tuning space may not affect current evaluation path.")
+    payload = {
+        "dataset_meta": dataset_meta,
+        "session_count": len(matched),
+        "total_labeled_frames": dataset_meta["total_labeled_frames"],
+        "best_score": (top[0]["score"] if top else None),
+        "top_candidates": top,
+        "per_session_scores": best_eval.get("per_session", []),
+        "unreliable_miss": best_eval["overall"].get("unreliable_miss", 0),
+        "warnings": warnings,
+    }
     Path(a.out).write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     if a.report:
         Path(a.report).write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
