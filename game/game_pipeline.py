@@ -125,6 +125,17 @@ class GamePipelineRunner:
             "control_state_reason": snapshot.control_state_reason,
             "warning_flags": snapshot.warning_flags,
             "error_flags": snapshot.error_flags,
+            "provider_mode": runtime_snapshot.get("provider_mode"),
+            "estimation_path": runtime_snapshot.get("estimation_path"),
+            "user_context_loaded": runtime_snapshot.get("user_context_loaded"),
+            "profile_loaded": runtime_snapshot.get("profile_loaded"),
+            "calibration_id": runtime_snapshot.get("calibration_id"),
+            "calibration_loaded": runtime_snapshot.get("calibration_loaded"),
+            "calibration_usable": runtime_snapshot.get("calibration_usable"),
+            "estimation_allowed": runtime_snapshot.get("estimation_allowed"),
+            "quality_reasons": runtime_snapshot.get("quality_reasons"),
+            "provider_fallback_used": runtime_snapshot.get("provider_fallback_used"),
+            "provider_fallback_reason": runtime_snapshot.get("provider_fallback_reason"),
         }
         r = PipelineTickResult(self.tick, self.session_id, self.game_id, int(time.time() * 1000), inp, out, view_state, warnings, errors)
         if self._jsonl_fp:
@@ -171,12 +182,30 @@ class LiveSnapshotProvider(RuntimeSnapshotProvider):
         bound = None
         if self.calibration_store is not None and self.user_profile and self.user_profile.get("last_calibration_id"):
             bound = self.calibration_store.get_calibration_profile(self.user_profile["last_calibration_id"])
-        gate = self.qg.evaluate(s, current_user=self.current_user, user_profile=self.user_profile, bound_calibration_profile=bound, warning_flags=s.get("warning_flags"), error_flags=s.get("error_flags"))
-        self.data_center.apply_quality_gate(gate)
-        s = self.data_center.get_runtime_snapshot()
-        fi = self.fe.estimate(s, self.user_profile, bound)
-        cs = self.cs.evaluate(s, fi, tick_ms=int(s.get("delta_ms") or 1000))
-        s.update(fi)
-        s.update(cs)
-        return {k: s.get(k) for k in ["now_ms","attention","attention_age_ms","attention_fresh","gyro_x","gyro_y","gyro_z","gyro_age_ms","gyro_fresh","sqi","quality_state","fi_raw","fi_smoothed","fi_valid","fi_confidence","control_state","control_state_reason","warning_flags","error_flags","delta_ms","behavior_ready"]}
+        fallback_reason = None
+        try:
+            gate = self.qg.evaluate(s, current_user=self.current_user, user_profile=self.user_profile, bound_calibration_profile=bound, warning_flags=s.get("warning_flags"), error_flags=s.get("error_flags"))
+            self.data_center.apply_quality_gate(gate)
+            s = self.data_center.get_runtime_snapshot()
+            fi = self.fe.estimate(s, self.user_profile, bound)
+            cs = self.cs.evaluate(s, fi, tick_ms=int(s.get("delta_ms") or 1000))
+            s.update(fi)
+            s.update(cs)
+        except Exception as e:  # noqa: BLE001
+            fallback_reason = f"estimation_exception:{type(e).__name__}"
+            s.update({"sqi": s.get("sqi", 0.3), "quality_state": "error", "fi_raw": None, "fi_smoothed": None, "fi_valid": False, "fi_confidence": "low", "control_state": "UNRELIABLE_SIGNAL", "control_state_reason": "estimation_exception"})
+        s.update({
+            "provider_mode": "live",
+            "estimation_path": "datacenter_quality_focus_control",
+            "user_context_loaded": self.current_user is not None,
+            "profile_loaded": self.user_profile is not None,
+            "calibration_id": None if not bound else bound.get("calibration_id"),
+            "calibration_loaded": bound is not None,
+            "calibration_usable": bool(bound and bound.get("valid")),
+            "estimation_allowed": s.get("estimation_allowed"),
+            "quality_reasons": s.get("quality_reasons"),
+            "provider_fallback_used": fallback_reason is not None,
+            "provider_fallback_reason": fallback_reason,
+        })
+        return {k: s.get(k) for k in ["now_ms","attention","attention_age_ms","attention_fresh","gyro_x","gyro_y","gyro_z","gyro_age_ms","gyro_fresh","sqi","quality_state","fi_raw","fi_smoothed","fi_valid","fi_confidence","control_state","control_state_reason","warning_flags","error_flags","delta_ms","behavior_ready","provider_mode","estimation_path","user_context_loaded","profile_loaded","calibration_id","calibration_loaded","calibration_usable","estimation_allowed","quality_reasons","provider_fallback_used","provider_fallback_reason"]}
     def close(self): self.gateway.stop()

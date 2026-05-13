@@ -87,8 +87,14 @@ def main() -> None:
         user_storage = StorageManager(sqlite_path=a.db_path)
         user_storage.initialize()
         um, pm = UserManager(user_storage.sqlite), ProfileManager(user_storage.sqlite)
-        current_user = um.load_user(a.user_id)
-        user_profile = pm.get_profile(a.user_id) if current_user is not None else None
+        if a.mode == "demo":
+            current_user = um.ensure_demo_user()
+            user_profile = pm.get_profile(current_user["user_id"])
+        else:
+            current_user = um.load_user(a.user_id)
+            if current_user is None:
+                raise ValueError(f"user not found: {a.user_id}")
+            user_profile = pm.get_profile(current_user["user_id"])
         provider = LiveSnapshotProvider(a.host, a.port, current_user=current_user, user_profile=user_profile, calibration_store=user_storage)
     runner = GamePipelineRunner(runtime=runtime, game_manager=manager, session_manager=session_manager, session_id=session.session_id, user_id=a.user_id, game_id=a.game_id, pipeline_jsonl_path=pipeline_path)
 
