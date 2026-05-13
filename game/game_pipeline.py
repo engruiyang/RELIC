@@ -154,16 +154,29 @@ class MockSnapshotProvider(RuntimeSnapshotProvider):
 
 
 class LiveSnapshotProvider(RuntimeSnapshotProvider):
-    def __init__(self, host: str, port: int):
+    def __init__(self, host: str, port: int, current_user: dict[str, Any] | None = None, user_profile: dict[str, Any] | None = None, calibration_store: Any | None = None):
         self.gateway = PlatformGateway(mode="live", host=host, port=port)
-        self.data_center = DataCenter(); self.qg = QualityGate(); self.fe = FocusEstimator(); self.cs = ControlStateEstimator(); self.gateway.start()
+        self.data_center = DataCenter()
+        self.qg = QualityGate()
+        self.fe = FocusEstimator()
+        self.cs = ControlStateEstimator()
+        self.current_user = current_user
+        self.user_profile = user_profile
+        self.calibration_store = calibration_store
+        self.gateway.start()
     def next_snapshot(self, now_ms: int) -> dict[str, Any]:
         events = self.gateway.poll_raw_events(now_ms=now_ms)
         self.data_center.ingest_events(events, now_ms=now_ms)
         s = self.data_center.get_runtime_snapshot()
-        gate = self.qg.evaluate(s, current_user=None, user_profile=None, bound_calibration_profile=None, warning_flags=s.get("warning_flags"), error_flags=s.get("error_flags"))
+        bound = None
+        if self.calibration_store is not None and self.user_profile and self.user_profile.get("last_calibration_id"):
+            bound = self.calibration_store.get_calibration_profile(self.user_profile["last_calibration_id"])
+        gate = self.qg.evaluate(s, current_user=self.current_user, user_profile=self.user_profile, bound_calibration_profile=bound, warning_flags=s.get("warning_flags"), error_flags=s.get("error_flags"))
         self.data_center.apply_quality_gate(gate)
         s = self.data_center.get_runtime_snapshot()
-        fi = self.fe.estimate(s, None, None); cs = self.cs.evaluate(s, fi, tick_ms=int(s.get("delta_ms") or 1000)); s.update(fi); s.update(cs)
+        fi = self.fe.estimate(s, self.user_profile, bound)
+        cs = self.cs.evaluate(s, fi, tick_ms=int(s.get("delta_ms") or 1000))
+        s.update(fi)
+        s.update(cs)
         return {k: s.get(k) for k in ["now_ms","attention","attention_age_ms","attention_fresh","gyro_x","gyro_y","gyro_z","gyro_age_ms","gyro_fresh","sqi","quality_state","fi_raw","fi_smoothed","fi_valid","fi_confidence","control_state","control_state_reason","warning_flags","error_flags","delta_ms","behavior_ready"]}
     def close(self): self.gateway.stop()

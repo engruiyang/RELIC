@@ -11,7 +11,10 @@ from game.game_manifest import GameManifest
 from game.game_pipeline import GamePipelineRunner, LiveSnapshotProvider, MockSnapshotProvider
 from runtime.local_runtime import LocalRuntime
 from session.session_manager import SessionManager
+from storage.storage_manager import StorageManager
 from storage.sqlite_store import SqliteStore
+from user.profile_manager import ProfileManager
+from user.user_manager import UserManager
 from ui_cli.evaluate_task6b import load_structured_file, _resolve_task6b_predictor_params
 
 
@@ -78,7 +81,15 @@ def main() -> None:
     pipeline_path = a.record_pipeline_jsonl
     if pipeline_path is None and a.print_jsonl:
         pipeline_path = f"logs/game_debug/{session.session_id}.pipeline.jsonl"
-    provider = LiveSnapshotProvider(a.host, a.port) if a.bridge == "live" else MockSnapshotProvider()
+    provider = MockSnapshotProvider()
+    user_storage = None
+    if a.bridge == "live":
+        user_storage = StorageManager(sqlite_path=a.db_path)
+        user_storage.initialize()
+        um, pm = UserManager(user_storage.sqlite), ProfileManager(user_storage.sqlite)
+        current_user = um.load_user(a.user_id)
+        user_profile = pm.get_profile(a.user_id) if current_user is not None else None
+        provider = LiveSnapshotProvider(a.host, a.port, current_user=current_user, user_profile=user_profile, calibration_store=user_storage)
     runner = GamePipelineRunner(runtime=runtime, game_manager=manager, session_manager=session_manager, session_id=session.session_id, user_id=a.user_id, game_id=a.game_id, pipeline_jsonl_path=pipeline_path)
 
     try:
@@ -99,6 +110,8 @@ def main() -> None:
         if hasattr(provider, "close"):
             provider.close()
         runner.close()
+        if user_storage is not None:
+            user_storage.shutdown()
 
     summary = store.get_training_session(session.session_id)
     print(json.dumps({
