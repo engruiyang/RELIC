@@ -16,6 +16,9 @@ class GameManifest:
     max_duration_sec: int | None = None
     requires_behavior_sample: bool = True
     description: str | None = None
+    view_schema_version: str = "game_view.v1"
+    default_difficulty: int = 1
+    supported_render_modes: list[str] = field(default_factory=lambda: ["headless", "future_pygame", "future_web"])
 
     def to_dict(self) -> dict[str, Any]:
         data = asdict(self)

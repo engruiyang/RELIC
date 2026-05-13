@@ -21,3 +21,9 @@ python -m ui_cli.run_session_debug --show-session <SESSION_ID> --db-path data/re
 6. GameEvent `behavior_sample` schema 已明确。
 7. SessionManager 只依赖标准 GameEvent，不依赖具体游戏类。
 8. `COMMANDS.md` 没有被重写，只追加索引。
+
+## Task8A 新增验证
+```bash
+pytest -q tests/test_game_manager.py tests/test_fake_game_client.py tests/test_task8_game_flow.py
+python -m ui_cli.run_game_debug --mode demo --duration-sec 5 --user-id demo_user --db-path data/relic_task8a.db
+```

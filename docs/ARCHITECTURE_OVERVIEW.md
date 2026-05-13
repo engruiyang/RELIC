@@ -32,3 +32,8 @@ JSONL + SQLite Summary
 ## Task8 前冻结说明
 - Runtime 契约语义（RuntimeSnapshotView / RuntimeCommand / GameEvent）在 Task8A 前冻结。
 - Task8 仅允许在 `game/` 与协调层做实现，不得反向侵入估计器、校准或存储职责。
+
+## Task8A Headless Game 闭环
+RuntimeSnapshotView -> LocalRuntime.publish_snapshot() -> FakeGameClient -> GameEvent -> GameManager -> SessionManager.record_game_event().
+
+渲染预留链路：FakeGameClient -> GameViewState -> GameManager.get_current_view_state() -> Future Renderer。

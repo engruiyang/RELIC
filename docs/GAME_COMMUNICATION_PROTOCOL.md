@@ -102,3 +102,10 @@
 ## 10. 版本策略
 - 当前 schema_version 按代码契约为 `1.0`。
 - 破坏性变更必须显式升级版本并提供迁移说明。
+
+## 11. Task8A FakeGameClient 使用方式
+- FakeGameClient 仅通过 Runtime API 接收 `RuntimeSnapshotView` 与 `RuntimeCommand`。
+- FakeGameClient 输出标准 `GameEvent`（`score_update` / `behavior_sample` / `difficulty_request` / `game_completed` / `game_error`）。
+- `difficulty_request` 仅作为请求记录，不直接改用户 difficulty。
+- `game_completed` 仅作为事件，不直接结束 session。
+- `behavior_sample` 在 Task8A 只进入 SessionManager 记录链路，暂不接入 FocusEstimator。
