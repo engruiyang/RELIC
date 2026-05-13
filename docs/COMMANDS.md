@@ -163,3 +163,154 @@
 | `python -m ui_cli.run_game_debug --bridge mock --mode demo --duration-sec 5 --user-id demo_user --db-path data/relic_task8c_mock.db --game-id fake_game --print-jsonl` | Task8C mock 双向 pipeline 验证 | `ui_cli/run_game_debug.py` | 是（SQLite summary） | 否 | `logs/sessions/*.jsonl`, `logs/game_debug/*.pipeline.jsonl` | `tick`, `event_types`, `view_state` | active |
 | `python -m ui_cli.run_game_debug --bridge live --mode user --user-id TEST --host 127.0.0.1 --port 8000 --duration-sec 60 --db-path data/relic_local.db --game-id fake_game --print-jsonl` | Task8C live 双向 pipeline 验证 | `ui_cli/run_game_debug.py` | 是（SQLite summary） | 是 | `logs/sessions/*.jsonl`, `logs/game_debug/*.pipeline.jsonl` | `tick`, `sqi`, `fi_smoothed`, `event_types` | active |
 | `python -m ui_cli.run_game_debug --bridge live --mode user --user-id TEST --host 127.0.0.1 --port 8000 --duration-sec 60 --db-path data/relic_local.db --game-id fake_game --record-pipeline-jsonl logs/game_debug/live_TEST_pipeline.jsonl` | Task8C live pipeline JSONL 落盘 | `ui_cli/run_game_debug.py` | 是（SQLite summary） | 是 | `logs/game_debug/live_TEST_pipeline.jsonl` | `input`, `output`, `warnings`, `errors` | active |
+
+# Task8 Runtime/Game Pipeline Commands
+
+## Task8 scope
+Task8 仅覆盖以下范围：
+- Runtime API
+- GameManager
+- FakeGame
+- GameViewState
+- mock pipeline
+- live pipeline
+- Task6B calibrated config 接入
+
+以下内容不属于 Task8（属于后续 Task9）：
+- PlatformReporter
+- ReplayAdapter
+- 官方报告上传
+- 鼠标事件兼容层
+
+## Regression tests
+```powershell
+pytest -q `
+  tests/test_runtime_contract.py `
+  tests/test_session_manager.py `
+  tests/test_task6_focus_estimator.py `
+  tests/test_task6_quality_gate.py `
+  tests/test_run_core_debug_user_context.py `
+  tests/test_game_manager.py `
+  tests/test_task8_game_flow.py
+```
+
+## Check CLI options
+```powershell
+python -m ui_cli.run_game_debug -h
+```
+应能看到：
+- `--task6b-config`
+- `--record-pipeline-jsonl`
+- `--print-jsonl`
+- `--bridge {mock,live}`
+
+## Mock game pipeline smoke test
+```powershell
+python -m ui_cli.run_game_debug `
+  --mode user `
+  --bridge mock `
+  --duration-sec 5 `
+  --user-id TEST `
+  --db-path data/relic_local.db `
+  --game-id fake_game `
+  --task6b-config config/task6b_grid_calibrated.yaml `
+  --print-jsonl `
+  --record-pipeline-jsonl logs/sessions/task8c_mock_calibrated_pipeline.jsonl
+```
+预期：
+- `task6b_config_loaded=true`
+- `game_event_count > 0`
+- `view_state` 出现
+- `behavior_sample_count` 可随 mock 输入产生
+
+## Live 20s verification
+```powershell
+python -m ui_cli.run_game_debug `
+  --mode user `
+  --bridge live `
+  --host 127.0.0.1 `
+  --port 8000 `
+  --duration-sec 20 `
+  --user-id TEST `
+  --db-path data/relic_local.db `
+  --game-id fake_game `
+  --task6b-config config/task6b_grid_calibrated.yaml `
+  --print-jsonl `
+  --record-pipeline-jsonl logs/sessions/task8c_live_calibrated_20s.jsonl
+```
+预期：
+- `provider_fallback_used=false`
+- `calibration_loaded=true`
+- `calibration_usable=true`
+- `estimation_allowed=true`
+- `quality_state` 大部分为 `ok`
+- `fi_valid=true` 出现
+- `behavior_sample_count > 0`
+- `score` 增长
+
+## Live 60s verification
+```powershell
+python -m ui_cli.run_game_debug `
+  --mode user `
+  --bridge live `
+  --host 127.0.0.1 `
+  --port 8000 `
+  --duration-sec 60 `
+  --user-id TEST `
+  --db-path data/relic_local.db `
+  --game-id fake_game `
+  --task6b-config config/task6b_grid_calibrated.yaml `
+  --print-jsonl `
+  --record-pipeline-jsonl logs/sessions/task8c_live_calibrated_60s.jsonl
+```
+预期：
+- `tick_count` 接近 60
+- `fallback_count=0`
+- `fi_valid_count > 0`（理想接近 `tick_count`）
+- `behavior_tick_count > 0`
+- `score_last > 0`
+- `quality_state` 不应长期 `error`
+- `control_state` 不应全是 `UNRELIABLE_SIGNAL`
+
+## Inspect 60s result
+```powershell
+python tools/inspect_task8c_live.py `
+  logs/sessions/task8c_live_calibrated_60s.jsonl
+```
+输出至少包含：
+- `tick_count`
+- `quality_states`
+- `control_states`
+- `fallback_count`
+- `calibration_loaded_count`
+- `calibration_usable_count`
+- `estimation_allowed_count`
+- `fi_valid_count`
+- `behavior_tick_count`
+- `score_last`
+- `Final Verdict`
+
+## Common pitfalls
+- live 测试必须使用含 TEST 用户和校准记录的 `data/relic_local.db`。
+- 不要使用空的 `data/relic_task8c_live.db`，除非已经创建 TEST 用户并写入校准记录。
+- 若出现 `user not found: TEST`，说明 `db_path` 不对或测试库没有用户。
+- 若 `attention_fresh=true` 但 `quality_state` 长期 `error`，应检查 `provider_fallback_used`、`calibration_loaded`、`calibration_usable`、`estimation_allowed`。
+- 若 `run_core_debug live` 正常但 `run_game_debug live` 异常，问题通常在 game live provider 到 RuntimeSnapshotView 的组装路径。
+- 第 1 tick 出现 `attention_missing/gyro_missing` 是正常启动现象。
+- 60s 内没有 `STABLE_FOCUS` 不一定失败；Task8 验收重点是 live pipeline 是否有效流动。
+
+## Task8 acceptance checklist
+- [ ] pytest regression passed
+- [ ] run_game_debug -h includes --task6b-config
+- [ ] mock pipeline runs
+- [ ] live 20s runs
+- [ ] live 60s runs
+- [ ] fallback_count=0
+- [ ] calibration_loaded_count>0
+- [ ] estimation_allowed_count>0
+- [ ] fi_valid_count>0
+- [ ] behavior_tick_count>0
+- [ ] score_last>0
+- [ ] no long-term quality_state=error
+- [ ] no all-UNRELIABLE_SIGNAL after startup
+- [ ] GameViewState updates
