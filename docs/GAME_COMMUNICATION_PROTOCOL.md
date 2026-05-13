@@ -60,3 +60,9 @@ schema_version, session_id, now_ms, user_id, game_id, attention, attention_age_m
 
 ## 18. 与 Task8 的关系
 - FakeGame 及后续 Pygame/WebSocket 版本必须遵守本协议。
+
+
+## 19. Task7 记录规则
+- SessionManager 只记录标准 GameEvent，不依赖具体游戏类。
+- `difficulty_request` 只记录为请求，不在 Task7 内批准/拒绝。
+- `game_completed` 由游戏发出，是否结束 session 由主程序/协调器决定。

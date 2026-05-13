@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-
 from dataclasses import asdict, dataclass, field, fields
-
 from typing import Any, ClassVar, Mapping
 import json
 
@@ -51,7 +49,6 @@ class RuntimeSnapshotView:
     control_state_reason: str | None = None
     warning_flags: list[str] | None = None
     error_flags: list[str] | None = None
-
     behavior_ready: bool | None = None
     interval_ms: int | None = None
     delta_ms: int | None = None
