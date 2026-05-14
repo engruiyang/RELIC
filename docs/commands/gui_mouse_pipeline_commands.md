@@ -203,3 +203,56 @@ Get-Content $latest.FullName -Encoding UTF8 -TotalCount 60
 
 - 运行 fake/live-stream 单测：`pytest -q tests/test_live_stream_check.py`
 - 运行实机验收：`python -m ui_cli.run_live_stream_check --host 127.0.0.1 --port 8000 --duration-sec 30 --db-path data/relic_local.db --output-dir logs/live_stream_checks`
+
+## TASK 16.5C live-control（debug）命令与人工验收
+
+### 启动 live-control
+
+```powershell
+python -m ui_cli.run_gui_minimal --mode live-control --host 127.0.0.1 --port 8000 --db-path data/relic_local.db --user-id demo_user --game-id fake_game
+```
+
+预期启动日志（正常连接路径）：
+- `[GUI] mode=live-control db_path=...`
+- `[GUI] source=live_control`
+- `[GUI LIVE] connecting 127.0.0.1:8000`（仅一次）
+- `[GUI LIVE] connected`
+
+### TASK 16.5C 回归命令
+
+```powershell
+pytest -q tests/test_gui_live_control.py tests/test_gui_live_readonly.py
+```
+
+```powershell
+pytest -q tests/test_live_stream_check.py tests/test_minimal_game_template.py tests/test_game_contracts.py tests/test_fake_click_game_client.py tests/test_game_view_render_contract.py tests/test_gui_mouse_to_game_client.py tests/test_game_event_to_platform_mock.py tests/test_gui_protocol.py tests/test_gui_facade.py tests/test_gui_bridge.py tests/test_gui_core_source.py tests/test_gui_command_dispatcher.py tests/test_gui_core_control.py tests/test_gui_mouse_input.py tests/test_platform_reporter.py tests/test_replay_adapter.py tests/test_task9_e2e_demo.py tests/test_session_report_writer.py tests/test_runtime_contract.py tests/test_session_manager.py tests/test_game_manager.py tests/test_task8_game_flow.py
+```
+
+### 架构检查
+
+```powershell
+Get-ChildItem -Path ui_qml -Recurse -Include *.qml | Select-String -Pattern "PlatformGateway|socket|ipc_mouse_data|PlatformReporter|SessionManager|DeviceAdapter"
+```
+
+```powershell
+Get-ChildItem -Path gui -Recurse -Include *.py | Select-String -Pattern "ipc_mouse_data|PlatformReporter"
+```
+
+### 人工验收要点（live-control）
+
+1. 点击 **Start Mock Session** 后进入 live debug session。
+2. 点击目标或背景时应同时看到：
+   - `[GAME INPUT]`
+   - `[GAME EVENT]`
+   - `[PLATFORM MOCK]`
+   - `[GUI EVENT]`
+3. 点击 **End Session** 后，再次点击应返回 `no_active_live_debug_session`。
+
+### 已知限制（TASK 16.5C）
+
+- `live-control` 仍是 debug 模式，不是正式训练模式。
+- PlatformReporter 仍走 mock sender（InMemory）。
+- 未写正式 TrainingSession。
+- 未生成正式训练报告。
+- 未接真实平台鼠标 socket。
+- 断流后的恢复能力仍需后续增强验证。
