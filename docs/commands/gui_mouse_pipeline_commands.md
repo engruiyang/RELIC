@@ -198,3 +198,8 @@ Get-Content $latest.FullName -Encoding UTF8 -TotalCount 60
 - 运行 GUI 回归：`pytest -q tests/test_gui_protocol.py tests/test_gui_facade.py tests/test_gui_bridge.py tests/test_gui_core_source.py tests/test_gui_command_dispatcher.py tests/test_gui_core_control.py tests/test_gui_mouse_input.py`
 - 运行 TASK 9 回归：`pytest -q tests/test_platform_reporter.py tests/test_replay_adapter.py tests/test_task9_e2e_demo.py tests/test_session_report_writer.py`
 - 运行 headless 回归：`pytest -q tests/test_runtime_contract.py tests/test_session_manager.py tests/test_game_manager.py tests/test_task8_game_flow.py`
+
+## TASK 16A 头环实机 live stream headless 验收 CLI（PowerShell）
+
+- 运行 fake/live-stream 单测：`pytest -q tests/test_live_stream_check.py`
+- 运行实机验收：`python -m ui_cli.run_live_stream_check --host 127.0.0.1 --port 8000 --duration-sec 30 --db-path data/relic_local.db --output-dir logs/live_stream_checks`
