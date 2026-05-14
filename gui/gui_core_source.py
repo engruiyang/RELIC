@@ -103,17 +103,17 @@ class GuiCoreSnapshotSource:
     def handle_command(self, command: str, args: dict[str, Any]) -> dict[str, Any]:
         if command == "refresh_snapshot":
             self.refresh_snapshot()
-            self._last_command_result = {"status": "accepted", "reason": "refreshed", "source": "core_readonly"}
+            self._last_command_result = {"result": "accepted", "status": "accepted", "reason": "refreshed", "source": "core_readonly"}
         elif command == "load_demo_user":
             self.load_demo_user()
-            self._last_command_result = {"status": "accepted", "reason": "demo_user_loaded", "source": "core_readonly"}
+            self._last_command_result = {"result": "accepted", "status": "accepted", "reason": "demo_user_loaded", "source": "core_readonly"}
         elif command == "end_session":
-            self._last_command_result = {"status": "noop", "reason": "no_active_session", "source": "core_readonly"}
+            self._last_command_result = {"result": "noop", "status": "noop", "reason": "no_active_session", "source": "core_readonly"}
         else:
-            self._last_command_result = {"status": "rejected", "reason": "readonly_rejected", "source": "core_readonly"}
+            self._last_command_result = {"result": "readonly_rejected", "status": "rejected", "reason": "readonly_rejected", "source": "core_readonly"}
         return dict(self._last_command_result)
 
     def handle_event(self, event_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         _ = (event_type, payload)
-        self._last_event_result = {"status": "ignored", "reason": "readonly_ignored", "source": "core_readonly"}
+        self._last_event_result = {"result": "readonly_ignored", "status": "ignored", "reason": "readonly_ignored", "source": "core_readonly"}
         return dict(self._last_event_result)

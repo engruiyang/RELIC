@@ -90,11 +90,12 @@ class GuiFacade:
         self.received_commands.append(entry)
         self.last_command = deepcopy(entry)
         self.command_count = len(self.received_commands)
-        print(f"[GUI COMMAND] command={command} args={args}", flush=True)
         if self._core_source:
             self.last_command_result = self._core_source.handle_command(command, args)
         else:
-            self.last_command_result = {"status": "accepted", "reason": "mock_ok", "source": "mock"}
+            self.last_command_result = {"result": "accepted", "status": "accepted", "reason": "mock_ok", "source": "mock"}
+        command_result = str(self.last_command_result.get("result") or self.last_command_result.get("reason") or "unknown")
+        print(f"[GUI COMMAND] command={command} args={args} result={command_result}", flush=True)
 
     def handle_gui_event(self, event_type: str, payload: dict[str, Any] | None = None) -> None:
         payload = payload or {}
@@ -102,8 +103,9 @@ class GuiFacade:
         self.received_events.append(entry)
         self.last_event = deepcopy(entry)
         self.event_count = len(self.received_events)
-        print(f"[GUI EVENT] event_type={event_type} payload={payload}", flush=True)
         if self._core_source:
             self.last_event_result = self._core_source.handle_event(event_type, payload)
         else:
-            self.last_event_result = {"status": "accepted", "reason": "mock_ok", "source": "mock"}
+            self.last_event_result = {"result": "accepted", "status": "accepted", "reason": "mock_ok", "source": "mock"}
+        event_result = str(self.last_event_result.get("result") or self.last_event_result.get("reason") or "unknown")
+        print(f"[GUI EVENT] event_type={event_type} payload={payload} result={event_result}", flush=True)
