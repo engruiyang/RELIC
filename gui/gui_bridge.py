@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from json import dumps, loads
+from json import JSONDecodeError, dumps, loads
 
 from .gui_facade import GuiFacade
 
@@ -16,14 +16,23 @@ class GuiBridge(QObject):
     def __init__(self, facade: GuiFacade) -> None:
         super().__init__()
         self._facade = facade
-        self._app_state = dumps(self._facade.get_app_state())
-        self._runtime_snapshot = dumps(self._facade.get_runtime_snapshot())
-        self._session_state = dumps(self._facade.get_session_state())
+        self._app_state = "{}"
+        self._runtime_snapshot = "{}"
+        self._session_state = "{}"
+        self._last_command = ""
+        self._last_event = ""
+        self._command_count = 0
+        self._event_count = 0
+        self._refresh_internal()
 
     def _refresh_internal(self) -> None:
         self._app_state = dumps(self._facade.get_app_state())
         self._runtime_snapshot = dumps(self._facade.get_runtime_snapshot())
         self._session_state = dumps(self._facade.get_session_state())
+        self._command_count = self._facade.command_count
+        self._event_count = self._facade.event_count
+        self._last_command = dumps(self._facade.last_command) if self._facade.last_command else ""
+        self._last_event = dumps(self._facade.last_event) if self._facade.last_event else ""
         self.stateChanged.emit()
 
     @Property(str, notify=stateChanged)
@@ -38,6 +47,22 @@ class GuiBridge(QObject):
     def sessionState(self) -> str:
         return self._session_state
 
+    @Property(int, notify=stateChanged)
+    def commandCount(self) -> int:
+        return self._command_count
+
+    @Property(str, notify=stateChanged)
+    def lastCommand(self) -> str:
+        return self._last_command
+
+    @Property(int, notify=stateChanged)
+    def eventCount(self) -> int:
+        return self._event_count
+
+    @Property(str, notify=stateChanged)
+    def lastEvent(self) -> str:
+        return self._last_event
+
     @Slot()
     def refresh(self) -> None:
         self._facade.handle_gui_command("refresh_snapshot", {})
@@ -45,9 +70,23 @@ class GuiBridge(QObject):
 
     @Slot(str, str)
     def sendCommand(self, command: str, args_json: str = "{}") -> None:
-        self._facade.handle_gui_command(command, loads(args_json or "{}"))
+        try:
+            args = loads(args_json or "{}")
+        except JSONDecodeError:
+            print(f"[GUI BRIDGE ERROR] invalid args_json for command={command}: {args_json}", flush=True)
+            args = {}
+        self._facade.handle_gui_command(command, args)
         self._refresh_internal()
 
     @Slot(str, str)
     def sendEvent(self, event_type: str, payload_json: str = "{}") -> None:
-        self._facade.handle_gui_event(event_type, loads(payload_json or "{}"))
+        try:
+            payload = loads(payload_json or "{}")
+        except JSONDecodeError:
+            print(
+                f"[GUI BRIDGE ERROR] invalid payload_json for event_type={event_type}: {payload_json}",
+                flush=True,
+            )
+            payload = {}
+        self._facade.handle_gui_event(event_type, payload)
+        self._refresh_internal()

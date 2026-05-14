@@ -4,7 +4,7 @@ import QtQuick.Controls
 ApplicationWindow {
     visible: true
     width: 640
-    height: 700
+    height: 760
     title: "RELIC Minimal GUI"
 
     property var appStateObj: JSON.parse(guiBridge.appState)
@@ -58,5 +58,11 @@ ApplicationWindow {
                 "button": "left"
             }))
         }
+
+        Rectangle { width: parent.width; height: 1; color: "#888" }
+        Text { text: "Command Count: " + guiBridge.commandCount }
+        Text { text: "Last Command: " + (guiBridge.lastCommand === "" ? "<none>" : guiBridge.lastCommand) }
+        Text { text: "Event Count: " + guiBridge.eventCount }
+        Text { text: "Last Event: " + (guiBridge.lastEvent === "" ? "<none>" : guiBridge.lastEvent) }
     }
 }

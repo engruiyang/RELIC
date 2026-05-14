@@ -50,6 +50,10 @@ class GuiFacade:
         }
         self.received_commands: list[dict[str, Any]] = []
         self.received_events: list[dict[str, Any]] = []
+        self.last_command: dict[str, Any] = {}
+        self.last_event: dict[str, Any] = {}
+        self.command_count = 0
+        self.event_count = 0
 
     def get_app_state(self) -> dict[str, Any]:
         return deepcopy(self._app_state)
@@ -62,8 +66,16 @@ class GuiFacade:
 
     def handle_gui_command(self, command: str, args: dict[str, Any] | None = None) -> None:
         args = args or {}
-        self.received_commands.append({"command": command, "args": deepcopy(args)})
+        entry = {"command": command, "args": deepcopy(args)}
+        self.received_commands.append(entry)
+        self.last_command = deepcopy(entry)
+        self.command_count = len(self.received_commands)
+        print(f"[GUI COMMAND] command={command} args={args}", flush=True)
 
     def handle_gui_event(self, event_type: str, payload: dict[str, Any] | None = None) -> None:
         payload = payload or {}
-        self.received_events.append({"event_type": event_type, "payload": deepcopy(payload)})
+        entry = {"event_type": event_type, "payload": deepcopy(payload)}
+        self.received_events.append(entry)
+        self.last_event = deepcopy(entry)
+        self.event_count = len(self.received_events)
+        print(f"[GUI EVENT] event_type={event_type} payload={payload}", flush=True)
