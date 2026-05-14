@@ -21,6 +21,17 @@ class GuiFacade:
         self.last_pointer_x: float | None = None
         self.last_pointer_y: float | None = None
         self.last_hit_state: bool | None = None
+        self.last_game_event: dict[str, Any] = {}
+        self.game_event_count = 0
+        self.last_game_event_type = ""
+        self.last_game_action_name = ""
+        self.last_game_target_index: int | None = None
+        self.last_game_view_summary: dict[str, Any] = {}
+        self.platform_message_count = 0
+        self.last_platform_message: dict[str, Any] = {}
+        self.last_platform_index: int | None = None
+        self.last_platform_action = ""
+        self.last_platform_result = ""
 
         self._core_source: GuiCoreSnapshotSource | None = None
         if self.mode in {"core", "core-control"}:
@@ -116,6 +127,20 @@ class GuiFacade:
             self.last_event_result = self._core_source.handle_event(event_type, payload)
         else:
             self.last_event_result = {"result": "recorded", "status": "accepted", "reason": "mock_recorded", "source": "mock"}
+        if self._core_source and self.mode == "core-control":
+            self.last_game_event = deepcopy(self.last_event_result.get("last_game_event") or {})
+            self.game_event_count = int(self.last_event_result.get("game_event_count") or self.game_event_count)
+            self.last_game_view_summary = deepcopy(self.last_event_result.get("last_game_view_summary") or {})
+            self.last_game_event_type = str(self.last_game_event.get("event_type") or "")
+            payload_data = self.last_game_event.get("payload") or {}
+            self.last_game_action_name = str(payload_data.get("action_name") or "")
+            target_idx = payload_data.get("target_index")
+            self.last_game_target_index = int(target_idx) if isinstance(target_idx, int) else None
+            self.platform_message_count = int(self.last_event_result.get("platform_message_count") or self.platform_message_count)
+            self.last_platform_message = deepcopy(self.last_event_result.get("last_platform_message") or {})
+            self.last_platform_index = self.last_platform_message.get("index") if isinstance(self.last_platform_message.get("index"), int) else None
+            self.last_platform_action = str(self.last_platform_message.get("action_name") or "")
+            self.last_platform_result = str(self.last_event_result.get("last_platform_result") or "")
         event_result = str(self.last_event_result.get("result") or self.last_event_result.get("reason") or "unknown")
         x_norm = payload.get("x_norm")
         y_norm = payload.get("y_norm")
