@@ -188,3 +188,13 @@ Get-Content $latest.FullName -Encoding UTF8 -TotalCount 60
 5. 当前 `Minimal GUI` 仍是工程探针，不是正式页面。
 6. 当前 `GameViewState` 只回传摘要，尚未驱动正式通用 `GameCanvas` 渲染。
 7. 当前尚未做正式素材系统、美术、主题和页面重布局。
+
+## TASK 16 模板与接入文档命令（PowerShell）
+
+- 运行模板测试：`pytest -q tests/test_minimal_game_template.py`
+- 运行小游戏契约测试：`pytest -q tests/test_game_contracts.py tests/test_fake_click_game_client.py`
+- 运行 TASK 15 渲染契约测试：`pytest -q tests/test_game_view_render_contract.py`
+- 运行 TASK 14 全链路测试：`pytest -q tests/test_gui_mouse_to_game_client.py tests/test_game_event_to_platform_mock.py`
+- 运行 GUI 回归：`pytest -q tests/test_gui_protocol.py tests/test_gui_facade.py tests/test_gui_bridge.py tests/test_gui_core_source.py tests/test_gui_command_dispatcher.py tests/test_gui_core_control.py tests/test_gui_mouse_input.py`
+- 运行 TASK 9 回归：`pytest -q tests/test_platform_reporter.py tests/test_replay_adapter.py tests/test_task9_e2e_demo.py tests/test_session_report_writer.py`
+- 运行 headless 回归：`pytest -q tests/test_runtime_contract.py tests/test_session_manager.py tests/test_game_manager.py tests/test_task8_game_flow.py`
