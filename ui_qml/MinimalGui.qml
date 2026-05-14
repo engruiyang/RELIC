@@ -60,8 +60,59 @@ ApplicationWindow {
                 "button": "left"
             }))
         }
+        Rectangle {
+            width: parent.width
+            height: 220
+            color: "#1a1a1a"
+            border.width: 1
+            border.color: "#888"
+
+            property real targetXNorm: 0.5
+            property real targetYNorm: 0.5
+            property real radiusNorm: 0.08
+
+            Text {
+                anchors.left: parent.left
+                anchors.top: parent.top
+                anchors.margins: 8
+                color: "#ddd"
+                text: "Minimal Game Canvas | Target: center"
+            }
+            Rectangle {
+                width: parent.width * (parent.radiusNorm * 2)
+                height: width
+                radius: width / 2
+                color: "#f44"
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.verticalCenter: parent.verticalCenter
+            }
+            MouseArea {
+                anchors.fill: parent
+                onClicked: function(mouse) {
+                    var xNorm = mouse.x / Math.max(1, parent.width)
+                    var yNorm = mouse.y / Math.max(1, parent.height)
+                    var dx = xNorm - parent.targetXNorm
+                    var dy = yNorm - parent.targetYNorm
+                    var hit = Math.sqrt(dx * dx + dy * dy) <= parent.radiusNorm
+                    var payload = {
+                        "game_id": "fake_game",
+                        "target_id": hit ? "mock_target_0" : null,
+                        "target_index": hit ? 0 : -1,
+                        "x_norm": xNorm,
+                        "y_norm": yNorm,
+                        "button": "left",
+                        "hit": hit,
+                        "source": "minimal_game_canvas"
+                    }
+                    guiBridge.sendEvent(hit ? "target_click" : "background_click", JSON.stringify(payload))
+                }
+            }
+        }
 
         Rectangle { width: parent.width; height: 1; color: "#888" }
+        Text { text: "Click x_norm: " + ((guiBridge && guiBridge.lastPointerX !== "") ? guiBridge.lastPointerX : "<none>") }
+        Text { text: "Click y_norm: " + ((guiBridge && guiBridge.lastPointerY !== "") ? guiBridge.lastPointerY : "<none>") }
+        Text { text: "Last Hit: " + ((guiBridge && guiBridge.lastHitState !== "") ? guiBridge.lastHitState : "<none>") }
         Text { text: "Command Count: " + (guiBridge ? guiBridge.commandCount : 0) }
         Text { text: "Last Command: " + ((guiBridge && guiBridge.lastCommand !== "") ? guiBridge.lastCommand : "<none>") }
         Text { text: "Last Command Result: " + ((guiBridge && guiBridge.lastCommandResult !== "") ? guiBridge.lastCommandResult : "<none>") }

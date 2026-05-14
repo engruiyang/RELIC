@@ -4,12 +4,18 @@ from dataclasses import asdict
 from typing import Any
 
 from data.data_center import DataCenter
+from .gui_command_dispatcher import GuiCommandDispatcher
 from storage.sqlite_store import SqliteStore
 
 
 class GuiCoreSnapshotSource:
-    def __init__(self, db_path: str = "data/relic_local.db") -> None:
+    def __init__(self, db_path: str = "data/relic_local.db", source_mode: str = "core_readonly", duration_sec: int = 3, user_id: str = "demo_user", game_id: str = "fake_game", task6b_config: str = "config/task6b.yaml") -> None:
         self.db_path = db_path
+        self.source_mode = source_mode
+        self.duration_sec = duration_sec
+        self.user_id = user_id
+        self.game_id = game_id
+        self.task6b_config = task6b_config
         self._store = SqliteStore(db_path=db_path)
         self._store.connect()
         self._data_center = DataCenter()
@@ -26,6 +32,7 @@ class GuiCoreSnapshotSource:
             "source": "core_readonly",
         }
         self.refresh_snapshot()
+        self._dispatcher = GuiCommandDispatcher(self) if self.source_mode == "core_control" else None
 
     def close(self) -> None:
         self._store.close()
@@ -62,7 +69,7 @@ class GuiCoreSnapshotSource:
             "warning_flags": ["readonly_mode"],
             "error_flags": ["device_disconnected"],
             "allowed_commands": ["refresh_snapshot", "load_demo_user"],
-            "source": "core_readonly",
+            "source": self.source_mode,
         }
 
     def get_runtime_snapshot(self) -> dict[str, Any]:
@@ -81,39 +88,50 @@ class GuiCoreSnapshotSource:
             "source": "core_no_live_stream",
         }
 
+    def _get_last_session(self) -> dict[str, Any] | None:
+        sessions = self._store.list_training_sessions(limit=1)
+        return sessions[0] if sessions else None
+
+    def handle_command(self, command: str, args: dict[str, Any]) -> dict[str, Any]:
+        if self._dispatcher:
+            result = self._dispatcher.dispatch(command, args).to_dict()
+            self._last_command_result = dict(result)
+            return dict(self._last_command_result)
+        if command == "refresh_snapshot":
+            self.refresh_snapshot()
+            self._last_command_result = {"command": command, "accepted": True, "result": "accepted", "status": "accepted", "message": "refreshed", "reason": "refreshed", "source": "core_readonly", "payload": {}}
+        elif command == "load_demo_user":
+            self.load_demo_user()
+            self._last_command_result = {"command": command, "accepted": True, "result": "accepted", "status": "accepted", "message": "demo_user_loaded", "reason": "demo_user_loaded", "source": "core_readonly", "payload": {}}
+        elif command == "end_session":
+            self._last_command_result = {"command": command, "accepted": True, "result": "noop", "status": "noop", "message": "no_active_session", "reason": "no_active_session", "source": "core_readonly", "payload": {}}
+        else:
+            self._last_command_result = {"command": command, "accepted": False, "result": "readonly_rejected", "status": "readonly_rejected", "message": "readonly_rejected", "reason": "readonly_rejected", "source": "core_readonly", "payload": {}}
+        return dict(self._last_command_result)
+
+    def handle_event(self, event_type: str, payload: dict[str, Any]) -> dict[str, Any]:
+        _ = payload
+        if self.source_mode == "core_control":
+            self._last_event_result = {"result": "recorded_only", "status": "accepted", "reason": "recorded_only", "source": "core_control", "event_type": event_type}
+        else:
+            self._last_event_result = {"result": "readonly_ignored", "status": "ignored", "reason": "readonly_ignored", "source": "core_readonly"}
+        return dict(self._last_event_result)
+
+    def apply_session_summary(self, summary: dict[str, Any]) -> None:
+        self._latest_session = dict(summary)
+
     def get_session_state(self) -> dict[str, Any]:
-        last_session = self._get_last_session() or {}
+        last_session = getattr(self, "_latest_session", None) or self._get_last_session() or {}
         return {
             "session_id": str(last_session.get("session_id") or ""),
             "user_id": str(last_session.get("user_id") or self._current_user_id or ""),
             "game_id": str(last_session.get("game_id") or ""),
             "session_active": False,
             "score": float(last_session.get("score") or 0.0),
-            "warning_count": 0,
+            "warning_count": int(last_session.get("warning_count") or 0),
             "error_count": int(last_session.get("error_count") or 0),
             "log_path": str(last_session.get("log_path") or ""),
-            "report_path": "",
-            "source": "core_readonly",
+            "report_path": str(last_session.get("report_path") or ""),
+            "platform_report_status": str(last_session.get("platform_report_status") or ""),
+            "source": self.source_mode,
         }
-
-    def _get_last_session(self) -> dict[str, Any] | None:
-        sessions = self._store.list_training_sessions(limit=1)
-        return sessions[0] if sessions else None
-
-    def handle_command(self, command: str, args: dict[str, Any]) -> dict[str, Any]:
-        if command == "refresh_snapshot":
-            self.refresh_snapshot()
-            self._last_command_result = {"result": "accepted", "status": "accepted", "reason": "refreshed", "source": "core_readonly"}
-        elif command == "load_demo_user":
-            self.load_demo_user()
-            self._last_command_result = {"result": "accepted", "status": "accepted", "reason": "demo_user_loaded", "source": "core_readonly"}
-        elif command == "end_session":
-            self._last_command_result = {"result": "noop", "status": "noop", "reason": "no_active_session", "source": "core_readonly"}
-        else:
-            self._last_command_result = {"result": "readonly_rejected", "status": "rejected", "reason": "readonly_rejected", "source": "core_readonly"}
-        return dict(self._last_command_result)
-
-    def handle_event(self, event_type: str, payload: dict[str, Any]) -> dict[str, Any]:
-        _ = (event_type, payload)
-        self._last_event_result = {"result": "readonly_ignored", "status": "ignored", "reason": "readonly_ignored", "source": "core_readonly"}
-        return dict(self._last_event_result)

@@ -25,6 +25,9 @@ class GuiBridge(QObject):
         self._event_count = 0
         self._last_command_result = ""
         self._last_event_result = ""
+        self._last_pointer_x = ""
+        self._last_pointer_y = ""
+        self._last_hit_state = ""
         self._refresh_internal()
 
     def _refresh_internal(self) -> None:
@@ -37,6 +40,9 @@ class GuiBridge(QObject):
         self._last_event = dumps(self._facade.last_event) if self._facade.last_event else ""
         self._last_command_result = dumps(self._facade.last_command_result) if self._facade.last_command_result else ""
         self._last_event_result = dumps(self._facade.last_event_result) if self._facade.last_event_result else ""
+        self._last_pointer_x = "" if self._facade.last_pointer_x is None else str(self._facade.last_pointer_x)
+        self._last_pointer_y = "" if self._facade.last_pointer_y is None else str(self._facade.last_pointer_y)
+        self._last_hit_state = "" if self._facade.last_hit_state is None else ("true" if self._facade.last_hit_state else "false")
         self.stateChanged.emit()
 
     @Property(str, notify=stateChanged)
@@ -76,6 +82,18 @@ class GuiBridge(QObject):
     @Property(str, notify=stateChanged)
     def lastEventResult(self) -> str:
         return self._last_event_result
+
+    @Property(str, notify=stateChanged)
+    def lastPointerX(self) -> str:
+        return self._last_pointer_x
+
+    @Property(str, notify=stateChanged)
+    def lastPointerY(self) -> str:
+        return self._last_pointer_y
+
+    @Property(str, notify=stateChanged)
+    def lastHitState(self) -> str:
+        return self._last_hit_state
 
     @Slot()
     def refresh(self) -> None:
