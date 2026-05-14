@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from dataclasses import asdict
 from time import time
 from typing import Any
 
@@ -18,6 +19,7 @@ class GuiMouseInputRouter:
         self.last_game_input: GameInputEvent | None = None
         self.last_game_event: dict[str, Any] = {}
         self.last_game_view_summary: dict[str, Any] = {}
+        self.last_game_view: dict[str, Any] = {}
         self.game_event_count = 0
         self._platform_adapter = GameEventPlatformAdapter()
         self._active_session_id: str | None = None
@@ -68,6 +70,7 @@ class GuiMouseInputRouter:
             platform_res = self._platform_adapter.process_game_event(self.last_game_event, allow_mock=session_id is not None)
             last_platform_result = str(platform_res.get("platform_result") or last_platform_result)
         view = self._client.build_game_view()
+        self.last_game_view = asdict(view)
         self.last_game_view_summary = {
             "score": view.score,
             "combo": view.combo,
@@ -88,6 +91,7 @@ class GuiMouseInputRouter:
             "game_event_count": self.game_event_count,
             "last_game_event": dict(self.last_game_event),
             "last_game_view_summary": dict(self.last_game_view_summary),
+            "last_game_view": dict(self.last_game_view),
             "no_session_context": session_id is None,
             "platform_message_count": self._platform_adapter.platform_message_count,
             "last_platform_message": dict(self._platform_adapter.last_platform_message),

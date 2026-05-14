@@ -74,7 +74,12 @@ class FakeClickGameClient:
 
     def build_game_view(self) -> GameViewState:
         events, self._pending_visual_events = self._pending_visual_events, []
-        return GameViewState(game_id=self.game_id, view_version="game_view.v1", frame_id=self._frame_id, score=self._score, combo=self._combo, level=1, hud={"score": self._score, "combo": self._combo}, entities=[GameEntity(id=self.target_id, kind="target", role="primary", x=self.target_x, y=self.target_y, radius=self.target_radius, state="active", style_key="target_default", asset_key="target_dot", interactive=True, hit_shape="circle", metadata={"target_index": 0})], visual_events=events, layout_hints={"canvas": "game_canvas", "theme": "default"})
+        entities = [
+            GameEntity(id="focus_zone_0", kind="focus_zone", role="safe_area", x=self.target_x, y=self.target_y, radius=0.18, state="idle", style_key="focus_zone_default", asset_key="focus_zone_plain", interactive=False, hit_shape="circle", metadata={}),
+            GameEntity(id="progress_ring_0", kind="progress_ring", role="target_progress", x=self.target_x, y=self.target_y, radius=0.11, state="active", style_key="progress_ring_default", asset_key="progress_ring_plain", interactive=False, hit_shape="circle", metadata={"progress": min(1.0, self._combo / 10.0)}),
+            GameEntity(id=self.target_id, kind="target", role="primary", x=self.target_x, y=self.target_y, radius=self.target_radius, state="active", style_key="target_default", asset_key="target_dot", interactive=True, hit_shape="circle", metadata={"target_index": 0}),
+        ]
+        return GameViewState(game_id=self.game_id, view_version="game_view.v1", frame_id=self._frame_id, score=self._score, combo=self._combo, level=1, hud={"score": self._score, "combo": self._combo}, entities=entities, visual_events=events, layout_hints={"canvas": "game_canvas", "theme": "default"})
 
     def collect_game_events(self) -> list[GameEvent]:
         events, self._pending_events = self._pending_events, []

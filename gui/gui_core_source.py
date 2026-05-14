@@ -32,6 +32,7 @@ class GuiCoreSnapshotSource:
             "reason": "none",
             "source": "core_readonly",
         }
+        self._last_game_view: dict[str, Any] = {}
         self.refresh_snapshot()
         self._dispatcher = GuiCommandDispatcher(self) if self.source_mode == "core_control" else None
         self._mouse_router = GuiMouseInputRouter(game_id=self.game_id) if self.source_mode == "core_control" else None
@@ -112,14 +113,18 @@ class GuiCoreSnapshotSource:
         return dict(self._last_command_result)
 
     def handle_event(self, event_type: str, payload: dict[str, Any]) -> dict[str, Any]:
-        if self.source_mode == "core_control" and self._mouse_router and event_type in {"target_click", "background_click"}:
+        if self.source_mode == "core_control" and self._mouse_router and event_type in {"pointer_click", "target_click", "background_click"}:
             session_id = str(self.get_session_state().get("session_id") or "") or None
             self._last_event_result = self._mouse_router.route_gui_event(event_type=event_type, payload=payload, session_id=session_id)
+            self._last_game_view = dict(self._last_event_result.get("last_game_view") or {})
         elif self.source_mode == "core_control":
             self._last_event_result = {"result": "recorded_only", "status": "accepted", "reason": "recorded_only", "source": "core_control", "event_type": event_type}
         else:
             self._last_event_result = {"result": "readonly_ignored", "status": "ignored", "reason": "readonly_ignored", "source": "core_readonly"}
         return dict(self._last_event_result)
+
+    def get_game_view(self) -> dict[str, Any]:
+        return dict(self._last_game_view)
 
     def apply_session_summary(self, summary: dict[str, Any]) -> None:
         self._latest_session = dict(summary)
