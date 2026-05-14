@@ -119,5 +119,14 @@ ApplicationWindow {
         Text { text: "Event Count: " + (guiBridge ? guiBridge.eventCount : 0) }
         Text { text: "Last Event: " + ((guiBridge && guiBridge.lastEvent !== "") ? guiBridge.lastEvent : "<none>") }
         Text { text: "Last Event Result: " + ((guiBridge && guiBridge.lastEventResult !== "") ? guiBridge.lastEventResult : "<none>") }
+        Text { text: "Game Event Count: " + (guiBridge ? guiBridge.gameEventCount : 0) }
+        Text { text: "Last Game Event: " + ((guiBridge && guiBridge.lastGameEvent !== "") ? guiBridge.lastGameEvent : "<none>") }
+        Text { text: "Last Game Event Type: " + ((guiBridge && guiBridge.lastGameEventType !== "") ? guiBridge.lastGameEventType : "<none>") }
+        Text { text: "Last Game Action: " + ((guiBridge && guiBridge.lastGameActionName !== "") ? guiBridge.lastGameActionName : "<none>") }
+        Text { text: "Last Game Target Index: " + ((guiBridge && guiBridge.lastGameTargetIndex !== "") ? guiBridge.lastGameTargetIndex : "<none>") }
+        Text { text: "Game View Score: " + ((guiBridge && guiBridge.gameViewScore !== "") ? guiBridge.gameViewScore : "<none>") }
+        Text { text: "Game View Combo: " + ((guiBridge && guiBridge.gameViewCombo !== "") ? guiBridge.gameViewCombo : "<none>") }
+        Text { text: "Game View Entity Count: " + ((guiBridge && guiBridge.gameViewEntityCount !== "") ? guiBridge.gameViewEntityCount : "<none>") }
+        Text { text: "Game View Visual Event Count: " + ((guiBridge && guiBridge.gameViewVisualEventCount !== "") ? guiBridge.gameViewVisualEventCount : "<none>") }
     }
 }

@@ -28,6 +28,15 @@ class GuiBridge(QObject):
         self._last_pointer_x = ""
         self._last_pointer_y = ""
         self._last_hit_state = ""
+        self._game_event_count = 0
+        self._last_game_event = ""
+        self._last_game_event_type = ""
+        self._last_game_action_name = ""
+        self._last_game_target_index = ""
+        self._game_view_score = ""
+        self._game_view_combo = ""
+        self._game_view_entity_count = ""
+        self._game_view_visual_event_count = ""
         self._refresh_internal()
 
     def _refresh_internal(self) -> None:
@@ -43,6 +52,16 @@ class GuiBridge(QObject):
         self._last_pointer_x = "" if self._facade.last_pointer_x is None else str(self._facade.last_pointer_x)
         self._last_pointer_y = "" if self._facade.last_pointer_y is None else str(self._facade.last_pointer_y)
         self._last_hit_state = "" if self._facade.last_hit_state is None else ("true" if self._facade.last_hit_state else "false")
+        self._game_event_count = self._facade.game_event_count
+        self._last_game_event = dumps(self._facade.last_game_event) if self._facade.last_game_event else ""
+        self._last_game_event_type = self._facade.last_game_event_type
+        self._last_game_action_name = self._facade.last_game_action_name
+        self._last_game_target_index = "" if self._facade.last_game_target_index is None else str(self._facade.last_game_target_index)
+        summary = self._facade.last_game_view_summary
+        self._game_view_score = str(summary.get("score", "")) if summary else ""
+        self._game_view_combo = str(summary.get("combo", "")) if summary else ""
+        self._game_view_entity_count = str(summary.get("entity_count", "")) if summary else ""
+        self._game_view_visual_event_count = str(summary.get("visual_event_count", "")) if summary else ""
         self.stateChanged.emit()
 
     @Property(str, notify=stateChanged)
@@ -94,6 +113,42 @@ class GuiBridge(QObject):
     @Property(str, notify=stateChanged)
     def lastHitState(self) -> str:
         return self._last_hit_state
+
+    @Property(int, notify=stateChanged)
+    def gameEventCount(self) -> int:
+        return self._game_event_count
+
+    @Property(str, notify=stateChanged)
+    def lastGameEvent(self) -> str:
+        return self._last_game_event
+
+    @Property(str, notify=stateChanged)
+    def lastGameEventType(self) -> str:
+        return self._last_game_event_type
+
+    @Property(str, notify=stateChanged)
+    def lastGameActionName(self) -> str:
+        return self._last_game_action_name
+
+    @Property(str, notify=stateChanged)
+    def lastGameTargetIndex(self) -> str:
+        return self._last_game_target_index
+
+    @Property(str, notify=stateChanged)
+    def gameViewScore(self) -> str:
+        return self._game_view_score
+
+    @Property(str, notify=stateChanged)
+    def gameViewCombo(self) -> str:
+        return self._game_view_combo
+
+    @Property(str, notify=stateChanged)
+    def gameViewEntityCount(self) -> str:
+        return self._game_view_entity_count
+
+    @Property(str, notify=stateChanged)
+    def gameViewVisualEventCount(self) -> str:
+        return self._game_view_visual_event_count
 
     @Slot()
     def refresh(self) -> None:
