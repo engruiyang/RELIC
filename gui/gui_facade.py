@@ -18,6 +18,9 @@ class GuiFacade:
         self.last_event_result: dict[str, Any] = {}
         self.command_count = 0
         self.event_count = 0
+        self.last_pointer_x: float | None = None
+        self.last_pointer_y: float | None = None
+        self.last_hit_state: bool | None = None
 
         self._core_source: GuiCoreSnapshotSource | None = None
         if self.mode in {"core", "core-control"}:
@@ -103,9 +106,18 @@ class GuiFacade:
         self.received_events.append(entry)
         self.last_event = deepcopy(entry)
         self.event_count = len(self.received_events)
+        if "x_norm" in payload:
+            self.last_pointer_x = float(payload.get("x_norm"))
+        if "y_norm" in payload:
+            self.last_pointer_y = float(payload.get("y_norm"))
+        if "hit" in payload:
+            self.last_hit_state = bool(payload.get("hit"))
         if self._core_source:
             self.last_event_result = self._core_source.handle_event(event_type, payload)
         else:
             self.last_event_result = {"result": "recorded", "status": "accepted", "reason": "mock_recorded", "source": "mock"}
         event_result = str(self.last_event_result.get("result") or self.last_event_result.get("reason") or "unknown")
-        print(f"[GUI EVENT] event_type={event_type} payload={payload} result={event_result}", flush=True)
+        x_norm = payload.get("x_norm")
+        y_norm = payload.get("y_norm")
+        hit = payload.get("hit")
+        print(f"[GUI EVENT] event_type={event_type} x={x_norm} y={y_norm} hit={hit} result={event_result}", flush=True)
