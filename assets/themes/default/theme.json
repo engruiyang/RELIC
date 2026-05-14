@@ -1,20 +1,18 @@
 {
-  "name": "default",
-  "font_family": "Microsoft YaHei UI",
+  "schema_version": "theme.v1",
+  "theme_id": "default",
   "colors": {
-    "background": "#10131A",
-    "panel": "#1B2130",
-    "primary": "#70E0FF",
-    "secondary": "#8B7CFF",
-    "warning": "#FFD166",
-    "danger": "#FF5C7A",
-    "text": "#F5F7FA",
-    "muted_text": "#A7B0C0"
+    "bg": "#10131A",
+    "fg": "#F5F7FA",
+    "accent": "#70E0FF",
+    "warn": "#FFD166"
   },
-  "sizes": {
-    "window_width": 1280,
-    "window_height": 720,
-    "top_bar_height": 72,
-    "bottom_bar_height": 48
+  "styles": {
+    "target.primary": {"fill": "#70E0FF", "stroke": "#1B2130", "stroke_width": 2, "opacity": 1.0, "radius_scale": 1.0, "debug_label": "target.primary"},
+    "target.background": {"fill": "#2B3342", "stroke": "#10131A", "stroke_width": 1, "opacity": 0.85, "radius_scale": 1.0, "debug_label": "target.background"},
+    "focus_zone.default": {"fill": "#70E0FF22", "stroke": "#70E0FF", "stroke_width": 2, "opacity": 1.0, "radius_scale": 1.0, "debug_label": "focus_zone.default"},
+    "progress_ring.default": {"fill": "#00000000", "stroke": "#8B7CFF", "stroke_width": 3, "opacity": 1.0, "radius_scale": 1.0, "debug_label": "progress_ring.default"},
+    "text.default": {"fill": "#F5F7FA", "font_size": 14, "opacity": 1.0, "debug_label": "text.default"},
+    "panel.debug": {"fill": "#1B2130", "stroke": "#2B3342", "stroke_width": 1, "opacity": 0.95, "debug_label": "panel.debug"}
   }
 }

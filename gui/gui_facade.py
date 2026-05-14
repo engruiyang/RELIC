@@ -5,6 +5,7 @@ from typing import Any
 
 from .gui_core_source import GuiCoreSnapshotSource
 from .gui_live_readonly_source import GuiLiveReadonlySource
+from .gui_live_control_source import GuiLiveControlSource
 
 
 class GuiFacade:
@@ -37,6 +38,7 @@ class GuiFacade:
 
         self._core_source: GuiCoreSnapshotSource | None = None
         self._live_source: GuiLiveReadonlySource | None = None
+        self._live_control_source: GuiLiveControlSource | None = None
         if self.mode in {"core", "core-control"}:
             source_mode = "core_control" if self.mode == "core-control" else "core_readonly"
             self._core_source = GuiCoreSnapshotSource(db_path=self.db_path, source_mode=source_mode, duration_sec=duration_sec, user_id=user_id, game_id=game_id, task6b_config=task6b_config)
@@ -44,6 +46,10 @@ class GuiFacade:
         if self.mode == "live-readonly":
             self._live_source = GuiLiveReadonlySource(host=host, port=port)
             self._live_source.start()
+            return
+        if self.mode == "live-control":
+            self._live_control_source = GuiLiveControlSource(host=host, port=port, user_id=user_id, game_id=game_id)
+            self._live_control_source.start()
             return
 
         self._app_state = {
@@ -92,6 +98,8 @@ class GuiFacade:
         }
 
     def get_app_state(self) -> dict[str, Any]:
+        if self._live_control_source:
+            return self._live_control_source.get_app_state()
         if self._live_source:
             return self._live_source.get_app_state()
         if self._core_source:
@@ -99,6 +107,8 @@ class GuiFacade:
         return deepcopy(self._app_state)
 
     def get_runtime_snapshot(self) -> dict[str, Any]:
+        if self._live_control_source:
+            return self._live_control_source.get_runtime_snapshot()
         if self._live_source:
             return self._live_source.get_runtime_snapshot()
         if self._core_source:
@@ -106,6 +116,8 @@ class GuiFacade:
         return deepcopy(self._runtime_snapshot)
 
     def get_session_state(self) -> dict[str, Any]:
+        if self._live_control_source:
+            return self._live_control_source.get_session_state()
         if self._live_source:
             return self._live_source.get_session_state()
         if self._core_source:
@@ -113,6 +125,8 @@ class GuiFacade:
         return deepcopy(self._session_state)
 
     def get_game_view(self) -> dict[str, Any]:
+        if self._live_control_source:
+            return self._live_control_source.get_game_view()
         if self._core_source:
             return self._core_source.get_game_view()
         return {}
@@ -125,6 +139,21 @@ class GuiFacade:
         self.command_count = len(self.received_commands)
         if self._core_source:
             self.last_command_result = self._core_source.handle_command(command, args)
+        elif self._live_control_source:
+            if command == "refresh_snapshot":
+                self.last_command_result = {"command": command, "accepted": True, "status": "accepted", "message": "refreshed", "result": "accepted", "source": "live_control"}
+            elif command == "load_demo_user":
+                uid = str(args.get("user_id", "demo_user"))
+                self._live_control_source.user_id = uid
+                self.last_command_result = {"command": command, "accepted": True, "status": "accepted", "message": "demo_user_loaded", "result": "accepted", "source": "live_control", "user_id": uid}
+            elif command == "start_mock_session":
+                self.last_command_result = self._live_control_source.start_live_debug_session(args.get("user_id"))
+            elif command == "end_session":
+                self.last_command_result = self._live_control_source.end_live_debug_session()
+            elif command == "open_last_report":
+                self.last_command_result = {"command": command, "accepted": True, "status": "noop", "message": "report_disabled_in_live_control", "result": "noop", "source": "live_control"}
+            else:
+                self.last_command_result = {"command": command, "accepted": False, "status": "rejected", "message": "unsupported_command", "result": "rejected", "source": "live_control"}
         elif self._live_source:
             if command == "refresh_snapshot":
                 self.last_command_result = {"command": command, "accepted": True, "status": "accepted", "message": "refreshed", "result": "accepted", "source": "live_readonly"}
@@ -154,10 +183,30 @@ class GuiFacade:
             self.last_hit_state = bool(payload.get("hit"))
         if self._core_source:
             self.last_event_result = self._core_source.handle_event(event_type, payload)
+        elif self._live_control_source:
+            if event_type == "pointer_click":
+                self.last_event_result = self._live_control_source.handle_pointer_click(payload)
+            else:
+                self.last_event_result = {"result": "ignored", "status": "ignored", "reason": "unsupported_event", "source": "live_control"}
         elif self._live_source:
             self.last_event_result = {"result": "readonly_ignored", "status": "ignored", "reason": "readonly_ignored", "source": "live_readonly"}
         else:
             self.last_event_result = {"result": "recorded", "status": "accepted", "reason": "mock_recorded", "source": "mock"}
+        if self._live_control_source:
+            self.last_game_event = deepcopy(self.last_event_result.get("last_game_event") or {})
+            self.game_event_count = int(self.last_event_result.get("game_event_count") or self.game_event_count)
+            self.last_game_view = deepcopy(self._live_control_source.get_game_view())
+            self.last_game_view_summary = {"score": self.last_game_view.get("score",0), "combo": self.last_game_view.get("combo",0), "entity_count": len(self.last_game_view.get("entities") or []), "visual_event_count": len(self.last_game_view.get("visual_events") or [])}
+            self.last_game_event_type = str(self.last_game_event.get("event_type") or "")
+            payload_data = self.last_game_event.get("payload") or {}
+            self.last_game_action_name = str(payload_data.get("action_name") or "")
+            target_idx = payload_data.get("target_index")
+            self.last_game_target_index = int(target_idx) if isinstance(target_idx, int) else None
+            self.platform_message_count = int(self.last_event_result.get("platform_message_count") or self.platform_message_count)
+            self.last_platform_message = deepcopy(self.last_event_result.get("last_platform_message") or {})
+            self.last_platform_index = self.last_platform_message.get("index") if isinstance(self.last_platform_message.get("index"), int) else None
+            self.last_platform_action = str(self.last_platform_message.get("action_name") or "")
+            self.last_platform_result = str(self.last_event_result.get("last_platform_result") or "")
         if self._core_source and self.mode == "core-control":
             self.last_game_event = deepcopy(self.last_event_result.get("last_game_event") or {})
             self.game_event_count = int(self.last_event_result.get("game_event_count") or self.game_event_count)
@@ -184,3 +233,5 @@ class GuiFacade:
             self._core_source.close()
         if self._live_source:
             self._live_source.stop()
+        if self._live_control_source:
+            self._live_control_source.stop()

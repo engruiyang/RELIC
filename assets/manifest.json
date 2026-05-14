@@ -1,8 +1,19 @@
 {
-  "images.logo": "images/icons/logo.png",
-  "images.main_background": "images/backgrounds/main.png",
-  "images.button.normal": "images/buttons/button_normal.png",
-  "images.button.hover": "images/buttons/button_hover.png",
-  "sounds.click": "sounds/click.wav",
-  "fonts.main": "fonts/main.ttf"
+  "schema_version": "asset_manifest.v1",
+  "default_theme": "default",
+  "default_layout": "minimal_gui",
+  "games": {
+    "fake_game": {
+      "visual_manifest": "games/fake_game/visual_manifest.json"
+    }
+  },
+  "common_assets": {
+    "common.placeholder.circle": {
+      "type": "shape",
+      "url": null,
+      "fallback_shape": "circle",
+      "style_key": "target.background",
+      "description": "shared fallback circle"
+    }
+  }
 }
