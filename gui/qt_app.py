@@ -6,12 +6,12 @@ from .gui_bridge import GuiBridge
 from .gui_facade import GuiFacade
 
 
-def run_minimal_qt(mode: str = "mock") -> int:
+def run_minimal_qt(mode: str = "mock", db_path: str = "data/relic_local.db") -> int:
     from PySide6.QtGui import QGuiApplication
     from PySide6.QtQml import QQmlApplicationEngine
 
     app = QGuiApplication([])
-    facade = GuiFacade(mode=mode)
+    facade = GuiFacade(mode=mode, db_path=db_path)
     bridge = GuiBridge(facade)
 
     engine = QQmlApplicationEngine()
