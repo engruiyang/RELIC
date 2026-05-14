@@ -13,6 +13,8 @@ def test_gui_bridge_can_create() -> None:
     facade = GuiFacade(mode="mock")
     bridge = GuiBridge(facade)
     assert "demo_user" in bridge.appState
+    assert bridge.commandCount == 0
+    assert bridge.eventCount == 0
 
 
 def test_gui_bridge_send_command() -> None:

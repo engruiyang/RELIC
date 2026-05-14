@@ -7,16 +7,16 @@ ApplicationWindow {
     height: 760
     title: "RELIC Minimal GUI"
 
-    property var appStateObj: JSON.parse(guiBridge.appState)
-    property var runtimeObj: JSON.parse(guiBridge.runtimeSnapshot)
-    property var sessionObj: JSON.parse(guiBridge.sessionState)
+    property var appStateObj: guiBridge ? JSON.parse(guiBridge.appState) : ({})
+    property var runtimeObj: guiBridge ? JSON.parse(guiBridge.runtimeSnapshot) : ({})
+    property var sessionObj: guiBridge ? JSON.parse(guiBridge.sessionState) : ({})
 
     Connections {
-        target: guiBridge
+        target: guiBridge ? guiBridge : null
         function onStateChanged() {
-            appStateObj = JSON.parse(guiBridge.appState)
-            runtimeObj = JSON.parse(guiBridge.runtimeSnapshot)
-            sessionObj = JSON.parse(guiBridge.sessionState)
+            appStateObj = guiBridge ? JSON.parse(guiBridge.appState) : ({})
+            runtimeObj = guiBridge ? JSON.parse(guiBridge.runtimeSnapshot) : ({})
+            sessionObj = guiBridge ? JSON.parse(guiBridge.sessionState) : ({})
         }
     }
 
@@ -25,23 +25,23 @@ ApplicationWindow {
         anchors.margins: 16
         spacing: 6
 
-        Text { text: "App State: " + appStateObj.state }
-        Text { text: "User ID: " + appStateObj.current_user_id }
-        Text { text: "User Name: " + appStateObj.current_user_name }
-        Text { text: "Device Connected: " + appStateObj.device_connected }
-        Text { text: "Calibration Status: " + appStateObj.calibration_status }
-        Text { text: "FI: " + runtimeObj.fi }
-        Text { text: "SQI: " + runtimeObj.sqi }
-        Text { text: "Attention: " + runtimeObj.attention }
-        Text { text: "Attention Age: " + runtimeObj.attention_age_ms }
-        Text { text: "Gyro Age: " + runtimeObj.gyro_age_ms }
-        Text { text: "Control State: " + runtimeObj.control_state }
-        Text { text: "Session ID: " + sessionObj.session_id }
-        Text { text: "Score: " + sessionObj.score }
-        Text { text: "Warning Count: " + sessionObj.warning_count }
-        Text { text: "Error Count: " + sessionObj.error_count }
-        Text { text: "Log Path: " + sessionObj.log_path }
-        Text { text: "Report Path: " + sessionObj.report_path }
+        Text { text: "App State: " + (appStateObj.state || "") }
+        Text { text: "User ID: " + (appStateObj.current_user_id || "") }
+        Text { text: "User Name: " + (appStateObj.current_user_name || "") }
+        Text { text: "Device Connected: " + (appStateObj.device_connected !== undefined ? appStateObj.device_connected : "") }
+        Text { text: "Calibration Status: " + (appStateObj.calibration_status || "") }
+        Text { text: "FI: " + (runtimeObj.fi !== undefined ? runtimeObj.fi : "") }
+        Text { text: "SQI: " + (runtimeObj.sqi !== undefined ? runtimeObj.sqi : "") }
+        Text { text: "Attention: " + (runtimeObj.attention !== undefined ? runtimeObj.attention : "") }
+        Text { text: "Attention Age: " + (runtimeObj.attention_age_ms !== undefined ? runtimeObj.attention_age_ms : "") }
+        Text { text: "Gyro Age: " + (runtimeObj.gyro_age_ms !== undefined ? runtimeObj.gyro_age_ms : "") }
+        Text { text: "Control State: " + (runtimeObj.control_state || "") }
+        Text { text: "Session ID: " + (sessionObj.session_id || "") }
+        Text { text: "Score: " + (sessionObj.score !== undefined ? sessionObj.score : "") }
+        Text { text: "Warning Count: " + (sessionObj.warning_count !== undefined ? sessionObj.warning_count : "") }
+        Text { text: "Error Count: " + (sessionObj.error_count !== undefined ? sessionObj.error_count : "") }
+        Text { text: "Log Path: " + (sessionObj.log_path || "") }
+        Text { text: "Report Path: " + (sessionObj.report_path || "") }
 
         Button { text: "Load Demo User"; onClicked: guiBridge.sendCommand("load_demo_user", "{}") }
         Button { text: "Start Mock Session"; onClicked: guiBridge.sendCommand("start_mock_session", "{}") }
@@ -60,9 +60,9 @@ ApplicationWindow {
         }
 
         Rectangle { width: parent.width; height: 1; color: "#888" }
-        Text { text: "Command Count: " + guiBridge.commandCount }
-        Text { text: "Last Command: " + (guiBridge.lastCommand === "" ? "<none>" : guiBridge.lastCommand) }
-        Text { text: "Event Count: " + guiBridge.eventCount }
-        Text { text: "Last Event: " + (guiBridge.lastEvent === "" ? "<none>" : guiBridge.lastEvent) }
+        Text { text: "Command Count: " + (guiBridge ? guiBridge.commandCount : 0) }
+        Text { text: "Last Command: " + ((guiBridge && guiBridge.lastCommand !== "") ? guiBridge.lastCommand : "<none>") }
+        Text { text: "Event Count: " + (guiBridge ? guiBridge.eventCount : 0) }
+        Text { text: "Last Event: " + ((guiBridge && guiBridge.lastEvent !== "") ? guiBridge.lastEvent : "<none>") }
     }
 }
