@@ -23,6 +23,8 @@ class GuiBridge(QObject):
         self._last_event = ""
         self._command_count = 0
         self._event_count = 0
+        self._last_command_result = ""
+        self._last_event_result = ""
         self._refresh_internal()
 
     def _refresh_internal(self) -> None:
@@ -33,6 +35,8 @@ class GuiBridge(QObject):
         self._event_count = self._facade.event_count
         self._last_command = dumps(self._facade.last_command) if self._facade.last_command else ""
         self._last_event = dumps(self._facade.last_event) if self._facade.last_event else ""
+        self._last_command_result = dumps(self._facade.last_command_result) if self._facade.last_command_result else ""
+        self._last_event_result = dumps(self._facade.last_event_result) if self._facade.last_event_result else ""
         self.stateChanged.emit()
 
     @Property(str, notify=stateChanged)
@@ -55,6 +59,11 @@ class GuiBridge(QObject):
     def lastCommand(self) -> str:
         return self._last_command
 
+
+    @Property(str, notify=stateChanged)
+    def lastCommandResult(self) -> str:
+        return self._last_command_result
+
     @Property(int, notify=stateChanged)
     def eventCount(self) -> int:
         return self._event_count
@@ -62,6 +71,11 @@ class GuiBridge(QObject):
     @Property(str, notify=stateChanged)
     def lastEvent(self) -> str:
         return self._last_event
+
+
+    @Property(str, notify=stateChanged)
+    def lastEventResult(self) -> str:
+        return self._last_event_result
 
     @Slot()
     def refresh(self) -> None:

@@ -25,6 +25,8 @@ ApplicationWindow {
         anchors.margins: 16
         spacing: 6
 
+        Text { text: "Mode: " + (appStateObj.source && appStateObj.source.indexOf("core") === 0 ? "core" : "mock") }
+        Text { text: "Source: " + (appStateObj.source || "") }
         Text { text: "App State: " + (appStateObj.state || "") }
         Text { text: "User ID: " + (appStateObj.current_user_id || "") }
         Text { text: "User Name: " + (appStateObj.current_user_name || "") }
@@ -62,7 +64,9 @@ ApplicationWindow {
         Rectangle { width: parent.width; height: 1; color: "#888" }
         Text { text: "Command Count: " + (guiBridge ? guiBridge.commandCount : 0) }
         Text { text: "Last Command: " + ((guiBridge && guiBridge.lastCommand !== "") ? guiBridge.lastCommand : "<none>") }
+        Text { text: "Last Command Result: " + ((guiBridge && guiBridge.lastCommandResult !== "") ? guiBridge.lastCommandResult : "<none>") }
         Text { text: "Event Count: " + (guiBridge ? guiBridge.eventCount : 0) }
         Text { text: "Last Event: " + ((guiBridge && guiBridge.lastEvent !== "") ? guiBridge.lastEvent : "<none>") }
+        Text { text: "Last Event Result: " + ((guiBridge && guiBridge.lastEventResult !== "") ? guiBridge.lastEventResult : "<none>") }
     }
 }
