@@ -4,10 +4,11 @@ from copy import deepcopy
 from typing import Any
 
 from .gui_core_source import GuiCoreSnapshotSource
+from .gui_live_readonly_source import GuiLiveReadonlySource
 
 
 class GuiFacade:
-    def __init__(self, mode: str = "mock", db_path: str = "data/relic_local.db", duration_sec: int = 3, user_id: str = "demo_user", game_id: str = "fake_game", task6b_config: str = "config/task6b.yaml") -> None:
+    def __init__(self, mode: str = "mock", db_path: str = "data/relic_local.db", duration_sec: int = 3, user_id: str = "demo_user", game_id: str = "fake_game", task6b_config: str = "config/task6b.yaml", host: str = "127.0.0.1", port: int = 8000) -> None:
         self.mode = mode
         self.db_path = db_path
         self.received_commands: list[dict[str, Any]] = []
@@ -35,9 +36,14 @@ class GuiFacade:
         self.last_platform_result = ""
 
         self._core_source: GuiCoreSnapshotSource | None = None
+        self._live_source: GuiLiveReadonlySource | None = None
         if self.mode in {"core", "core-control"}:
             source_mode = "core_control" if self.mode == "core-control" else "core_readonly"
             self._core_source = GuiCoreSnapshotSource(db_path=self.db_path, source_mode=source_mode, duration_sec=duration_sec, user_id=user_id, game_id=game_id, task6b_config=task6b_config)
+            return
+        if self.mode == "live-readonly":
+            self._live_source = GuiLiveReadonlySource(host=host, port=port)
+            self._live_source.start()
             return
 
         self._app_state = {
@@ -86,16 +92,22 @@ class GuiFacade:
         }
 
     def get_app_state(self) -> dict[str, Any]:
+        if self._live_source:
+            return self._live_source.get_app_state()
         if self._core_source:
             return self._core_source.get_app_state()
         return deepcopy(self._app_state)
 
     def get_runtime_snapshot(self) -> dict[str, Any]:
+        if self._live_source:
+            return self._live_source.get_runtime_snapshot()
         if self._core_source:
             return self._core_source.get_runtime_snapshot()
         return deepcopy(self._runtime_snapshot)
 
     def get_session_state(self) -> dict[str, Any]:
+        if self._live_source:
+            return self._live_source.get_session_state()
         if self._core_source:
             return self._core_source.get_session_state()
         return deepcopy(self._session_state)
@@ -113,6 +125,17 @@ class GuiFacade:
         self.command_count = len(self.received_commands)
         if self._core_source:
             self.last_command_result = self._core_source.handle_command(command, args)
+        elif self._live_source:
+            if command == "refresh_snapshot":
+                self.last_command_result = {"command": command, "accepted": True, "status": "accepted", "message": "refreshed", "result": "accepted", "source": "live_readonly"}
+            elif command == "load_demo_user":
+                self.last_command_result = {"command": command, "accepted": True, "status": "noop", "message": "readonly_no_user", "result": "noop", "source": "live_readonly"}
+            elif command == "start_mock_session":
+                self.last_command_result = {"command": command, "accepted": False, "status": "readonly_rejected", "message": "readonly_rejected", "result": "readonly_rejected", "source": "live_readonly"}
+            elif command == "end_session":
+                self.last_command_result = {"command": command, "accepted": True, "status": "noop", "message": "no_active_session", "result": "noop", "source": "live_readonly"}
+            else:
+                self.last_command_result = {"command": command, "accepted": False, "status": "readonly_rejected", "message": "readonly_rejected", "result": "readonly_rejected", "source": "live_readonly"}
         else:
             self.last_command_result = {"command": command, "accepted": True, "status": "accepted", "message": "mock_ok", "payload": {}, "result": "accepted", "source": "mock"}
         print(f"[GUI COMMAND] command={command} args={args} result={self.last_command_result.get('accepted')} status={self.last_command_result.get('status')} message=\"{self.last_command_result.get('message', self.last_command_result.get('reason', ''))}\"", flush=True)
@@ -131,6 +154,8 @@ class GuiFacade:
             self.last_hit_state = bool(payload.get("hit"))
         if self._core_source:
             self.last_event_result = self._core_source.handle_event(event_type, payload)
+        elif self._live_source:
+            self.last_event_result = {"result": "readonly_ignored", "status": "ignored", "reason": "readonly_ignored", "source": "live_readonly"}
         else:
             self.last_event_result = {"result": "recorded", "status": "accepted", "reason": "mock_recorded", "source": "mock"}
         if self._core_source and self.mode == "core-control":
@@ -153,3 +178,9 @@ class GuiFacade:
         y_norm = payload.get("y_norm")
         hit = payload.get("hit")
         print(f"[GUI EVENT] event_type={event_type} x={x_norm} y={y_norm} hit={hit} result={event_result}", flush=True)
+
+    def close(self) -> None:
+        if self._core_source:
+            self._core_source.close()
+        if self._live_source:
+            self._live_source.stop()
