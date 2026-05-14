@@ -32,4 +32,4 @@ def test_modes_keep_event_result_contract(tmp_path) -> None:
 
     control = GuiFacade(mode="core-control", db_path=str(tmp_path / "relic_cc.db"))
     control.handle_gui_event("target_click", {"x_norm": 0.5, "y_norm": 0.5, "hit": True})
-    assert control.last_event_result["reason"] == "recorded_only"
+    assert control.last_event_result["reason"] == "game_event_recorded_no_session_context"
