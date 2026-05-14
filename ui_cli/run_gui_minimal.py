@@ -6,7 +6,7 @@ import sys
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--mode", default="mock", choices=["mock", "core", "core-control", "live-readonly"])
+    parser.add_argument("--mode", default="mock", choices=["mock", "core", "core-control", "live-readonly", "live-control"])
     parser.add_argument("--db-path", default="data/relic_local.db")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8000)
@@ -31,6 +31,10 @@ def main() -> int:
     elif args.mode == "live-readonly":
         print(f"[GUI] mode=live-readonly db_path={args.db_path}", flush=True)
         print("[GUI] source=live_readonly", flush=True)
+        print(f"[GUI LIVE] connecting {args.host}:{args.port}", flush=True)
+    elif args.mode == "live-control":
+        print(f"[GUI] mode=live-control db_path={args.db_path}", flush=True)
+        print("[GUI] source=live_control", flush=True)
         print(f"[GUI LIVE] connecting {args.host}:{args.port}", flush=True)
     else:
         print("[GUI] mode=mock", flush=True)
