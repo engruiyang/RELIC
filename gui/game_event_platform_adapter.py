@@ -13,13 +13,13 @@ class GameEventPlatformAdapter:
         self.last_platform_message: dict[str, Any] = {}
         self.last_platform_result = "idle"
 
-    def process_game_event(self, game_event: dict[str, Any]) -> dict[str, Any]:
+    def process_game_event(self, game_event: dict[str, Any], *, allow_mock: bool = True) -> dict[str, Any]:
         if not game_event.get("reportable", False):
             self.last_platform_result = "skipped_not_reportable"
             return {"platform_mocked": False, "reason": "not_reportable", "platform_result": self.last_platform_result}
 
         session_id = game_event.get("session_id")
-        if not session_id:
+        if not allow_mock or not session_id:
             self.last_platform_result = "game_event_recorded_no_session_context"
             print("[PLATFORM MOCK] skipped reason=no_session_context", flush=True)
             return {"platform_mocked": False, "reason": "no_session_context", "platform_result": self.last_platform_result}

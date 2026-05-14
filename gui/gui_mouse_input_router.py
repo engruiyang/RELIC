@@ -20,6 +20,7 @@ class GuiMouseInputRouter:
         self.last_game_view_summary: dict[str, Any] = {}
         self.game_event_count = 0
         self._platform_adapter = GameEventPlatformAdapter()
+        self._active_session_id: str | None = None
 
     def route_gui_event(self, *, event_type: str, payload: dict[str, Any], session_id: str | None) -> dict[str, Any]:
         x_norm = float(payload.get("x_norm", 0.0))
@@ -28,9 +29,13 @@ class GuiMouseInputRouter:
             return {"result": "ignored", "status": "ignored", "reason": "invalid_pointer_range", "source": "core_control"}
 
         active_session_id = session_id or "gui_mouse_debug_session"
-        if not self._started:
+        if (not self._started) or (self._active_session_id != active_session_id):
+            if self._started:
+                self._client.stop("session_context_switched")
+                self._client.collect_game_events()
             self._client.start({"session_id": active_session_id, "game_id": self.game_id})
             self._started = True
+            self._active_session_id = active_session_id
 
         game_input = GameInputEvent(
             event_id=self._next_event_id(),
@@ -51,6 +56,7 @@ class GuiMouseInputRouter:
 
         self._client.handle_input(game_input)
         events = self._client.collect_game_events()
+        last_platform_result = "idle"
         for evt in events:
             self.last_game_event = evt.to_dict()
             self.game_event_count += 1
@@ -59,7 +65,8 @@ class GuiMouseInputRouter:
                 f"[GAME EVENT] event_type={evt.event_type} target_index={e_payload.get('target_index')} action={e_payload.get('action_name')} hit={e_payload.get('hit')}",
                 flush=True,
             )
-            self._platform_adapter.process_game_event(self.last_game_event)
+            platform_res = self._platform_adapter.process_game_event(self.last_game_event, allow_mock=session_id is not None)
+            last_platform_result = str(platform_res.get("platform_result") or last_platform_result)
         view = self._client.build_game_view()
         self.last_game_view_summary = {
             "score": view.score,
@@ -67,10 +74,14 @@ class GuiMouseInputRouter:
             "entity_count": len(view.entities),
             "visual_event_count": len(view.visual_events),
         }
+        result = "game_event_recorded_no_session_context" if session_id is None else last_platform_result
+        if result in {"idle", "skipped_not_reportable", "skipped_unmapped_event_type"}:
+            result = "recorded_only"
+
         return {
-            "result": "recorded_only",
+            "result": result,
             "status": "accepted",
-            "reason": "recorded_only",
+            "reason": result,
             "source": "core_control",
             "event_type": event_type,
             "game_input": game_input.to_dict(),

@@ -33,6 +33,7 @@ def test_core_control_routes_to_platform_mock(tmp_path) -> None:
     target = source.handle_event("target_click", {"x_norm": 0.5, "y_norm": 0.5, "button": 0, "hit": True})
     background = source.handle_event("background_click", {"x_norm": 0.1, "y_norm": 0.1, "button": 1, "hit": False})
     assert target["platform_message_count"] >= 1
+    assert target["result"] == "game_event_recorded_and_platform_mocked"
     assert target["last_platform_message"]["index"] == 0
     assert background["last_platform_message"]["index"] == 1
     source.close()
@@ -43,4 +44,12 @@ def test_readonly_does_not_generate_platform_message(tmp_path) -> None:
     res = source.handle_event("target_click", {"x_norm": 0.5, "y_norm": 0.5})
     assert res["reason"] == "readonly_ignored"
     assert "platform_message_count" not in res
+    source.close()
+
+
+def test_core_control_without_session_returns_no_session_context_result(tmp_path) -> None:
+    source = GuiCoreSnapshotSource(db_path=str(tmp_path / "nosid.db"), source_mode="core_control")
+    res = source.handle_event("target_click", {"x_norm": 0.5, "y_norm": 0.5, "button": 0, "hit": True})
+    assert res["result"] == "game_event_recorded_no_session_context"
+    assert res["platform_message_count"] == 0
     source.close()
