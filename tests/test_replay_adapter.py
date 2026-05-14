@@ -15,5 +15,6 @@ def test_replay_adapter_load_filter_summarize(tmp_path):
     assert len(list(ra.iter_events(str(p), {"game_event"}))) == 1
     sm = ra.summarize(str(p))
     assert sm["event_count"] == 3
+    assert sm["event_type_counts"]["runtime_snapshot"] == 1
     stats = ra.replay(str(p), speed=0)
     assert stats["event_count"] == 3

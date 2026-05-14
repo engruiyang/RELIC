@@ -7,6 +7,7 @@ import sys
 
 from relic_platform.platform_reporter import PlatformReporter
 from storage.replay_adapter import ReplayAdapter
+from storage.session_report_writer import write_session_report
 from storage.sqlite_store import SqliteStore
 
 
@@ -48,8 +49,10 @@ def main() -> None:
         "warning_count": row.get("warning_tick_count"),
         "error_count": row.get("error_count"),
         "platform_report_status": result.status,
+        "platform_report_error": result.error,
         "replay_event_count": replay_stats["event_count"],
     }
+    out["report_path"] = write_session_report(out, replay_stats, report_error=result.error)
     print(json.dumps(out, ensure_ascii=False))
 
 

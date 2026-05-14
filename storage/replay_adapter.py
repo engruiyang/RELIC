@@ -7,6 +7,11 @@ from typing import Any, Callable
 
 
 class ReplayAdapter:
+    """JSONL 日志级回放适配器。
+
+    当前仅支持事件级读取/过滤/回放/统计，不负责重新计算 FI/SQI。
+    后续可扩展为“计算级重放”以复现估计链路。
+    """
     def load_events(self, log_path: str) -> list[dict[str, Any]]:
         events = []
         for ln in Path(log_path).read_text(encoding="utf-8").splitlines():
