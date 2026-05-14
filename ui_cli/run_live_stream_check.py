@@ -74,13 +74,18 @@ def run_live_stream_check(
     metrics = _Metrics()
     data_center = DataCenter()
     warning_flags: set[str] = set()
+    historical_warning_flags: set[str] = set()
     error_flags: set[str] = set()
 
     gw = gateway or PlatformGateway(mode="live", host=host, port=port)
     writer = None
-    if save_jsonl:
-        out_dir = Path(output_dir)
-        out_dir.mkdir(parents=True, exist_ok=True)
+    out_dir = Path(output_dir) if output_dir else None
+    if out_dir is not None:
+        try:
+            out_dir.mkdir(parents=True, exist_ok=True)
+        except Exception:
+            out_dir = None
+    if save_jsonl and out_dir is not None:
         out_path = out_dir / f"live_stream_check_{now_ms}.jsonl"
         writer = out_path.open("w", encoding="utf-8")
 
@@ -118,6 +123,8 @@ def run_live_stream_check(
 
     start = time.monotonic()
     deadline = start + max(1, duration_sec)
+    connection_closed_early = False
+    exit_reason = "duration_reached"
     try:
         while time.monotonic() < deadline:
             loop_now_ms = int(time.time() * 1000)
@@ -152,8 +159,16 @@ def run_live_stream_check(
             if snap.get("gyro_fresh"):
                 metrics.gyro_fresh_hits += 1
 
-            warning_flags.update(snap.get("warning_flags", []))
+            tick_warning_flags = set(snap.get("warning_flags", []))
+            warning_flags.update(tick_warning_flags)
+            historical_warning_flags.update(tick_warning_flags)
             error_flags.update(snap.get("error_flags", []))
+
+            health = gw.health()
+            if metrics.total_ticks > 1 and not bool(health.get("alive", False)):
+                connection_closed_early = True
+                exit_reason = "connection_closed_early"
+                break
 
             if writer is not None:
                 writer.write(json.dumps({"now_ms": loop_now_ms, "events": events, "snapshot": snap}, ensure_ascii=False) + "\n")
@@ -161,6 +176,7 @@ def run_live_stream_check(
     except Exception as exc:  # noqa: BLE001
         error_flags.add("runtime_exception")
         warning_flags.add("stream_check_interrupted")
+        historical_warning_flags.add("stream_check_interrupted")
         runtime_exception = str(exc)
     else:
         runtime_exception = None
@@ -175,8 +191,16 @@ def run_live_stream_check(
 
     if metrics.decoded_attention_count == 0 and metrics.decoded_gyro_count > 0:
         warning_flags.add("attention_stale")
+        historical_warning_flags.add("attention_stale")
     if metrics.raw_message_count == 0:
         error_flags.add("no_data")
+    current_warning_flags = set(snap.get("warning_flags", []))
+    final_attention_fresh = bool(snap.get("attention_fresh", False))
+    final_gyro_fresh = bool(snap.get("gyro_fresh", False))
+    if final_attention_fresh:
+        current_warning_flags.discard("attention_missing")
+    if final_gyro_fresh:
+        current_warning_flags.discard("gyro_missing")
 
     summary = {
         "mode": "live_stream_check",
@@ -206,10 +230,32 @@ def run_live_stream_check(
         "warning_count": len(warning_flags),
         "error_count": len(error_flags),
         "warning_flags": sorted(warning_flags),
+        "current_warning_flags": sorted(current_warning_flags),
+        "historical_warning_flags": sorted(historical_warning_flags | warning_flags),
+        "final_attention_fresh": final_attention_fresh,
+        "final_gyro_fresh": final_gyro_fresh,
         "error_flags": sorted(error_flags),
         "error_message": runtime_exception,
-        "output_log_path": str(out_path) if out_path else None,
+        "connection_closed_early": connection_closed_early,
+        "exit_reason": exit_reason,
+        "output_log_path": None,
     }
+
+    if out_dir is not None:
+        ts = time.strftime("%Y%m%d_%H%M%S", time.localtime())
+        summary_path = out_dir / f"live_stream_check_{ts}_summary.json"
+        try:
+            summary_path.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
+            summary["output_log_path"] = str(summary_path)
+        except Exception as exc:  # noqa: BLE001
+            summary["warning_flags"] = sorted(set(summary["warning_flags"]) | {"summary_save_failed"})
+            summary["historical_warning_flags"] = sorted(set(summary["historical_warning_flags"]) | {"summary_save_failed"})
+            summary["error_message"] = str(exc) if summary["error_message"] is None else f"{summary['error_message']} | {exc}"
+
+    if summary["exit_reason"] == "duration_reached":
+        print("达到 duration_sec，停止接收")
+    elif summary["connection_closed_early"]:
+        print("连接提前断开")
     return summary
 
 

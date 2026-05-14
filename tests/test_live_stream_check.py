@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 from ui_cli.run_live_stream_check import run_live_stream_check
 
@@ -43,6 +44,10 @@ def test_live_stream_check_normal_attention_gyro() -> None:
     assert s["decoded_gyro_count"] >= 3
     assert s["last_attention"] is not None
     assert s["last_gyro"]["x"] is not None
+    assert "final_attention_fresh" in s
+    assert "final_gyro_fresh" in s
+    assert isinstance(s["current_warning_flags"], list)
+    assert isinstance(s["historical_warning_flags"], list)
 
 
 def test_live_stream_check_attention_stale_with_gyro_only() -> None:
@@ -66,3 +71,18 @@ def test_live_stream_check_json_serializable_and_connect_fail() -> None:
     dumped = json.dumps(s, ensure_ascii=False)
     assert dumped
     assert "connect_failed" in s["error_flags"]
+
+
+def test_output_dir_creates_summary_file_and_path(tmp_path: Path) -> None:
+    frames = [
+        [{"type": "device_status", "connected": True}, {"type": "stream_status", "alive": True, "active": True}],
+        [{"type": "attention", "value": 68}, {"type": "gyroscope", "x": 10, "y": 11, "z": 12}],
+    ]
+    s = run_live_stream_check("127.0.0.1", 8000, 1, "data/relic_local.db", str(tmp_path), tick_ms=20, gateway=FakeGateway(frames))
+    assert s["output_log_path"] is not None
+    output_file = Path(s["output_log_path"])
+    assert output_file.exists()
+    assert output_file.parent == tmp_path
+    assert output_file.read_text(encoding="utf-8")
+    assert "attention_missing" not in s["current_warning_flags"]
+    assert "gyro_missing" not in s["current_warning_flags"]
