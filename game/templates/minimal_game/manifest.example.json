@@ -1,0 +1,20 @@
+{
+  "game_id": "minimal_template",
+  "display_name": "Minimal Template Game",
+  "version": "0.1.0",
+  "supported_inputs": ["pointer_click"],
+  "supported_entities": ["target", "focus_zone", "progress_ring"],
+  "supported_effects": ["hit_flash", "miss_pulse"],
+  "default_difficulty": "normal",
+  "mouse_action_map": {
+    "0": "target_primary",
+    "1": "background",
+    "2": "send_test_click"
+  },
+  "report_enabled": true,
+  "resource_keys": {
+    "asset_key_examples": ["target.core.circle", "zone.focus.default"],
+    "style_key_examples": ["target_style.default", "hud_style.default"],
+    "effect_key_examples": ["fx.hit.flash.small", "fx.miss.pulse.small"]
+  }
+}

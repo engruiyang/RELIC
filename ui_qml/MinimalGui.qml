@@ -28,7 +28,7 @@ ApplicationWindow {
         anchors.margins: 16
         spacing: 6
 
-        Text { text: "Mode: " + (appStateObj.source && appStateObj.source.indexOf("core") === 0 ? "core" : "mock") }
+        Text { text: "Mode: " + (appStateObj.source === "live_readonly" ? "live-readonly" : (appStateObj.source && appStateObj.source.indexOf("core") === 0 ? "core" : "mock")) }
         Text { text: "Source: " + (appStateObj.source || "") }
         Text { text: "App State: " + (appStateObj.state || "") }
         Text { text: "User ID: " + (appStateObj.current_user_id || "") }
@@ -93,5 +93,23 @@ ApplicationWindow {
         Text { text: "Last Platform Index: " + ((guiBridge && guiBridge.lastPlatformIndex !== "") ? guiBridge.lastPlatformIndex : "<none>") }
         Text { text: "Last Platform Action: " + ((guiBridge && guiBridge.lastPlatformAction !== "") ? guiBridge.lastPlatformAction : "<none>") }
         Text { text: "Last Platform Result: " + ((guiBridge && guiBridge.lastPlatformResult !== "") ? guiBridge.lastPlatformResult : "<none>") }
+
+        Rectangle { width: parent.width; height: 1; color: "#888" }
+        Text { text: "Live Stream" }
+        Text { text: "Connection Status: " + (runtimeObj.connection_status !== undefined ? runtimeObj.connection_status : "-") }
+        Text { text: "Stream Alive: " + (runtimeObj.stream_alive !== undefined ? runtimeObj.stream_alive : "-") }
+        Text { text: "Raw Messages: " + (runtimeObj.raw_message_count !== undefined ? runtimeObj.raw_message_count : "-") }
+        Text { text: "Attention Count: " + (runtimeObj.decoded_attention_count !== undefined ? runtimeObj.decoded_attention_count : "-") }
+        Text { text: "Gyro Count: " + (runtimeObj.decoded_gyro_count !== undefined ? runtimeObj.decoded_gyro_count : "-") }
+        Text { text: "Attention: " + (runtimeObj.attention !== undefined ? runtimeObj.attention : "-") }
+        Text { text: "Attention Age: " + (runtimeObj.attention_age_ms !== undefined ? runtimeObj.attention_age_ms : "-") }
+        Text { text: "Attention Fresh: " + (runtimeObj.attention_fresh !== undefined ? runtimeObj.attention_fresh : "-") }
+        Text { text: "Gyro X/Y/Z: " + (runtimeObj.gyro_x !== undefined ? runtimeObj.gyro_x : "-") + "/" + (runtimeObj.gyro_y !== undefined ? runtimeObj.gyro_y : "-") + "/" + (runtimeObj.gyro_z !== undefined ? runtimeObj.gyro_z : "-") }
+        Text { text: "Gyro Age: " + (runtimeObj.gyro_age_ms !== undefined ? runtimeObj.gyro_age_ms : "-") }
+        Text { text: "Gyro Fresh: " + (runtimeObj.gyro_fresh !== undefined ? runtimeObj.gyro_fresh : "-") }
+        Text { text: "Current Warning Flags: " + (runtimeObj.current_warning_flags !== undefined ? JSON.stringify(runtimeObj.current_warning_flags) : "-") }
+        Text { text: "Historical Warning Flags: " + (runtimeObj.historical_warning_flags !== undefined ? JSON.stringify(runtimeObj.historical_warning_flags) : "-") }
+        Text { text: "Error Flags: " + (runtimeObj.error_flags !== undefined ? JSON.stringify(runtimeObj.error_flags) : "-") }
+        Text { text: "Error Message: " + (runtimeObj.error_message !== undefined && runtimeObj.error_message !== null ? runtimeObj.error_message : "-") }
     }
 }
