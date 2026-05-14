@@ -5,6 +5,7 @@ from typing import Any
 
 from data.data_center import DataCenter
 from .gui_command_dispatcher import GuiCommandDispatcher
+from .gui_mouse_input_router import GuiMouseInputRouter
 from storage.sqlite_store import SqliteStore
 
 
@@ -33,6 +34,7 @@ class GuiCoreSnapshotSource:
         }
         self.refresh_snapshot()
         self._dispatcher = GuiCommandDispatcher(self) if self.source_mode == "core_control" else None
+        self._mouse_router = GuiMouseInputRouter(game_id=self.game_id) if self.source_mode == "core_control" else None
 
     def close(self) -> None:
         self._store.close()
@@ -110,8 +112,10 @@ class GuiCoreSnapshotSource:
         return dict(self._last_command_result)
 
     def handle_event(self, event_type: str, payload: dict[str, Any]) -> dict[str, Any]:
-        _ = payload
-        if self.source_mode == "core_control":
+        if self.source_mode == "core_control" and self._mouse_router and event_type in {"target_click", "background_click"}:
+            session_id = str(self.get_session_state().get("session_id") or "") or None
+            self._last_event_result = self._mouse_router.route_gui_event(event_type=event_type, payload=payload, session_id=session_id)
+        elif self.source_mode == "core_control":
             self._last_event_result = {"result": "recorded_only", "status": "accepted", "reason": "recorded_only", "source": "core_control", "event_type": event_type}
         else:
             self._last_event_result = {"result": "readonly_ignored", "status": "ignored", "reason": "readonly_ignored", "source": "core_readonly"}
