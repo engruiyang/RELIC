@@ -27,6 +27,11 @@ class GuiFacade:
         self.last_game_action_name = ""
         self.last_game_target_index: int | None = None
         self.last_game_view_summary: dict[str, Any] = {}
+        self.platform_message_count = 0
+        self.last_platform_message: dict[str, Any] = {}
+        self.last_platform_index: int | None = None
+        self.last_platform_action = ""
+        self.last_platform_result = ""
 
         self._core_source: GuiCoreSnapshotSource | None = None
         if self.mode in {"core", "core-control"}:
@@ -131,6 +136,11 @@ class GuiFacade:
             self.last_game_action_name = str(payload_data.get("action_name") or "")
             target_idx = payload_data.get("target_index")
             self.last_game_target_index = int(target_idx) if isinstance(target_idx, int) else None
+            self.platform_message_count = int(self.last_event_result.get("platform_message_count") or self.platform_message_count)
+            self.last_platform_message = deepcopy(self.last_event_result.get("last_platform_message") or {})
+            self.last_platform_index = self.last_platform_message.get("index") if isinstance(self.last_platform_message.get("index"), int) else None
+            self.last_platform_action = str(self.last_platform_message.get("action_name") or "")
+            self.last_platform_result = str(self.last_event_result.get("last_platform_result") or "")
         event_result = str(self.last_event_result.get("result") or self.last_event_result.get("reason") or "unknown")
         x_norm = payload.get("x_norm")
         y_norm = payload.get("y_norm")

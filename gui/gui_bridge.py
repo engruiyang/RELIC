@@ -37,6 +37,11 @@ class GuiBridge(QObject):
         self._game_view_combo = ""
         self._game_view_entity_count = ""
         self._game_view_visual_event_count = ""
+        self._platform_message_count = 0
+        self._last_platform_message = ""
+        self._last_platform_index = ""
+        self._last_platform_action = ""
+        self._last_platform_result = ""
         self._refresh_internal()
 
     def _refresh_internal(self) -> None:
@@ -62,6 +67,11 @@ class GuiBridge(QObject):
         self._game_view_combo = str(summary.get("combo", "")) if summary else ""
         self._game_view_entity_count = str(summary.get("entity_count", "")) if summary else ""
         self._game_view_visual_event_count = str(summary.get("visual_event_count", "")) if summary else ""
+        self._platform_message_count = self._facade.platform_message_count
+        self._last_platform_message = dumps(self._facade.last_platform_message) if self._facade.last_platform_message else ""
+        self._last_platform_index = "" if self._facade.last_platform_index is None else str(self._facade.last_platform_index)
+        self._last_platform_action = self._facade.last_platform_action
+        self._last_platform_result = self._facade.last_platform_result
         self.stateChanged.emit()
 
     @Property(str, notify=stateChanged)
@@ -149,6 +159,26 @@ class GuiBridge(QObject):
     @Property(str, notify=stateChanged)
     def gameViewVisualEventCount(self) -> str:
         return self._game_view_visual_event_count
+
+    @Property(int, notify=stateChanged)
+    def platformMessageCount(self) -> int:
+        return self._platform_message_count
+
+    @Property(str, notify=stateChanged)
+    def lastPlatformMessage(self) -> str:
+        return self._last_platform_message
+
+    @Property(str, notify=stateChanged)
+    def lastPlatformIndex(self) -> str:
+        return self._last_platform_index
+
+    @Property(str, notify=stateChanged)
+    def lastPlatformAction(self) -> str:
+        return self._last_platform_action
+
+    @Property(str, notify=stateChanged)
+    def lastPlatformResult(self) -> str:
+        return self._last_platform_result
 
     @Slot()
     def refresh(self) -> None:

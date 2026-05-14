@@ -128,5 +128,10 @@ ApplicationWindow {
         Text { text: "Game View Combo: " + ((guiBridge && guiBridge.gameViewCombo !== "") ? guiBridge.gameViewCombo : "<none>") }
         Text { text: "Game View Entity Count: " + ((guiBridge && guiBridge.gameViewEntityCount !== "") ? guiBridge.gameViewEntityCount : "<none>") }
         Text { text: "Game View Visual Event Count: " + ((guiBridge && guiBridge.gameViewVisualEventCount !== "") ? guiBridge.gameViewVisualEventCount : "<none>") }
+        Text { text: "Platform Message Count: " + (guiBridge ? guiBridge.platformMessageCount : 0) }
+        Text { text: "Last Platform Message: " + ((guiBridge && guiBridge.lastPlatformMessage !== "") ? guiBridge.lastPlatformMessage : "<none>") }
+        Text { text: "Last Platform Index: " + ((guiBridge && guiBridge.lastPlatformIndex !== "") ? guiBridge.lastPlatformIndex : "<none>") }
+        Text { text: "Last Platform Action: " + ((guiBridge && guiBridge.lastPlatformAction !== "") ? guiBridge.lastPlatformAction : "<none>") }
+        Text { text: "Last Platform Result: " + ((guiBridge && guiBridge.lastPlatformResult !== "") ? guiBridge.lastPlatformResult : "<none>") }
     }
 }
