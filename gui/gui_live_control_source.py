@@ -86,6 +86,7 @@ class GuiLiveControlSource:
             return {"result": "no_active_live_debug_session", "status": "ignored", "reason": "no_active_live_debug_session", "source": "live_control"}
         self._event_seq += 1
         ge = GameInputEvent(event_id=f"live_ctrl_input_{self._event_seq}", session_id=self.live_debug_session_id, game_id=self.game_id, input_type="pointer_click", created_at_ms=int(time.time() * 1000), source="minimal_game_canvas", x_norm=float(payload.get("x_norm", 0.0)), y_norm=float(payload.get("y_norm", 0.0)), button=0, raw_event_type="pointer_click", debug_hit=payload.get("hit"), payload=dict(payload))
+        print(f"[GAME INPUT] type={ge.input_type} x={ge.x_norm:.3f} y={ge.y_norm:.3f} session_id={ge.session_id}", flush=True)
         self._client.handle_input(ge)
         events = self._client.collect_game_events()
         result = "recorded_only"
@@ -97,6 +98,10 @@ class GuiLiveControlSource:
             self.last_game_action_name = str(ep.get("action_name") or "")
             ti = ep.get("target_index")
             self.last_game_target_index = ti if isinstance(ti, int) else None
+            print(
+                f"[GAME EVENT] event_type={evt.event_type} target_index={ep.get('target_index')} action={ep.get('action_name')} hit={ep.get('hit')}",
+                flush=True,
+            )
             platform_res = self._platform_adapter.process_game_event(evt_dict, allow_mock=True)
             result = str(platform_res.get("platform_result") or result)
         self.last_game_view = asdict(self._client.build_game_view())

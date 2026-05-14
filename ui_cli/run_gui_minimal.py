@@ -35,7 +35,6 @@ def main() -> int:
     elif args.mode == "live-control":
         print(f"[GUI] mode=live-control db_path={args.db_path}", flush=True)
         print("[GUI] source=live_control", flush=True)
-        print(f"[GUI LIVE] connecting {args.host}:{args.port}", flush=True)
     else:
         print("[GUI] mode=mock", flush=True)
         print("[GUI] source=mock", flush=True)
