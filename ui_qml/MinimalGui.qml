@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import "components"
 
 ApplicationWindow {
     visible: true
@@ -10,6 +11,7 @@ ApplicationWindow {
     property var appStateObj: guiBridge ? JSON.parse(guiBridge.appState) : ({})
     property var runtimeObj: guiBridge ? JSON.parse(guiBridge.runtimeSnapshot) : ({})
     property var sessionObj: guiBridge ? JSON.parse(guiBridge.sessionState) : ({})
+    property var gameViewObj: guiBridge ? JSON.parse(guiBridge.gameViewJson) : ({})
 
     Connections {
         target: guiBridge ? guiBridge : null
@@ -17,6 +19,7 @@ ApplicationWindow {
             appStateObj = guiBridge ? JSON.parse(guiBridge.appState) : ({})
             runtimeObj = guiBridge ? JSON.parse(guiBridge.runtimeSnapshot) : ({})
             sessionObj = guiBridge ? JSON.parse(guiBridge.sessionState) : ({})
+            gameViewObj = guiBridge ? JSON.parse(guiBridge.gameViewJson) : ({})
         }
     }
 
@@ -51,62 +54,19 @@ ApplicationWindow {
         Button { text: "Refresh Snapshot"; onClicked: guiBridge.refresh() }
         Button {
             text: "Send Test Click"
-            onClicked: guiBridge.sendEvent("target_click", JSON.stringify({
+            onClicked: guiBridge.sendEvent("pointer_click", JSON.stringify({
                 "game_id": "fake_game",
-                "target_id": "mock_target_0",
-                "target_index": 0,
                 "x_norm": 0.5,
                 "y_norm": 0.5,
                 "button": "left"
             }))
         }
-        Rectangle {
+        GameCanvas {
             width: parent.width
             height: 220
-            color: "#1a1a1a"
-            border.width: 1
-            border.color: "#888"
-
-            property real targetXNorm: 0.5
-            property real targetYNorm: 0.5
-            property real radiusNorm: 0.08
-
-            Text {
-                anchors.left: parent.left
-                anchors.top: parent.top
-                anchors.margins: 8
-                color: "#ddd"
-                text: "Minimal Game Canvas | Target: center"
-            }
-            Rectangle {
-                width: parent.width * (parent.radiusNorm * 2)
-                height: width
-                radius: width / 2
-                color: "#f44"
-                anchors.horizontalCenter: parent.horizontalCenter
-                anchors.verticalCenter: parent.verticalCenter
-            }
-            MouseArea {
-                anchors.fill: parent
-                onClicked: function(mouse) {
-                    var xNorm = mouse.x / Math.max(1, parent.width)
-                    var yNorm = mouse.y / Math.max(1, parent.height)
-                    var dx = xNorm - parent.targetXNorm
-                    var dy = yNorm - parent.targetYNorm
-                    var hit = Math.sqrt(dx * dx + dy * dy) <= parent.radiusNorm
-                    var payload = {
-                        "game_id": "fake_game",
-                        "target_id": hit ? "mock_target_0" : null,
-                        "target_index": hit ? 0 : -1,
-                        "x_norm": xNorm,
-                        "y_norm": yNorm,
-                        "button": "left",
-                        "hit": hit,
-                        "source": "minimal_game_canvas"
-                    }
-                    guiBridge.sendEvent(hit ? "target_click" : "background_click", JSON.stringify(payload))
-                }
-            }
+            gameView: gameViewObj
+            guiBridgeRef: guiBridge
+            fallbackGameId: "fake_game"
         }
 
         Rectangle { width: parent.width; height: 1; color: "#888" }

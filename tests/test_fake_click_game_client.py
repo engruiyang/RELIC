@@ -25,12 +25,14 @@ def test_start_sets_zero_score() -> None:
     assert client.get_score() == 0
 
 
-def test_build_game_view_has_one_target_entity() -> None:
+def test_build_game_view_has_expected_entities() -> None:
     client = FakeClickGameClient()
     client.start({"session_id": "s1"})
     view = client.build_game_view()
-    assert len(view.entities) == 1
-    assert view.entities[0].kind == "target"
+    kinds = {entity.kind for entity in view.entities}
+    assert "target" in kinds
+    assert "focus_zone" in kinds
+    assert "progress_ring" in kinds
 
 
 def test_target_click_event_payload() -> None:

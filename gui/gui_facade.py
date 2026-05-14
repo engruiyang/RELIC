@@ -27,6 +27,7 @@ class GuiFacade:
         self.last_game_action_name = ""
         self.last_game_target_index: int | None = None
         self.last_game_view_summary: dict[str, Any] = {}
+        self.last_game_view: dict[str, Any] = {}
         self.platform_message_count = 0
         self.last_platform_message: dict[str, Any] = {}
         self.last_platform_index: int | None = None
@@ -99,6 +100,11 @@ class GuiFacade:
             return self._core_source.get_session_state()
         return deepcopy(self._session_state)
 
+    def get_game_view(self) -> dict[str, Any]:
+        if self._core_source:
+            return self._core_source.get_game_view()
+        return {}
+
     def handle_gui_command(self, command: str, args: dict[str, Any] | None = None) -> None:
         args = args or {}
         entry = {"command": command, "args": deepcopy(args)}
@@ -131,6 +137,7 @@ class GuiFacade:
             self.last_game_event = deepcopy(self.last_event_result.get("last_game_event") or {})
             self.game_event_count = int(self.last_event_result.get("game_event_count") or self.game_event_count)
             self.last_game_view_summary = deepcopy(self.last_event_result.get("last_game_view_summary") or {})
+            self.last_game_view = deepcopy(self.last_event_result.get("last_game_view") or {})
             self.last_game_event_type = str(self.last_game_event.get("event_type") or "")
             payload_data = self.last_game_event.get("payload") or {}
             self.last_game_action_name = str(payload_data.get("action_name") or "")

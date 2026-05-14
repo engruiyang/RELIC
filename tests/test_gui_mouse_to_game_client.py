@@ -13,7 +13,7 @@ def test_core_control_target_click_routes_to_game_client(tmp_path) -> None:
     assert payload["target_index"] == 0
     assert payload["action_name"] == "target_primary"
     assert result["game_event_count"] >= 1
-    assert result["last_game_view_summary"]["entity_count"] == 1
+    assert result["last_game_view_summary"]["entity_count"] >= 1
     source.close()
 
 
