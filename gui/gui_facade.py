@@ -7,7 +7,7 @@ from .gui_core_source import GuiCoreSnapshotSource
 
 
 class GuiFacade:
-    def __init__(self, mode: str = "mock", db_path: str = "data/relic_local.db") -> None:
+    def __init__(self, mode: str = "mock", db_path: str = "data/relic_local.db", duration_sec: int = 3, user_id: str = "demo_user", game_id: str = "fake_game", task6b_config: str = "config/task6b.yaml") -> None:
         self.mode = mode
         self.db_path = db_path
         self.received_commands: list[dict[str, Any]] = []
@@ -20,8 +20,9 @@ class GuiFacade:
         self.event_count = 0
 
         self._core_source: GuiCoreSnapshotSource | None = None
-        if self.mode == "core":
-            self._core_source = GuiCoreSnapshotSource(db_path=self.db_path)
+        if self.mode in {"core", "core-control"}:
+            source_mode = "core_control" if self.mode == "core-control" else "core_readonly"
+            self._core_source = GuiCoreSnapshotSource(db_path=self.db_path, source_mode=source_mode, duration_sec=duration_sec, user_id=user_id, game_id=game_id, task6b_config=task6b_config)
             return
 
         self._app_state = {
@@ -93,9 +94,8 @@ class GuiFacade:
         if self._core_source:
             self.last_command_result = self._core_source.handle_command(command, args)
         else:
-            self.last_command_result = {"result": "accepted", "status": "accepted", "reason": "mock_ok", "source": "mock"}
-        command_result = str(self.last_command_result.get("result") or self.last_command_result.get("reason") or "unknown")
-        print(f"[GUI COMMAND] command={command} args={args} result={command_result}", flush=True)
+            self.last_command_result = {"command": command, "accepted": True, "status": "accepted", "message": "mock_ok", "payload": {}, "result": "accepted", "source": "mock"}
+        print(f"[GUI COMMAND] command={command} args={args} result={self.last_command_result.get('accepted')} status={self.last_command_result.get('status')} message=\"{self.last_command_result.get('message', self.last_command_result.get('reason', ''))}\"", flush=True)
 
     def handle_gui_event(self, event_type: str, payload: dict[str, Any] | None = None) -> None:
         payload = payload or {}
@@ -106,6 +106,6 @@ class GuiFacade:
         if self._core_source:
             self.last_event_result = self._core_source.handle_event(event_type, payload)
         else:
-            self.last_event_result = {"result": "accepted", "status": "accepted", "reason": "mock_ok", "source": "mock"}
+            self.last_event_result = {"result": "recorded", "status": "accepted", "reason": "mock_recorded", "source": "mock"}
         event_result = str(self.last_event_result.get("result") or self.last_event_result.get("reason") or "unknown")
         print(f"[GUI EVENT] event_type={event_type} payload={payload} result={event_result}", flush=True)

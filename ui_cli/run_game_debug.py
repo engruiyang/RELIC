@@ -36,8 +36,36 @@ def build_parser() -> argparse.ArgumentParser:
     return p
 
 
-def main() -> None:
-    a = build_parser().parse_args()
+def run_game_debug_session(
+    db_path: str,
+    duration_sec: int,
+    user_id: str,
+    game_id: str,
+    task6b_config: str,
+    interval: float = 1.0,
+    mode: str = "demo",
+    bridge: str = "mock",
+    print_jsonl: bool = False,
+    print_ticks: bool = False,
+    record_pipeline_jsonl: str | None = None,
+) -> dict:
+    class Args:
+        pass
+
+    a = Args()
+    a.db_path = db_path
+    a.duration_sec = duration_sec
+    a.user_id = user_id
+    a.game_id = game_id
+    a.task6b_config = task6b_config
+    a.interval = interval
+    a.mode = mode
+    a.bridge = bridge
+    a.host = "127.0.0.1"
+    a.port = 8000
+    a.print_jsonl = print_jsonl
+    a.print_ticks = print_ticks
+    a.record_pipeline_jsonl = record_pipeline_jsonl
     store = SqliteStore(db_path=a.db_path)
     store.connect()
     task6b_cfg_raw = load_structured_file(a.task6b_config)
@@ -120,7 +148,7 @@ def main() -> None:
             user_storage.shutdown()
 
     summary = store.get_training_session(session.session_id)
-    print(json.dumps({
+    output = {
         "session_id": session.session_id,
         "task6b_config_path": a.task6b_config,
         "task6b_config_loaded": bool(task6b_cfg_raw),
@@ -132,8 +160,27 @@ def main() -> None:
         "log_path": ended.log_path if ended else None,
         "summary": summary,
         "view_state": manager.get_current_view_state(),
-    }, ensure_ascii=False))
+    }
     store.close()
+    return output
+
+
+def main() -> None:
+    a = build_parser().parse_args()
+    result = run_game_debug_session(
+        db_path=a.db_path,
+        duration_sec=a.duration_sec,
+        user_id=a.user_id,
+        game_id=a.game_id,
+        task6b_config=a.task6b_config,
+        interval=a.interval,
+        mode=a.mode,
+        bridge=a.bridge,
+        print_jsonl=a.print_jsonl,
+        print_ticks=a.print_ticks,
+        record_pipeline_jsonl=a.record_pipeline_jsonl,
+    )
+    print(json.dumps(result, ensure_ascii=False))
 
 
 if __name__ == "__main__":
