@@ -5,6 +5,9 @@
   "games": {
     "fake_game": {
       "visual_manifest": "games/fake_game/visual_manifest.json"
+    },
+    "trace_lock": {
+      "visual_manifest": "games/trace_lock/visual_manifest.json"
     }
   },
   "common_assets": {
