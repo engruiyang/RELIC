@@ -48,6 +48,8 @@ def write_session_report(session_summary: dict[str, Any], replay_summary: dict[s
         sqi_avg = merged.get("final_sqi_avg")
     platform_status = merged.get("platform_report_status") or "not_applicable"
     platform_error = report_error if report_error not in (None, "") else (merged.get("platform_report_error") or "none")
+    session_type = str(merged.get("session_type") or "").strip().lower()
+    is_formal_training = session_type == "training"
 
     def val(name: str, default: str = "unknown") -> Any:
         x = merged.get(name)
@@ -55,7 +57,42 @@ def write_session_report(session_summary: dict[str, Any], replay_summary: dict[s
 
     p = Path(out_dir) / f"{session_id}.md"
     p.parent.mkdir(parents=True, exist_ok=True)
-    text = f"""# RELIC Link Diagnostics
+    if is_formal_training:
+        text = f"""# RELIC Link Diagnostics
+
+- session_id: {val('session_id')}
+- session_type: {val('session_type')}
+- user_id: {val('user_id')}
+- game_id: {val('game_id')}
+- protocol_name: TraceLock Protocol
+- log_path: {val('log_path')}
+- Trace Score: {val('score')}
+- Sync Chain / max_combo: {val('combo')}/{val('max_combo')}
+- Trace Retention / accuracy: {val('accuracy')}
+- Trace Drop / omission: {val('omission')}
+- False Action: {val('false_action')}
+- RT Stability: {val('rt_stability')}
+- fi_avg: {fi_avg if fi_avg is not None else 'unknown'}
+- sqi_avg: {sqi_avg if sqi_avg is not None else 'unknown'}
+- valid_duration_ms: {val('valid_duration_ms')}
+- warning_duration_ms: {val('warning_duration_ms')}
+- error_count: {val('error_count')}
+- total_duration_ms: {val('total_duration_ms')}
+- control_state_summary: {val('control_state_summary')}
+- quality_state_summary: {val('quality_state_summary')}
+- game_event_count: {val('game_event_count')}
+- score_update_count: {val('score_update_count')}
+- behavior_sample_count: {val('behavior_sample_count')}
+- platform_report_status: {platform_status}
+- platform_report_error: {platform_error}
+- replay_event_count: {replay_summary.get('event_count')}
+
+训练摘要来源：SQLite summary + JSONL replay summary
+
+备注：当前报告由 headless mock/e2e 流程生成，真实平台联调状态另行记录。
+"""
+    else:
+        text = f"""# RELIC 训练会话报告
 
 - session_id: {val('session_id')}
 - session_type: {val('session_type')}
