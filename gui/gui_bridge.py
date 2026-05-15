@@ -199,7 +199,7 @@ class GuiBridge(QObject):
 
     @Slot()
     def refresh(self) -> None:
-        self._facade.handle_gui_command("refresh_snapshot", {})
+        self._facade.handle_gui_command("refresh_snapshot", {"silent": True})
         self._refresh_internal()
 
     @Slot(str, str)

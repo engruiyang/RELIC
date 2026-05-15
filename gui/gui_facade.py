@@ -150,15 +150,19 @@ class GuiFacade:
             self.last_command_result = self._core_source.handle_command(command, args)
         elif self._live_control_source:
             if command == "refresh_snapshot":
-                self.last_command_result = {"command": command, "accepted": True, "status": "accepted", "message": "refreshed", "result": "accepted", "source": "live_control"}
+                self.last_command_result = {"command": command, "accepted": True, "status": "accepted", "message": "refreshed", "result": "accepted", "source": "live_control", "silent": bool(args.get("silent", False))}
             elif command == "load_demo_user":
                 uid = str(args.get("user_id", "demo_user"))
                 self._live_control_source.user_id = uid
                 self.last_command_result = {"command": command, "accepted": True, "status": "accepted", "message": "demo_user_loaded", "result": "accepted", "source": "live_control", "user_id": uid}
             elif command == "start_mock_session":
                 self.last_command_result = self._live_control_source.start_live_debug_session(args.get("user_id"))
+            elif command == "start_training_session":
+                self.last_command_result = self._live_control_source.start_training_session(args.get("user_id"), args.get("db_path", self.db_path))
+            elif command == "end_training_session":
+                self.last_command_result = self._live_control_source.end_training_session()
             elif command == "end_session":
-                self.last_command_result = self._live_control_source.end_live_debug_session()
+                self.last_command_result = self._live_control_source.end_training_session() if self._live_control_source.session_type == "training" else self._live_control_source.end_live_debug_session()
             elif command == "set_debug_difficulty":
                 self.last_command_result = self._live_control_source.set_debug_difficulty(args.get("level"))
             elif command == "open_last_report":
@@ -178,7 +182,8 @@ class GuiFacade:
                 self.last_command_result = {"command": command, "accepted": False, "status": "readonly_rejected", "message": "readonly_rejected", "result": "readonly_rejected", "source": "live_readonly"}
         else:
             self.last_command_result = {"command": command, "accepted": True, "status": "accepted", "message": "mock_ok", "payload": {}, "result": "accepted", "source": "mock"}
-        print(f"[GUI COMMAND] command={command} args={args} result={self.last_command_result.get('accepted')} status={self.last_command_result.get('status')} message=\"{self.last_command_result.get('message', self.last_command_result.get('reason', ''))}\"", flush=True)
+        if not bool(args.get("silent", False)):
+            print(f"[GUI COMMAND] command={command} args={args} result={self.last_command_result.get('accepted')} status={self.last_command_result.get('status')} message=\"{self.last_command_result.get('message', self.last_command_result.get('reason', ''))}\"", flush=True)
 
     def handle_gui_event(self, event_type: str, payload: dict[str, Any] | None = None) -> None:
         payload = payload or {}
