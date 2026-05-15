@@ -95,10 +95,17 @@ def write_session_report(session_summary: dict[str, Any], replay_summary: dict[s
         text = f"""# RELIC 训练会话报告
 
 - session_id: {val('session_id')}
+- session_type: {val('session_type')}
 - user_id: {val('user_id')}
 - game_id: {val('game_id')}
+- protocol_name: TraceLock Protocol
 - log_path: {val('log_path')}
-- score: {val('score')}
+- Trace Score: {val('score')}
+- Sync Chain / max_combo: {val('combo')}/{val('max_combo')}
+- Trace Retention / accuracy: {val('accuracy')}
+- Trace Drop / omission: {val('omission')}
+- False Action: {val('false_action')}
+- RT Stability: {val('rt_stability')}
 - fi_avg: {fi_avg if fi_avg is not None else 'unknown'}
 - sqi_avg: {sqi_avg if sqi_avg is not None else 'unknown'}
 - valid_duration_ms: {val('valid_duration_ms')}
