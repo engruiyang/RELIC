@@ -5,7 +5,7 @@ import time
 from dataclasses import asdict
 from typing import Any
 
-from game.fake_click_game_client import FakeClickGameClient
+from game.game_client_registry import create_game_client
 from game.game_contracts import GameInputEvent
 from .game_event_platform_adapter import GameEventPlatformAdapter
 from .gui_live_readonly_source import GuiLiveReadonlySource
@@ -17,7 +17,7 @@ class GuiLiveControlSource:
         self.game_id = game_id
         self.poll_interval_sec = poll_interval_sec
         self._live_source = live_source or GuiLiveReadonlySource(host=host, port=port, poll_interval_sec=poll_interval_sec)
-        self._client = FakeClickGameClient(game_id=game_id)
+        self._client = create_game_client(game_id)
         self._platform_adapter = GameEventPlatformAdapter()
         self._lock = threading.Lock()
         self._tick_thread: threading.Thread | None = None
@@ -69,7 +69,9 @@ class GuiLiveControlSource:
         if sid == self.live_debug_session_id:
             sid = f"{sid}_{int(time.time() * 1000) % 1000:03d}"
         self.live_debug_session_id = sid
-        self._client.start({"session_id": sid, "game_id": self.game_id})
+        manifest = getattr(self._client, "manifest", {}) or {}
+        default_difficulty = manifest.get("default_difficulty", 1)
+        self._client.start({"session_id": sid, "user_id": uid, "game_id": self.game_id, "difficulty": default_difficulty})
         self.interaction_enabled = True
         return {"command": "start_mock_session", "accepted": True, "status": "live_debug_started", "message": "live debug session started", "result": "live_debug_started", "session_id": sid, "source": "live_control"}
 
