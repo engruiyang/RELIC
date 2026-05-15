@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import logging
 from statistics import mean
 from typing import Any
 
 from game.game_contracts import BehaviorSample, GameEntity, GameEvent, GameInputEvent, GameViewState, VisualEvent
+
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(slots=True)
@@ -86,6 +90,8 @@ class TraceLockClient:
         self._trace_seal_count = 0
         self._snapshot: dict[str, Any] = {}
         self._level_change_count = 0
+        self._debug_difficulty_level: int | None = None
+        self._last_logged_movement_type = ""
 
     @property
     def manifest(self) -> dict[str, Any]:
@@ -94,6 +100,8 @@ class TraceLockClient:
     def start(self, context: dict[str, Any]) -> None:
         self._session_id = str(context.get("session_id", ""))
         self._level = int(context.get("difficulty", self._manifest["default_difficulty"]))
+        if self._debug_difficulty_level is not None:
+            self._level = self._debug_difficulty_level
         self._level = max(1, min(5, self._level))
         self._started = True
         self._completed = False
@@ -123,12 +131,14 @@ class TraceLockClient:
         self._trace_seal_count = 0
         self._snapshot = {}
         self._level_change_count = 0
+        logger.info("[TRACELOCK] start session_id=%s level=%s override=%s", self._session_id, self._level, self._debug_difficulty_level)
         self._spawn_target()
 
     def stop(self, reason: str) -> None:
         self._started = False
         self._completed = True
         self._events.append(self._make_event("game_completed", self._clock_ms, False, {"reason": reason, "final_score": self._score}))
+        logger.info("[TRACELOCK] completed score=%s accuracy=%.3f combo=%s", self._score, self.collect_behavior_sample().accuracy, self._combo)
 
     def update(self, runtime_snapshot: dict[str, Any], dt_ms: int) -> None:
         if not self._started:
@@ -145,6 +155,7 @@ class TraceLockClient:
             self._completed = True
             self._started = False
             self._events.append(self._make_event("game_completed", self._clock_ms, False, {"reason": "duration_elapsed", "final_score": self._score}))
+            logger.info("[TRACELOCK] completed score=%s accuracy=%.3f combo=%s", self._score, self.collect_behavior_sample().accuracy, self._combo)
 
     def handle_input(self, game_input_event: GameInputEvent) -> None:
         if not self._started or self._completed:
@@ -197,7 +208,8 @@ class TraceLockClient:
         ]
         visual_events = [v for v in self._visual_events]
         self._visual_events.clear()
-        return GameViewState(game_id=self.game_id, view_version="game_view.v1", frame_id=self._frame_id, score=self._score, combo=self._combo, level=self._level, hud={"score": self._score, "combo": self._combo, "max_combo": self._max_combo, "score_multiplier": score_multiplier, "level": self._level, "time_left_ms": max(0, self._game_duration_ms - self._clock_ms), "hint": self._hint, "attention_fresh": bool(self._snapshot.get("attention_fresh", True)), "gyro_fresh": bool(self._snapshot.get("gyro_fresh", True)), "stream_alive": bool(self._snapshot.get("stream_alive", True)), "target_time_left_ms": target_time_left_ms, "target_lifetime_ms": target_lifetime_ms, "target_pressure_level": pressure, "target_type": target_type, "protocol_name": "TraceLock Protocol", "vendor": "Qilin Logic"}, entities=entities, visual_events=visual_events, layout_hints={"canvas": "game_canvas", "render_mode": "contract_only"})
+        sample = self.collect_behavior_sample()
+        return GameViewState(game_id=self.game_id, view_version="game_view.v1", frame_id=self._frame_id, score=self._score, combo=self._combo, level=self._level, hud={"score": self._score, "combo": self._combo, "max_combo": self._max_combo, "score_multiplier": score_multiplier, "level": self._level, "load_tier": self._level, "time_left_ms": max(0, self._game_duration_ms - self._clock_ms), "hint": self._hint, "attention_fresh": bool(self._snapshot.get("attention_fresh", True)), "gyro_fresh": bool(self._snapshot.get("gyro_fresh", True)), "stream_alive": bool(self._snapshot.get("stream_alive", True)), "target_time_left_ms": target_time_left_ms, "target_lifetime_ms": target_lifetime_ms, "target_pressure_level": pressure, "target_type": target_type, "movement_type": target.movement_type if target else "n/a", "remaining_lifetime_ratio": remaining_ratio, "protocol_name": "TraceLock Protocol", "vendor": "Qilin Logic", "target_count": self._target_count, "correct_count": self._correct_count, "omission_count": self._omission_count, "false_action_count": self._false_action_count, "accuracy": sample.accuracy, "omission": sample.omission, "false_action": sample.false_action, "rt_stability": sample.rt_stability}, entities=entities, visual_events=visual_events, layout_hints={"canvas": "game_canvas", "render_mode": "contract_only"})
 
     def collect_game_events(self) -> list[GameEvent]:
         out = list(self._events)
@@ -238,6 +250,10 @@ class TraceLockClient:
             vy = -vy
         self._active_target = _Target(target_id=f"trace_{self._target_seq}", target_type=target_type, x=max(0.1, min(0.9, x)), y=max(0.12, min(0.9, y)), radius=cfg.target_radius, spawned_at_ms=self._clock_ms, expires_at_ms=self._clock_ms + cfg.target_lifetime_ms, vx=vx, vy=vy, movement_type=movement_type)
         self._target_count += 1
+        logger.info("[TRACELOCK] spawn target_id=%s level=%s movement=%s type=%s lifetime_ms=%s", self._active_target.target_id, self._level, movement_type, target_type, cfg.target_lifetime_ms)
+        if movement_type != self._last_logged_movement_type:
+            logger.info("[TRACELOCK] movement_changed old=%s new=%s level=%s", self._last_logged_movement_type or "n/a", movement_type, self._level)
+            self._last_logged_movement_type = movement_type
 
     def _move_target(self, dt_ms: int) -> None:
         t = self._active_target
@@ -299,6 +315,9 @@ class TraceLockClient:
             self._stable_focus_frames += 1
 
     def _maybe_adjust_difficulty(self) -> None:
+        if self._debug_difficulty_level is not None:
+            self._level = self._debug_difficulty_level
+            return
         if self._clock_ms - self._last_difficulty_check_ms < 5000:
             return
         self._last_difficulty_check_ms = self._clock_ms
@@ -320,6 +339,19 @@ class TraceLockClient:
             self._level_change_count += 1
             self._last_level_change_ms = self._clock_ms
             self._events.append(self._make_event("level_changed", self._clock_ms, False, {"old_level": old, "new_level": self._level}))
+            logger.info("[TRACELOCK] level_changed old=%s new=%s reason=auto_dda", old, self._level)
+
+    def set_debug_difficulty(self, level: int | None) -> None:
+        if level is None:
+            self._debug_difficulty_level = None
+            logger.info("[TRACELOCK] debug_difficulty level=auto")
+            return
+        clamped = max(1, min(5, int(level)))
+        self._debug_difficulty_level = clamped
+        self._level = clamped
+        if self._started:
+            self._spawn_target()
+        logger.info("[TRACELOCK] debug_difficulty level=%s", clamped)
 
     def _make_event(self, event_type: str, created_at_ms: int, reportable: bool, payload: dict[str, Any]) -> GameEvent:
         self._event_seq += 1
