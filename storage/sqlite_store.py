@@ -15,6 +15,10 @@ TRAINING_SESSION_COLUMNS: list[tuple[str, str]] = [
     ("fi_min", "REAL"), ("fi_max", "REAL"), ("fi_last", "REAL"), ("sqi_min", "REAL"), ("sqi_max", "REAL"), ("sqi_last", "REAL"),
     ("game_event_count", "INTEGER"), ("score_update_count", "INTEGER"), ("behavior_sample_count", "INTEGER"), ("user_action_count", "INTEGER"), ("game_error_count", "INTEGER"),
     ("score_last", "REAL"), ("score_max", "REAL"), ("score_total_delta", "REAL"), ("game_completed", "INTEGER"), ("game_completion_reason", "TEXT"),
+    ("session_type", "TEXT"), ("combo", "INTEGER"), ("max_combo", "INTEGER"), ("accuracy", "REAL"), ("omission", "REAL"), ("false_action", "REAL"),
+    ("rt_stability", "REAL"), ("fi_avg", "REAL"), ("sqi_avg", "REAL"), ("calibration_status", "TEXT"), ("profile_status", "TEXT"),
+    ("report_path", "TEXT"), ("warning_count", "INTEGER"), ("level_final", "INTEGER"), ("target_count", "INTEGER"), ("correct_count", "INTEGER"),
+    ("omission_count", "INTEGER"), ("false_action_count", "INTEGER"),
 ]
 
 
