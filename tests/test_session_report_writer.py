@@ -53,6 +53,7 @@ def test_report_title_uses_link_diagnostics_for_training(tmp_path: Path) -> None
     content = Path(report_path).read_text(encoding="utf-8")
     assert "# RELIC Link Diagnostics" in content
     assert "protocol_name: TraceLock Protocol" in content
+    assert "headless mock/e2e" not in content
 
 
 def test_report_title_uses_legacy_for_unknown_session_type(tmp_path: Path) -> None:

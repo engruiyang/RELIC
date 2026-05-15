@@ -4,183 +4,132 @@ import "components"
 
 ApplicationWindow {
     visible: true
-    width: 640
-    height: 760
+    width: 980
+    height: 820
     title: "RELIC Minimal GUI"
 
     property var appStateObj: ({})
     property var runtimeObj: ({})
     property var sessionObj: ({})
     property var gameViewObj: ({})
-    property var resourceBundleObj: ({})
     property var gameHudObj: ({})
 
     function safeParseJson(jsonText) {
-        try {
-            return JSON.parse(jsonText || "{}")
-        } catch (e) {
-            return ({ "error": "json_parse_failed" })
-        }
+        try { return JSON.parse(jsonText || "{}") } catch (e) { return ({ "error": "json_parse_failed" }) }
     }
 
-    Connections {
-        target: guiBridge ? guiBridge : null
-        function onStateChanged() {
-            appStateObj = guiBridge ? safeParseJson(guiBridge.appState) : ({})
-            runtimeObj = guiBridge ? safeParseJson(guiBridge.runtimeSnapshot) : ({})
-            sessionObj = guiBridge ? safeParseJson(guiBridge.sessionState) : ({})
-            gameViewObj = guiBridge ? safeParseJson(guiBridge.gameViewJson) : ({})
-            resourceBundleObj = guiBridge ? safeParseJson(guiBridge.renderResourcesJson) : ({})
-            gameHudObj = guiBridge ? safeParseJson(guiBridge.gameHudJson) : ({})
-        }
-    }
-    Timer {
-        interval: 100
-        running: true
-        repeat: true
-        onTriggered: {
-            if (guiBridge) {
-                guiBridge.refresh()
-            }
-        }
-    }
-
-    Component.onCompleted: {
+    function pullState() {
         appStateObj = guiBridge ? safeParseJson(guiBridge.appState) : ({})
         runtimeObj = guiBridge ? safeParseJson(guiBridge.runtimeSnapshot) : ({})
         sessionObj = guiBridge ? safeParseJson(guiBridge.sessionState) : ({})
         gameViewObj = guiBridge ? safeParseJson(guiBridge.gameViewJson) : ({})
-        resourceBundleObj = guiBridge ? safeParseJson(guiBridge.renderResourcesJson) : ({})
         gameHudObj = guiBridge ? safeParseJson(guiBridge.gameHudJson) : ({})
     }
 
-    Column {
+    Connections { target: guiBridge ? guiBridge : null; function onStateChanged() { pullState() } }
+    Timer { interval: 100; running: true; repeat: true; onTriggered: { if (guiBridge) guiBridge.refresh() } }
+    Component.onCompleted: pullState()
+
+    ScrollView {
         anchors.fill: parent
-        anchors.margins: 16
-        spacing: 6
-
-        Text { text: "Mode: " + (appStateObj.source === "live_readonly" ? "live-readonly" : (appStateObj.source && appStateObj.source.indexOf("core") === 0 ? "core" : "mock")) }
-        Text { text: "Source: " + (appStateObj.source || "") }
-        Text { text: "App State: " + (appStateObj.state || "") }
-        Text { text: "User ID: " + (appStateObj.current_user_id || "") }
-        Text { text: "User Name: " + (appStateObj.current_user_name || "") }
-        Text { text: "Device Connected: " + (appStateObj.device_connected !== undefined ? appStateObj.device_connected : "") }
-        Text { text: "Calibration Status: " + (appStateObj.calibration_status || "") }
-        Text { text: "FI: " + (runtimeObj.fi !== undefined ? runtimeObj.fi : "") }
-        Text { text: "SQI: " + (runtimeObj.sqi !== undefined ? runtimeObj.sqi : "") }
-        Text { text: "Attention: " + (runtimeObj.attention !== undefined ? runtimeObj.attention : "") }
-        Text { text: "Attention Age: " + (runtimeObj.attention_age_ms !== undefined ? runtimeObj.attention_age_ms : "") }
-        Text { text: "Gyro Age: " + (runtimeObj.gyro_age_ms !== undefined ? runtimeObj.gyro_age_ms : "") }
-        Text { text: "Control State: " + (runtimeObj.control_state || "") }
-        Text { text: "Session ID: " + (sessionObj.session_id || "") }
-        Text { text: "Score: " + (sessionObj.score !== undefined ? sessionObj.score : "") }
-        Text { text: "Warning Count: " + (sessionObj.warning_count !== undefined ? sessionObj.warning_count : "") }
-        Text { text: "Error Count: " + (sessionObj.error_count !== undefined ? sessionObj.error_count : "") }
-        Text { text: "Log Path: " + (sessionObj.log_path || "") }
-        Text { text: "Report Path: " + (sessionObj.report_path || "") }
-
-        Button { text: "Load Demo User"; onClicked: guiBridge.sendCommand("load_demo_user", "{}") }
-        Button { text: "Start Mock Session"; onClicked: guiBridge.sendCommand("start_mock_session", "{}") }
-        Button { text: "Start Training Session"; onClicked: guiBridge.sendCommand("start_training_session", "{}") }
-        Button { text: "End Training Session"; onClicked: guiBridge.sendCommand("end_training_session", "{}") }
-        Button { text: "End Session"; onClicked: guiBridge.sendCommand("end_session", "{}") }
-        Button { text: "Refresh Snapshot"; onClicked: guiBridge.refresh() }
-        Row {
-            spacing: 4
-            Button { text: "Force L1"; onClicked: guiBridge.sendCommand("set_debug_difficulty", "{\"level\":1}") }
-            Button { text: "Force L2"; onClicked: guiBridge.sendCommand("set_debug_difficulty", "{\"level\":2}") }
-            Button { text: "Force L3"; onClicked: guiBridge.sendCommand("set_debug_difficulty", "{\"level\":3}") }
-        }
-        Row {
-            spacing: 4
-            Button { text: "Force L4"; onClicked: guiBridge.sendCommand("set_debug_difficulty", "{\"level\":4}") }
-            Button { text: "Force L5"; onClicked: guiBridge.sendCommand("set_debug_difficulty", "{\"level\":5}") }
-            Button { text: "Auto DDA"; onClicked: guiBridge.sendCommand("set_debug_difficulty", "{\"level\":null}") }
-        }
-        Button {
-            text: "Send Test Click"
-            onClicked: guiBridge.sendEvent("pointer_click", JSON.stringify({
-                "game_id": "fake_game",
-                "x_norm": 0.5,
-                "y_norm": 0.5,
-                "button": "left"
-            }))
-        }
-        GameCanvas {
+        Column {
             width: parent.width
-            height: 220
-            gameView: gameViewObj
-            guiBridgeRef: guiBridge
-            fallbackGameId: "fake_game"
+            spacing: 8
+            padding: 12
+
+            GroupBox {
+                objectName: "protocolSelectPanel"
+                width: parent.width
+                title: "Protocol Select"
+                Column {
+                    spacing: 4
+                    Text { text: "TraceLock Protocol" }
+                    Text { text: "Data Trace Tracking Protocol" }
+                    Text { text: "game_id=" + (appStateObj.current_game_id || "n/a") }
+                    Button { text: "Enter Training"; onClicked: guiBridge.sendCommand("start_training_session", "{}") }
+                }
+            }
+
+            GroupBox {
+                objectName: "traceLockTrainingPanel"
+                width: parent.width
+                title: "TraceLock Training"
+                Column {
+                    spacing: 4
+                    GameCanvas { width: parent.width - 20; height: 280; gameView: gameViewObj; guiBridgeRef: guiBridge; fallbackGameId: "fake_game" }
+                    Text { text: "Trace Score: " + (gameHudObj.score !== undefined ? gameHudObj.score : "n/a") + " | Sync Chain / Combo: " + (gameHudObj.combo !== undefined ? gameHudObj.combo : "n/a") + " | Multiplier: " + (gameHudObj.score_multiplier !== undefined ? gameHudObj.score_multiplier : "n/a") }
+                    Text { text: "Load Tier / Level: " + (gameHudObj.load_tier !== undefined ? gameHudObj.load_tier : "n/a") + "/" + (gameHudObj.level !== undefined ? gameHudObj.level : "n/a") + " | Movement Type: " + (gameHudObj.movement_type || "n/a") }
+                    Text { text: "Lock Window / target_time_left_ms: " + (gameHudObj.target_time_left_ms !== undefined ? gameHudObj.target_time_left_ms : "n/a") }
+                    Text { text: "Trace Retention / accuracy: " + (gameHudObj.accuracy !== undefined ? gameHudObj.accuracy : "n/a") + " | Trace Drop / omission: " + (gameHudObj.omission !== undefined ? gameHudObj.omission : "n/a") }
+                    Text { text: "False Action: " + (gameHudObj.false_action !== undefined ? gameHudObj.false_action : "n/a") + " | RT Stability: " + (gameHudObj.rt_stability !== undefined ? gameHudObj.rt_stability : "n/a") }
+                }
+            }
+
+            GroupBox {
+                width: parent.width
+                title: "Training Controls"
+                Column {
+                    spacing: 4
+                    Row { spacing: 6
+                        Button { text: "Start Training Session"; onClicked: guiBridge.sendCommand("start_training_session", "{}") }
+                        Button { text: "End Training Session"; onClicked: guiBridge.sendCommand("end_training_session", "{}") }
+                    }
+                    Text { text: "session_type: " + (sessionObj.session_type || "n/a") }
+                    Text { text: "session_id: " + (sessionObj.session_id || "n/a") }
+                    Text { text: "report_path: " + (sessionObj.report_path || "n/a") }
+                }
+            }
+
+            GroupBox {
+                objectName: "debugControlPanel"
+                width: parent.width
+                title: "Debug Panel"
+                Column {
+                    spacing: 4
+                    Row { spacing: 6
+                        Button { text: "Start Mock Session (Debug)"; onClicked: guiBridge.sendCommand("start_mock_session", "{}") }
+                        Button { text: "End Session"; onClicked: guiBridge.sendCommand("end_session", "{}") }
+                        Button { text: "Refresh Snapshot"; onClicked: guiBridge.sendCommand("refresh_snapshot", "{}") }
+                    }
+                    Row { spacing: 4
+                        Button { text: "Force L1"; onClicked: guiBridge.sendCommand("set_debug_difficulty", "{\"level\":1}") }
+                        Button { text: "Force L2"; onClicked: guiBridge.sendCommand("set_debug_difficulty", "{\"level\":2}") }
+                        Button { text: "Force L3"; onClicked: guiBridge.sendCommand("set_debug_difficulty", "{\"level\":3}") }
+                        Button { text: "Force L4"; onClicked: guiBridge.sendCommand("set_debug_difficulty", "{\"level\":4}") }
+                        Button { text: "Force L5"; onClicked: guiBridge.sendCommand("set_debug_difficulty", "{\"level\":5}") }
+                        Button { text: "Auto DDA"; onClicked: guiBridge.sendCommand("set_debug_difficulty", "{\"level\":null}") }
+                    }
+                    Text { text: "last command: " + (guiBridge && guiBridge.lastCommand !== "" ? guiBridge.lastCommand : "n/a") }
+                    Text { text: "last event: " + (guiBridge && guiBridge.lastEvent !== "" ? guiBridge.lastEvent : "n/a") }
+                }
+            }
+
+            GroupBox {
+                objectName: "linkDiagnosticsPanel"
+                width: parent.width
+                title: "Link Diagnostics"
+                Column {
+                    spacing: 4
+                    Text { text: "latest report_path: " + (sessionObj.latest_report_path || sessionObj.report_path || "n/a") }
+                    Text { text: "last session_id: " + (sessionObj.latest_session_id || sessionObj.session_id || "n/a") }
+                    Text { text: "last training status: " + (sessionObj.training_status || "n/a") }
+                    Button { text: "Open Last Report"; onClicked: guiBridge.sendCommand("open_last_report", "{}") }
+                }
+            }
+
+            GroupBox {
+                width: parent.width
+                title: "NAC / Live Status"
+                Column {
+                    spacing: 4
+                    Text { text: "connection_status: " + (runtimeObj.connection_status !== undefined ? runtimeObj.connection_status : "n/a") }
+                    Text { text: "stream_alive: " + (runtimeObj.stream_alive !== undefined ? runtimeObj.stream_alive : "n/a") }
+                    Text { text: "Focus Sync / attention_fresh: " + (runtimeObj.attention_fresh !== undefined ? runtimeObj.attention_fresh : "n/a") }
+                    Text { text: "Gyro Link / gyro_fresh: " + (runtimeObj.gyro_fresh !== undefined ? runtimeObj.gyro_fresh : "n/a") }
+                    Text { text: "warning_flags: " + (runtimeObj.current_warning_flags !== undefined ? JSON.stringify(runtimeObj.current_warning_flags) : "n/a") }
+                    Text { text: "error_flags: " + (runtimeObj.error_flags !== undefined ? JSON.stringify(runtimeObj.error_flags) : "n/a") }
+                }
+            }
         }
-
-        Rectangle { width: parent.width; height: 1; color: "#888" }
-        Text { text: "Click x_norm: " + ((guiBridge && guiBridge.lastPointerX !== "") ? guiBridge.lastPointerX : "<none>") }
-        Text { text: "Click y_norm: " + ((guiBridge && guiBridge.lastPointerY !== "") ? guiBridge.lastPointerY : "<none>") }
-        Text { text: "Last Hit: " + ((guiBridge && guiBridge.lastHitState !== "") ? guiBridge.lastHitState : "<none>") }
-        Text { text: "Command Count: " + (guiBridge ? guiBridge.commandCount : 0) }
-        Text { text: "Last Command: " + ((guiBridge && guiBridge.lastCommand !== "") ? guiBridge.lastCommand : "<none>") }
-        Text { text: "Last Command Result: " + ((guiBridge && guiBridge.lastCommandResult !== "") ? guiBridge.lastCommandResult : "<none>") }
-        Text { text: "Event Count: " + (guiBridge ? guiBridge.eventCount : 0) }
-        Text { text: "Last Event: " + ((guiBridge && guiBridge.lastEvent !== "") ? guiBridge.lastEvent : "<none>") }
-        Text { text: "Last Event Result: " + ((guiBridge && guiBridge.lastEventResult !== "") ? guiBridge.lastEventResult : "<none>") }
-        Text { text: "Game Event Count: " + (guiBridge ? guiBridge.gameEventCount : 0) }
-        Text { text: "Last Game Event: " + ((guiBridge && guiBridge.lastGameEvent !== "") ? guiBridge.lastGameEvent : "<none>") }
-        Text { text: "Last Game Event Type: " + ((guiBridge && guiBridge.lastGameEventType !== "") ? guiBridge.lastGameEventType : "<none>") }
-        Text { text: "Last Game Action: " + ((guiBridge && guiBridge.lastGameActionName !== "") ? guiBridge.lastGameActionName : "<none>") }
-        Text { text: "Last Game Target Index: " + ((guiBridge && guiBridge.lastGameTargetIndex !== "") ? guiBridge.lastGameTargetIndex : "<none>") }
-        Text { text: "Game View Score: " + ((guiBridge && guiBridge.gameViewScore !== "") ? guiBridge.gameViewScore : "<none>") }
-        Text { text: "Game View Combo: " + ((guiBridge && guiBridge.gameViewCombo !== "") ? guiBridge.gameViewCombo : "<none>") }
-        Text { text: "Game View Entity Count: " + ((guiBridge && guiBridge.gameViewEntityCount !== "") ? guiBridge.gameViewEntityCount : "<none>") }
-        Text { text: "Game View Visual Event Count: " + ((guiBridge && guiBridge.gameViewVisualEventCount !== "") ? guiBridge.gameViewVisualEventCount : "<none>") }
-        Rectangle { width: parent.width; height: 1; color: "#888" }
-        Text { text: "TraceLock HUD" }
-        Text { text: "Protocol: " + (gameHudObj.protocol_name || "n/a") }
-        Text { text: "Vendor: " + (gameHudObj.vendor || "n/a") }
-        Text { text: "Trace Score: " + (gameHudObj.score !== undefined ? gameHudObj.score : "n/a") + " | Sync Chain / Combo: " + (gameHudObj.combo !== undefined ? gameHudObj.combo : "n/a") + " | Max Combo: " + (gameHudObj.max_combo !== undefined ? gameHudObj.max_combo : "n/a") }
-        Text { text: "Multiplier: " + (gameHudObj.score_multiplier !== undefined ? gameHudObj.score_multiplier : "n/a") + " | Level/Load Tier: " + (gameHudObj.level !== undefined ? gameHudObj.level : "n/a") + "/" + (gameHudObj.load_tier !== undefined ? gameHudObj.load_tier : "n/a") }
-        Text { text: "Movement: " + (gameHudObj.movement_type || "n/a") + " | Target Type: " + (gameHudObj.target_type || "n/a") }
-        Text { text: "Target X/Y: " + (gameHudObj.target_x !== undefined && gameHudObj.target_x !== null ? gameHudObj.target_x : "n/a") + "/" + (gameHudObj.target_y !== undefined && gameHudObj.target_y !== null ? gameHudObj.target_y : "n/a") + " | VX/VY: " + (gameHudObj.target_vx !== undefined && gameHudObj.target_vx !== null ? gameHudObj.target_vx : "n/a") + "/" + (gameHudObj.target_vy !== undefined && gameHudObj.target_vy !== null ? gameHudObj.target_vy : "n/a") }
-        Text { text: "Target Lifetime: " + (gameHudObj.target_lifetime_ms !== undefined ? gameHudObj.target_lifetime_ms : "n/a") + " | Time Left: " + (gameHudObj.target_time_left_ms !== undefined ? gameHudObj.target_time_left_ms : "n/a") + " | Lock Window: " + (gameHudObj.remaining_lifetime_ratio !== undefined ? gameHudObj.remaining_lifetime_ratio : "n/a") }
-        Text { text: "Accuracy: " + (gameHudObj.accuracy !== undefined ? gameHudObj.accuracy : "n/a") + " | Omission: " + (gameHudObj.omission !== undefined ? gameHudObj.omission : "n/a") + " | False Action: " + (gameHudObj.false_action !== undefined ? gameHudObj.false_action : "n/a") + " | RT Stability: " + (gameHudObj.rt_stability !== undefined ? gameHudObj.rt_stability : "n/a") }
-        Text { text: "Counts T/C/O/F: " + (gameHudObj.target_count !== undefined ? gameHudObj.target_count : "n/a") + "/" + (gameHudObj.correct_count !== undefined ? gameHudObj.correct_count : "n/a") + "/" + (gameHudObj.omission_count !== undefined ? gameHudObj.omission_count : "n/a") + "/" + (gameHudObj.false_action_count !== undefined ? gameHudObj.false_action_count : "n/a") }
-        Text { text: "Focus Sync: " + (gameHudObj.attention_fresh !== undefined ? gameHudObj.attention_fresh : "n/a") + " | Gyro Link: " + (gameHudObj.gyro_fresh !== undefined ? gameHudObj.gyro_fresh : "n/a") + " | stream_alive: " + (gameHudObj.stream_alive !== undefined ? gameHudObj.stream_alive : "n/a") + " | hint: " + (gameHudObj.hint || "n/a") }
-        Text { text: "Platform Message Count: " + (guiBridge ? guiBridge.platformMessageCount : 0) }
-        Text { text: "Last Platform Message: " + ((guiBridge && guiBridge.lastPlatformMessage !== "") ? guiBridge.lastPlatformMessage : "<none>") }
-        Text { text: "Last Platform Index: " + ((guiBridge && guiBridge.lastPlatformIndex !== "") ? guiBridge.lastPlatformIndex : "<none>") }
-        Text { text: "Last Platform Action: " + ((guiBridge && guiBridge.lastPlatformAction !== "") ? guiBridge.lastPlatformAction : "<none>") }
-        Text { text: "Last Platform Result: " + ((guiBridge && guiBridge.lastPlatformResult !== "") ? guiBridge.lastPlatformResult : "<none>") }
-
-
-        Rectangle { width: parent.width; height: 1; color: "#888" }
-        Text { text: "Resource Bundle" }
-        Text { text: "Theme ID: " + (resourceBundleObj.theme_id || "") }
-        Text { text: "Layout ID: " + (resourceBundleObj.layout_id || "") }
-        Text { text: "Game ID: " + (resourceBundleObj.game_id || "") }
-        Text { text: "Asset Count: " + (resourceBundleObj.assets ? Object.keys(resourceBundleObj.assets).length : 0) }
-        Text { text: "Style Count: " + (resourceBundleObj.styles ? Object.keys(resourceBundleObj.styles).length : 0) }
-        Text { text: "Layout Region Count: " + (resourceBundleObj.layout_regions ? Object.keys(resourceBundleObj.layout_regions).length : 0) }
-        Text { text: "Missing Assets: " + (resourceBundleObj.missing_assets ? resourceBundleObj.missing_assets.length : 0) }
-        Text { text: "Missing Styles: " + (resourceBundleObj.missing_styles ? resourceBundleObj.missing_styles.length : 0) }
-        Text { text: "Missing Regions: " + (resourceBundleObj.missing_regions ? resourceBundleObj.missing_regions.length : 0) }
-        Text { text: "Resource Error: " + (resourceBundleObj.error || "") }
-
-        Rectangle { width: parent.width; height: 1; color: "#888" }
-        Text { text: "Live Stream" }
-        Text { text: "Connection Status: " + (runtimeObj.connection_status !== undefined ? runtimeObj.connection_status : "-") }
-        Text { text: "Stream Alive: " + (runtimeObj.stream_alive !== undefined ? runtimeObj.stream_alive : "-") }
-        Text { text: "Raw Messages: " + (runtimeObj.raw_message_count !== undefined ? runtimeObj.raw_message_count : "-") }
-        Text { text: "Attention Count: " + (runtimeObj.decoded_attention_count !== undefined ? runtimeObj.decoded_attention_count : "-") }
-        Text { text: "Gyro Count: " + (runtimeObj.decoded_gyro_count !== undefined ? runtimeObj.decoded_gyro_count : "-") }
-        Text { text: "Attention: " + (runtimeObj.attention !== undefined ? runtimeObj.attention : "-") }
-        Text { text: "Attention Age: " + (runtimeObj.attention_age_ms !== undefined ? runtimeObj.attention_age_ms : "-") }
-        Text { text: "Attention Fresh: " + (runtimeObj.attention_fresh !== undefined ? runtimeObj.attention_fresh : "-") }
-        Text { text: "Gyro X/Y/Z: " + (runtimeObj.gyro_x !== undefined ? runtimeObj.gyro_x : "-") + "/" + (runtimeObj.gyro_y !== undefined ? runtimeObj.gyro_y : "-") + "/" + (runtimeObj.gyro_z !== undefined ? runtimeObj.gyro_z : "-") }
-        Text { text: "Gyro Age: " + (runtimeObj.gyro_age_ms !== undefined ? runtimeObj.gyro_age_ms : "-") }
-        Text { text: "Gyro Fresh: " + (runtimeObj.gyro_fresh !== undefined ? runtimeObj.gyro_fresh : "-") }
-        Text { text: "Current Warning Flags: " + (runtimeObj.current_warning_flags !== undefined ? JSON.stringify(runtimeObj.current_warning_flags) : "-") }
-        Text { text: "Historical Warning Flags: " + (runtimeObj.historical_warning_flags !== undefined ? JSON.stringify(runtimeObj.historical_warning_flags) : "-") }
-        Text { text: "Error Flags: " + (runtimeObj.error_flags !== undefined ? JSON.stringify(runtimeObj.error_flags) : "-") }
-        Text { text: "Error Message: " + (runtimeObj.error_message !== undefined && runtimeObj.error_message !== null ? runtimeObj.error_message : "-") }
     }
 }

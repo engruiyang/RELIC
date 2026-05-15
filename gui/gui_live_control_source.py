@@ -47,6 +47,9 @@ class GuiLiveControlSource:
         self.last_game_target_index: int | None = None
         self.game_event_count = 0
         self.last_game_view: dict[str, Any] = asdict(self._client.build_game_view())
+        self.last_report_path = ""
+        self.last_training_status = "idle"
+        self.last_session_id = ""
 
     def start(self) -> None:
         self._live_source.start()
@@ -104,6 +107,8 @@ class GuiLiveControlSource:
         sid = f"training_{uid}_{now.strftime('%Y%m%d_%H%M%S')}"
         self.training_session_id = sid
         self.session_type = "training"
+        self.last_training_status = "training_started"
+        self.last_session_id = sid
         self._store = SqliteStore(db_path); self._store.connect()
         profile = self._store.get_user_profile(uid)
         calib = self._store.get_latest_calibration_profile(uid)
@@ -133,6 +138,9 @@ class GuiLiveControlSource:
         self._store.upsert_training_session(summary)
         self.last_game_view = asdict(view)
         self._training_context["report_path"]=report_path
+        self.last_report_path = report_path
+        self.last_training_status = "training_completed"
+        self.last_session_id = str(self.training_session_id or "")
         self.session_type = ""
         return {"command":"end_training_session","accepted":True,"status":"training_completed","result":"training_completed","report_path":report_path,"session_id":self.training_session_id,"source":"live_control"}
 
@@ -151,6 +159,7 @@ class GuiLiveControlSource:
         self._client.start({"session_id": sid, "user_id": uid, "game_id": self.game_id, "difficulty": default_difficulty})
         self.interaction_enabled = True
         self.session_type = "debug"
+        self.last_session_id = sid
         return {"command": "start_mock_session", "accepted": True, "status": "live_debug_started", "message": "live debug session started", "result": "live_debug_started", "session_id": sid, "source": "live_control"}
 
     def end_live_debug_session(self) -> dict[str, Any]:
@@ -203,7 +212,9 @@ class GuiLiveControlSource:
         return base
 
     def get_session_state(self) -> dict[str, Any]:
-        return {"session_id": (self.training_session_id if self.session_type=="training" else self.live_debug_session_id) or "", "session_type": self.session_type or "none", "user_id": self.user_id, "game_id": self.game_id, "session_active": self.interaction_enabled, "score": self.last_game_view.get("score", 0), "warning_count": 0, "error_count": 0, "log_path": "", "report_path": "", "platform_report_status": "mock_only", "source": "live_control"}
+        sid = (self.training_session_id if self.session_type == "training" else self.live_debug_session_id) or self.last_session_id or ""
+        report_path = self._training_context.get("report_path") or self.last_report_path or ""
+        return {"session_id": sid, "session_type": self.session_type or "none", "training_status": self.last_training_status, "latest_session_id": self.last_session_id, "latest_report_path": report_path, "user_id": self.user_id, "game_id": self.game_id, "session_active": self.interaction_enabled, "score": self.last_game_view.get("score", 0), "warning_count": 0, "error_count": 0, "log_path": "", "report_path": report_path, "platform_report_status": "mock_only", "source": "live_control"}
 
     def get_game_view(self) -> dict[str, Any]:
         return dict(self.last_game_view)
