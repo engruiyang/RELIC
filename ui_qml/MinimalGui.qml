@@ -13,6 +13,7 @@ ApplicationWindow {
     property var sessionObj: ({})
     property var gameViewObj: ({})
     property var resourceBundleObj: ({})
+    property var gameHudObj: ({})
 
     function safeParseJson(jsonText) {
         try {
@@ -30,6 +31,7 @@ ApplicationWindow {
             sessionObj = guiBridge ? safeParseJson(guiBridge.sessionState) : ({})
             gameViewObj = guiBridge ? safeParseJson(guiBridge.gameViewJson) : ({})
             resourceBundleObj = guiBridge ? safeParseJson(guiBridge.renderResourcesJson) : ({})
+            gameHudObj = guiBridge ? safeParseJson(guiBridge.gameHudJson) : ({})
         }
     }
 
@@ -39,6 +41,7 @@ ApplicationWindow {
         sessionObj = guiBridge ? safeParseJson(guiBridge.sessionState) : ({})
         gameViewObj = guiBridge ? safeParseJson(guiBridge.gameViewJson) : ({})
         resourceBundleObj = guiBridge ? safeParseJson(guiBridge.renderResourcesJson) : ({})
+        gameHudObj = guiBridge ? safeParseJson(guiBridge.gameHudJson) : ({})
     }
 
     Column {
@@ -70,6 +73,18 @@ ApplicationWindow {
         Button { text: "Start Mock Session"; onClicked: guiBridge.sendCommand("start_mock_session", "{}") }
         Button { text: "End Session"; onClicked: guiBridge.sendCommand("end_session", "{}") }
         Button { text: "Refresh Snapshot"; onClicked: guiBridge.refresh() }
+        Row {
+            spacing: 4
+            Button { text: "Force L1"; onClicked: guiBridge.sendCommand("set_debug_difficulty", "{\"level\":1}") }
+            Button { text: "Force L2"; onClicked: guiBridge.sendCommand("set_debug_difficulty", "{\"level\":2}") }
+            Button { text: "Force L3"; onClicked: guiBridge.sendCommand("set_debug_difficulty", "{\"level\":3}") }
+        }
+        Row {
+            spacing: 4
+            Button { text: "Force L4"; onClicked: guiBridge.sendCommand("set_debug_difficulty", "{\"level\":4}") }
+            Button { text: "Force L5"; onClicked: guiBridge.sendCommand("set_debug_difficulty", "{\"level\":5}") }
+            Button { text: "Auto DDA"; onClicked: guiBridge.sendCommand("set_debug_difficulty", "{\"level\":null}") }
+        }
         Button {
             text: "Send Test Click"
             onClicked: guiBridge.sendEvent("pointer_click", JSON.stringify({
@@ -106,6 +121,17 @@ ApplicationWindow {
         Text { text: "Game View Combo: " + ((guiBridge && guiBridge.gameViewCombo !== "") ? guiBridge.gameViewCombo : "<none>") }
         Text { text: "Game View Entity Count: " + ((guiBridge && guiBridge.gameViewEntityCount !== "") ? guiBridge.gameViewEntityCount : "<none>") }
         Text { text: "Game View Visual Event Count: " + ((guiBridge && guiBridge.gameViewVisualEventCount !== "") ? guiBridge.gameViewVisualEventCount : "<none>") }
+        Rectangle { width: parent.width; height: 1; color: "#888" }
+        Text { text: "TraceLock HUD" }
+        Text { text: "Protocol: " + (gameHudObj.protocol_name || "n/a") }
+        Text { text: "Vendor: " + (gameHudObj.vendor || "n/a") }
+        Text { text: "Trace Score: " + (gameHudObj.score !== undefined ? gameHudObj.score : "n/a") + " | Sync Chain: " + (gameHudObj.combo !== undefined ? gameHudObj.combo : "n/a") + " | Max Combo: " + (gameHudObj.max_combo !== undefined ? gameHudObj.max_combo : "n/a") }
+        Text { text: "Multiplier: " + (gameHudObj.score_multiplier !== undefined ? gameHudObj.score_multiplier : "n/a") + " | Level/Load Tier: " + (gameHudObj.level !== undefined ? gameHudObj.level : "n/a") + "/" + (gameHudObj.load_tier !== undefined ? gameHudObj.load_tier : "n/a") }
+        Text { text: "Movement: " + (gameHudObj.movement_type || "n/a") + " | Target Type: " + (gameHudObj.target_type || "n/a") }
+        Text { text: "Target Lifetime: " + (gameHudObj.target_lifetime_ms !== undefined ? gameHudObj.target_lifetime_ms : "n/a") + " | Time Left: " + (gameHudObj.target_time_left_ms !== undefined ? gameHudObj.target_time_left_ms : "n/a") + " | Lock Window: " + (gameHudObj.remaining_lifetime_ratio !== undefined ? gameHudObj.remaining_lifetime_ratio : "n/a") }
+        Text { text: "Accuracy: " + (gameHudObj.accuracy !== undefined ? gameHudObj.accuracy : "n/a") + " | Omission: " + (gameHudObj.omission !== undefined ? gameHudObj.omission : "n/a") + " | False Action: " + (gameHudObj.false_action !== undefined ? gameHudObj.false_action : "n/a") + " | RT Stability: " + (gameHudObj.rt_stability !== undefined ? gameHudObj.rt_stability : "n/a") }
+        Text { text: "Counts T/C/O/F: " + (gameHudObj.target_count !== undefined ? gameHudObj.target_count : "n/a") + "/" + (gameHudObj.correct_count !== undefined ? gameHudObj.correct_count : "n/a") + "/" + (gameHudObj.omission_count !== undefined ? gameHudObj.omission_count : "n/a") + "/" + (gameHudObj.false_action_count !== undefined ? gameHudObj.false_action_count : "n/a") }
+        Text { text: "Focus Sync: " + (gameHudObj.attention_fresh !== undefined ? gameHudObj.attention_fresh : "n/a") + " | Gyro Link: " + (gameHudObj.gyro_fresh !== undefined ? gameHudObj.gyro_fresh : "n/a") + " | stream_alive: " + (gameHudObj.stream_alive !== undefined ? gameHudObj.stream_alive : "n/a") + " | hint: " + (gameHudObj.hint || "n/a") }
         Text { text: "Platform Message Count: " + (guiBridge ? guiBridge.platformMessageCount : 0) }
         Text { text: "Last Platform Message: " + ((guiBridge && guiBridge.lastPlatformMessage !== "") ? guiBridge.lastPlatformMessage : "<none>") }
         Text { text: "Last Platform Index: " + ((guiBridge && guiBridge.lastPlatformIndex !== "") ? guiBridge.lastPlatformIndex : "<none>") }
