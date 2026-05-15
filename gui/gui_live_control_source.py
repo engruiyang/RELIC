@@ -52,6 +52,7 @@ class GuiLiveControlSource:
         while not self._stop.is_set():
             runtime = self._live_source.get_runtime_snapshot()
             self._client.update(runtime, int(self.poll_interval_sec * 1000))
+            self._drain_game_events()
             view = self._client.build_game_view()
             with self._lock:
                 self.game_update_count += 1
@@ -60,6 +61,20 @@ class GuiLiveControlSource:
                 self.last_runtime_gyro_fresh = bool(runtime.get("gyro_fresh"))
                 self.last_game_view = asdict(view)
             time.sleep(self.poll_interval_sec)
+
+    def _drain_game_events(self) -> None:
+        events = self._client.collect_game_events()
+        for evt in events:
+            evt_dict = evt.to_dict()
+            self.last_game_event = evt_dict
+            self.game_event_count += 1
+            ep = evt.payload or {}
+            self.last_game_action_name = str(ep.get("action_name") or "")
+            ti = ep.get("target_index")
+            self.last_game_target_index = ti if isinstance(ti, int) else None
+            if not evt.reportable:
+                continue
+            self._platform_adapter.process_game_event(evt_dict, allow_mock=True)
 
     def start_live_debug_session(self, user_id: str | None = None) -> dict[str, Any]:
         uid = str(user_id or self.user_id)

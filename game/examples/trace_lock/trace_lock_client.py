@@ -54,9 +54,9 @@ class TraceLockClient:
         self._level_cfg: dict[int, _LevelConfig] = {
             1: _LevelConfig(0.09, 1500, False, 0.0, 0.00),
             2: _LevelConfig(0.08, 1300, False, 0.0, 0.05),
-            3: _LevelConfig(0.07, 1100, True, 0.00004, 0.10),
-            4: _LevelConfig(0.06, 950, True, 0.00007, 0.15),
-            5: _LevelConfig(0.05, 800, True, 0.00010, 0.20),
+            3: _LevelConfig(0.07, 1100, True, 0.00012, 0.10),
+            4: _LevelConfig(0.06, 950, True, 0.00022, 0.15),
+            5: _LevelConfig(0.05, 800, True, 0.00034, 0.20),
         }
         self._session_id = ""
         self._started = False
@@ -197,7 +197,7 @@ class TraceLockClient:
             remaining_ratio = max(0.0, min(1.0, target_time_left_ms / target_lifetime_ms))
             target_type = target.target_type
             key = self._asset_for_target(target.target_type)
-            target_entities.append(GameEntity(id=target.target_id, kind="target", role="primary", x=target.x, y=target.y, radius=target.radius, state="active", style_key=key, asset_key=key, interactive=True, hit_shape="circle", metadata={"target_id": target.target_id, "target_type": target.target_type, "remaining_lifetime_ratio": remaining_ratio, "time_left_ms": target_time_left_ms, "target_lifetime_ms": target_lifetime_ms, "movement_type": target.movement_type, "level": self._level}))
+            target_entities.append(GameEntity(id=target.target_id, kind="target", role="primary", x=target.x, y=target.y, radius=target.radius, state="active", style_key=key, asset_key=key, interactive=True, hit_shape="circle", metadata={"target_id": target.target_id, "target_type": target.target_type, "remaining_lifetime_ratio": remaining_ratio, "time_left_ms": target_time_left_ms, "target_lifetime_ms": target_lifetime_ms, "movement_type": target.movement_type, "level": self._level, "target_x": target.x, "target_y": target.y, "target_vx": target.vx, "target_vy": target.vy}))
             target_entities.append(GameEntity(id=f"ring_{target.target_id}", kind="progress_ring", role="lock_progress", x=target.x, y=target.y, radius=target.radius * 1.25, state="active", style_key="tracelock.progress_ring.default", asset_key="tracelock.progress_ring.default", interactive=False, hit_shape="circle", metadata={"progress": remaining_ratio, "time_left_ms": target_time_left_ms, "target_lifetime_ms": target_lifetime_ms}))
 
         pressure = "high" if remaining_ratio < 0.25 else ("medium" if remaining_ratio < 0.6 else "low")
@@ -209,7 +209,7 @@ class TraceLockClient:
         visual_events = [v for v in self._visual_events]
         self._visual_events.clear()
         sample = self.collect_behavior_sample()
-        return GameViewState(game_id=self.game_id, view_version="game_view.v1", frame_id=self._frame_id, score=self._score, combo=self._combo, level=self._level, hud={"score": self._score, "combo": self._combo, "max_combo": self._max_combo, "score_multiplier": score_multiplier, "level": self._level, "load_tier": self._level, "time_left_ms": max(0, self._game_duration_ms - self._clock_ms), "hint": self._hint, "attention_fresh": bool(self._snapshot.get("attention_fresh", True)), "gyro_fresh": bool(self._snapshot.get("gyro_fresh", True)), "stream_alive": bool(self._snapshot.get("stream_alive", True)), "target_time_left_ms": target_time_left_ms, "target_lifetime_ms": target_lifetime_ms, "target_pressure_level": pressure, "target_type": target_type, "movement_type": target.movement_type if target else "n/a", "remaining_lifetime_ratio": remaining_ratio, "protocol_name": "TraceLock Protocol", "vendor": "Qilin Logic", "target_count": self._target_count, "correct_count": self._correct_count, "omission_count": self._omission_count, "false_action_count": self._false_action_count, "accuracy": sample.accuracy, "omission": sample.omission, "false_action": sample.false_action, "rt_stability": sample.rt_stability}, entities=entities, visual_events=visual_events, layout_hints={"canvas": "game_canvas", "render_mode": "contract_only"})
+        return GameViewState(game_id=self.game_id, view_version="game_view.v1", frame_id=self._frame_id, score=self._score, combo=self._combo, level=self._level, hud={"score": self._score, "combo": self._combo, "max_combo": self._max_combo, "score_multiplier": score_multiplier, "level": self._level, "load_tier": self._level, "time_left_ms": max(0, self._game_duration_ms - self._clock_ms), "hint": self._hint, "attention_fresh": bool(self._snapshot.get("attention_fresh", True)), "gyro_fresh": bool(self._snapshot.get("gyro_fresh", True)), "stream_alive": bool(self._snapshot.get("stream_alive", True)), "target_time_left_ms": target_time_left_ms, "target_lifetime_ms": target_lifetime_ms, "target_pressure_level": pressure, "target_type": target_type, "movement_type": target.movement_type if target else "n/a", "remaining_lifetime_ratio": remaining_ratio, "target_x": target.x if target else None, "target_y": target.y if target else None, "target_vx": target.vx if target else None, "target_vy": target.vy if target else None, "protocol_name": "TraceLock Protocol", "vendor": "Qilin Logic", "target_count": self._target_count, "correct_count": self._correct_count, "omission_count": self._omission_count, "false_action_count": self._false_action_count, "accuracy": sample.accuracy, "omission": sample.omission, "false_action": sample.false_action, "rt_stability": sample.rt_stability}, entities=entities, visual_events=visual_events, layout_hints={"canvas": "game_canvas", "render_mode": "contract_only"})
 
     def collect_game_events(self) -> list[GameEvent]:
         out = list(self._events)
@@ -250,7 +250,7 @@ class TraceLockClient:
             vy = -vy
         self._active_target = _Target(target_id=f"trace_{self._target_seq}", target_type=target_type, x=max(0.1, min(0.9, x)), y=max(0.12, min(0.9, y)), radius=cfg.target_radius, spawned_at_ms=self._clock_ms, expires_at_ms=self._clock_ms + cfg.target_lifetime_ms, vx=vx, vy=vy, movement_type=movement_type)
         self._target_count += 1
-        logger.info("[TRACELOCK] spawn target_id=%s level=%s movement=%s type=%s lifetime_ms=%s", self._active_target.target_id, self._level, movement_type, target_type, cfg.target_lifetime_ms)
+        logger.info("[TRACELOCK] spawn target_id=%s level=%s movement=%s type=%s x=%.3f y=%.3f vx=%.5f vy=%.5f lifetime_ms=%s", self._active_target.target_id, self._level, movement_type, target_type, self._active_target.x, self._active_target.y, self._active_target.vx, self._active_target.vy, cfg.target_lifetime_ms)
         if movement_type != self._last_logged_movement_type:
             logger.info("[TRACELOCK] movement_changed old=%s new=%s level=%s", self._last_logged_movement_type or "n/a", movement_type, self._level)
             self._last_logged_movement_type = movement_type

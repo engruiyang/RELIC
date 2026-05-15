@@ -34,6 +34,16 @@ ApplicationWindow {
             gameHudObj = guiBridge ? safeParseJson(guiBridge.gameHudJson) : ({})
         }
     }
+    Timer {
+        interval: 100
+        running: true
+        repeat: true
+        onTriggered: {
+            if (guiBridge) {
+                guiBridge.refresh()
+            }
+        }
+    }
 
     Component.onCompleted: {
         appStateObj = guiBridge ? safeParseJson(guiBridge.appState) : ({})
@@ -128,6 +138,7 @@ ApplicationWindow {
         Text { text: "Trace Score: " + (gameHudObj.score !== undefined ? gameHudObj.score : "n/a") + " | Sync Chain: " + (gameHudObj.combo !== undefined ? gameHudObj.combo : "n/a") + " | Max Combo: " + (gameHudObj.max_combo !== undefined ? gameHudObj.max_combo : "n/a") }
         Text { text: "Multiplier: " + (gameHudObj.score_multiplier !== undefined ? gameHudObj.score_multiplier : "n/a") + " | Level/Load Tier: " + (gameHudObj.level !== undefined ? gameHudObj.level : "n/a") + "/" + (gameHudObj.load_tier !== undefined ? gameHudObj.load_tier : "n/a") }
         Text { text: "Movement: " + (gameHudObj.movement_type || "n/a") + " | Target Type: " + (gameHudObj.target_type || "n/a") }
+        Text { text: "Target X/Y: " + (gameHudObj.target_x !== undefined && gameHudObj.target_x !== null ? gameHudObj.target_x : "n/a") + "/" + (gameHudObj.target_y !== undefined && gameHudObj.target_y !== null ? gameHudObj.target_y : "n/a") + " | VX/VY: " + (gameHudObj.target_vx !== undefined && gameHudObj.target_vx !== null ? gameHudObj.target_vx : "n/a") + "/" + (gameHudObj.target_vy !== undefined && gameHudObj.target_vy !== null ? gameHudObj.target_vy : "n/a") }
         Text { text: "Target Lifetime: " + (gameHudObj.target_lifetime_ms !== undefined ? gameHudObj.target_lifetime_ms : "n/a") + " | Time Left: " + (gameHudObj.target_time_left_ms !== undefined ? gameHudObj.target_time_left_ms : "n/a") + " | Lock Window: " + (gameHudObj.remaining_lifetime_ratio !== undefined ? gameHudObj.remaining_lifetime_ratio : "n/a") }
         Text { text: "Accuracy: " + (gameHudObj.accuracy !== undefined ? gameHudObj.accuracy : "n/a") + " | Omission: " + (gameHudObj.omission !== undefined ? gameHudObj.omission : "n/a") + " | False Action: " + (gameHudObj.false_action !== undefined ? gameHudObj.false_action : "n/a") + " | RT Stability: " + (gameHudObj.rt_stability !== undefined ? gameHudObj.rt_stability : "n/a") }
         Text { text: "Counts T/C/O/F: " + (gameHudObj.target_count !== undefined ? gameHudObj.target_count : "n/a") + "/" + (gameHudObj.correct_count !== undefined ? gameHudObj.correct_count : "n/a") + "/" + (gameHudObj.omission_count !== undefined ? gameHudObj.omission_count : "n/a") + "/" + (gameHudObj.false_action_count !== undefined ? gameHudObj.false_action_count : "n/a") }
