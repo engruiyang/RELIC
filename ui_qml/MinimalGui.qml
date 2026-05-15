@@ -8,19 +8,37 @@ ApplicationWindow {
     height: 760
     title: "RELIC Minimal GUI"
 
-    property var appStateObj: guiBridge ? JSON.parse(guiBridge.appState) : ({})
-    property var runtimeObj: guiBridge ? JSON.parse(guiBridge.runtimeSnapshot) : ({})
-    property var sessionObj: guiBridge ? JSON.parse(guiBridge.sessionState) : ({})
-    property var gameViewObj: guiBridge ? JSON.parse(guiBridge.gameViewJson) : ({})
+    property var appStateObj: ({})
+    property var runtimeObj: ({})
+    property var sessionObj: ({})
+    property var gameViewObj: ({})
+    property var resourceBundleObj: ({})
+
+    function safeParseJson(jsonText) {
+        try {
+            return JSON.parse(jsonText || "{}")
+        } catch (e) {
+            return ({ "error": "json_parse_failed" })
+        }
+    }
 
     Connections {
         target: guiBridge ? guiBridge : null
         function onStateChanged() {
-            appStateObj = guiBridge ? JSON.parse(guiBridge.appState) : ({})
-            runtimeObj = guiBridge ? JSON.parse(guiBridge.runtimeSnapshot) : ({})
-            sessionObj = guiBridge ? JSON.parse(guiBridge.sessionState) : ({})
-            gameViewObj = guiBridge ? JSON.parse(guiBridge.gameViewJson) : ({})
+            appStateObj = guiBridge ? safeParseJson(guiBridge.appState) : ({})
+            runtimeObj = guiBridge ? safeParseJson(guiBridge.runtimeSnapshot) : ({})
+            sessionObj = guiBridge ? safeParseJson(guiBridge.sessionState) : ({})
+            gameViewObj = guiBridge ? safeParseJson(guiBridge.gameViewJson) : ({})
+            resourceBundleObj = guiBridge ? safeParseJson(guiBridge.renderResourcesJson) : ({})
         }
+    }
+
+    Component.onCompleted: {
+        appStateObj = guiBridge ? safeParseJson(guiBridge.appState) : ({})
+        runtimeObj = guiBridge ? safeParseJson(guiBridge.runtimeSnapshot) : ({})
+        sessionObj = guiBridge ? safeParseJson(guiBridge.sessionState) : ({})
+        gameViewObj = guiBridge ? safeParseJson(guiBridge.gameViewJson) : ({})
+        resourceBundleObj = guiBridge ? safeParseJson(guiBridge.renderResourcesJson) : ({})
     }
 
     Column {
@@ -93,6 +111,20 @@ ApplicationWindow {
         Text { text: "Last Platform Index: " + ((guiBridge && guiBridge.lastPlatformIndex !== "") ? guiBridge.lastPlatformIndex : "<none>") }
         Text { text: "Last Platform Action: " + ((guiBridge && guiBridge.lastPlatformAction !== "") ? guiBridge.lastPlatformAction : "<none>") }
         Text { text: "Last Platform Result: " + ((guiBridge && guiBridge.lastPlatformResult !== "") ? guiBridge.lastPlatformResult : "<none>") }
+
+
+        Rectangle { width: parent.width; height: 1; color: "#888" }
+        Text { text: "Resource Bundle" }
+        Text { text: "Theme ID: " + (resourceBundleObj.theme_id || "") }
+        Text { text: "Layout ID: " + (resourceBundleObj.layout_id || "") }
+        Text { text: "Game ID: " + (resourceBundleObj.game_id || "") }
+        Text { text: "Asset Count: " + (resourceBundleObj.assets ? Object.keys(resourceBundleObj.assets).length : 0) }
+        Text { text: "Style Count: " + (resourceBundleObj.styles ? Object.keys(resourceBundleObj.styles).length : 0) }
+        Text { text: "Layout Region Count: " + (resourceBundleObj.layout_regions ? Object.keys(resourceBundleObj.layout_regions).length : 0) }
+        Text { text: "Missing Assets: " + (resourceBundleObj.missing_assets ? resourceBundleObj.missing_assets.length : 0) }
+        Text { text: "Missing Styles: " + (resourceBundleObj.missing_styles ? resourceBundleObj.missing_styles.length : 0) }
+        Text { text: "Missing Regions: " + (resourceBundleObj.missing_regions ? resourceBundleObj.missing_regions.length : 0) }
+        Text { text: "Resource Error: " + (resourceBundleObj.error || "") }
 
         Rectangle { width: parent.width; height: 1; color: "#888" }
         Text { text: "Live Stream" }

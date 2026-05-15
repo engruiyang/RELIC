@@ -20,6 +20,7 @@ class GuiBridge(QObject):
         self._runtime_snapshot = "{}"
         self._session_state = "{}"
         self._game_view_json = "{}"
+        self._render_resources_json = "{}"
         self._last_command = ""
         self._last_event = ""
         self._command_count = 0
@@ -50,6 +51,7 @@ class GuiBridge(QObject):
         self._runtime_snapshot = dumps(self._facade.get_runtime_snapshot())
         self._session_state = dumps(self._facade.get_session_state())
         self._game_view_json = dumps(self._facade.get_game_view())
+        self._render_resources_json = dumps(self._facade.get_render_resources(), ensure_ascii=False)
         self._command_count = self._facade.command_count
         self._event_count = self._facade.event_count
         self._last_command = dumps(self._facade.last_command) if self._facade.last_command else ""
@@ -92,6 +94,10 @@ class GuiBridge(QObject):
     def gameViewJson(self) -> str:
         return self._game_view_json
 
+
+    @Property(str, notify=stateChanged)
+    def renderResourcesJson(self) -> str:
+        return self._render_resources_json
     @Property(int, notify=stateChanged)
     def commandCount(self) -> int:
         return self._command_count
