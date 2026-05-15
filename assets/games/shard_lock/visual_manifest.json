@@ -1,0 +1,121 @@
+{
+  "schema_version": "1.0",
+  "game_id": "shard_lock",
+  "assets": {
+    "shardlock.target.primary": {
+      "type": "sprite",
+      "url": null,
+      "fallback_shape": "circle",
+      "style_key": "shardlock.target.primary",
+      "description": "Primary lock target shard."
+    },
+    "shardlock.target.burst": {
+      "type": "sprite",
+      "url": null,
+      "fallback_shape": "circle",
+      "style_key": "shardlock.target.burst",
+      "description": "Burst shard with short lifetime."
+    },
+    "shardlock.target.unstable": {
+      "type": "sprite",
+      "url": null,
+      "fallback_shape": "circle",
+      "style_key": "shardlock.target.unstable",
+      "description": "Unstable shard with jitter cue."
+    },
+    "shardlock.focus_zone.default": {
+      "type": "shape",
+      "url": null,
+      "fallback_shape": "ring",
+      "style_key": "focus_zone.default",
+      "description": "Focus guidance zone."
+    },
+    "shardlock.progress_ring.default": {
+      "type": "shape",
+      "url": null,
+      "fallback_shape": "ring",
+      "style_key": "progress_ring.default",
+      "description": "Round progress indicator ring."
+    },
+    "shardlock.timer.round": {
+      "type": "shape",
+      "url": null,
+      "fallback_shape": "bar",
+      "style_key": "timer.round",
+      "description": "Round timer bar."
+    },
+    "shardlock.hud.combo_badge": {
+      "type": "shape",
+      "url": null,
+      "fallback_shape": "badge",
+      "style_key": "hud.combo_badge",
+      "description": "Combo badge indicator."
+    }
+  },
+  "effects": {
+    "shardlock.effect.lock_success": {
+      "type": "pulse",
+      "url": null,
+      "style_key": "shardlock.effect.lock_success",
+      "duration_ms": 180,
+      "description": "Success pulse feedback."
+    },
+    "shardlock.effect.lock_failed": {
+      "type": "flash",
+      "url": null,
+      "style_key": "shardlock.effect.lock_failed",
+      "duration_ms": 220,
+      "description": "Failed lock visual feedback."
+    },
+    "shardlock.effect.target_timeout": {
+      "type": "fade",
+      "url": null,
+      "style_key": "shardlock.effect.target_timeout",
+      "duration_ms": 250,
+      "description": "Target timeout fade feedback."
+    },
+    "shardlock.effect.combo_popup": {
+      "type": "popup",
+      "url": null,
+      "style_key": "shardlock.effect.combo_popup",
+      "duration_ms": 300,
+      "description": "Combo popup feedback."
+    },
+    "shardlock.effect.level_up": {
+      "type": "banner",
+      "url": null,
+      "style_key": "shardlock.effect.level_up",
+      "duration_ms": 360,
+      "description": "Level up feedback banner."
+    },
+    "shardlock.effect.level_down": {
+      "type": "banner",
+      "url": null,
+      "style_key": "shardlock.effect.level_down",
+      "duration_ms": 360,
+      "description": "Level down feedback banner."
+    }
+  },
+  "styles": {
+    "shardlock.target.primary": "shardlock.target.primary",
+    "shardlock.target.burst": "shardlock.target.burst",
+    "shardlock.target.unstable": "shardlock.target.unstable",
+    "shardlock.focus_zone.default": "focus_zone.default",
+    "shardlock.progress_ring.default": "progress_ring.default",
+    "shardlock.timer.round": "timer.round"
+  },
+  "supported_entities": [
+    "target",
+    "focus_zone",
+    "progress_ring",
+    "timer_bar"
+  ],
+  "supported_visual_states": [
+    "active",
+    "locked",
+    "failed",
+    "expired",
+    "warning",
+    "disabled"
+  ]
+}
