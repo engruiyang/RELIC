@@ -42,3 +42,24 @@ def test_write_session_report_prefers_jsonl_session_summary(tmp_path: Path) -> N
     assert "fi_avg: None" not in content
     assert "sqi_avg: None" not in content
     assert "error_count: None" not in content
+
+
+def test_report_title_uses_link_diagnostics_for_training(tmp_path: Path) -> None:
+    report_path = write_session_report(
+        {"session_id": "s_training", "session_type": "training", "user_id": "u1", "game_id": "trace_lock"},
+        {"event_count": 1},
+        out_dir=str(tmp_path / "reports"),
+    )
+    content = Path(report_path).read_text(encoding="utf-8")
+    assert "# RELIC Link Diagnostics" in content
+    assert "protocol_name: TraceLock Protocol" in content
+
+
+def test_report_title_uses_legacy_for_unknown_session_type(tmp_path: Path) -> None:
+    report_path = write_session_report(
+        {"session_id": "s_legacy", "session_type": "unknown", "user_id": "u1", "game_id": "fake_game"},
+        {"event_count": 1},
+        out_dir=str(tmp_path / "reports"),
+    )
+    content = Path(report_path).read_text(encoding="utf-8")
+    assert "# RELIC 训练会话报告" in content
