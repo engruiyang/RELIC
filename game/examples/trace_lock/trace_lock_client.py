@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from math import sqrt
 from statistics import mean
 from typing import Any
 
@@ -26,6 +25,9 @@ class _Target:
     radius: float
     spawned_at_ms: int
     expires_at_ms: int
+    vx: float = 0.0
+    vy: float = 0.0
+    movement_type: str = "static"
     state: str = "active"
 
 
@@ -48,9 +50,9 @@ class TraceLockClient:
         self._level_cfg: dict[int, _LevelConfig] = {
             1: _LevelConfig(0.09, 1500, False, 0.0, 0.00),
             2: _LevelConfig(0.08, 1300, False, 0.0, 0.05),
-            3: _LevelConfig(0.07, 1100, True, 0.02, 0.10),
-            4: _LevelConfig(0.06, 950, True, 0.03, 0.15),
-            5: _LevelConfig(0.05, 800, True, 0.04, 0.20),
+            3: _LevelConfig(0.07, 1100, True, 0.00004, 0.10),
+            4: _LevelConfig(0.06, 950, True, 0.00007, 0.15),
+            5: _LevelConfig(0.05, 800, True, 0.00010, 0.20),
         }
         self._session_id = ""
         self._started = False
@@ -131,11 +133,13 @@ class TraceLockClient:
     def update(self, runtime_snapshot: dict[str, Any], dt_ms: int) -> None:
         if not self._started:
             return
+        step_ms = max(0, int(dt_ms))
         self._frame_id += 1
-        self._clock_ms += max(0, int(dt_ms))
+        self._clock_ms += step_ms
         self._snapshot = dict(runtime_snapshot or {})
         self._update_hint_and_live_stats()
         self._maybe_adjust_difficulty()
+        self._move_target(step_ms)
         self._check_target_timeout()
         if self._clock_ms >= self._game_duration_ms and not self._completed:
             self._completed = True
@@ -151,44 +155,21 @@ class TraceLockClient:
         target = self._active_target
         if target and self._is_hit(game_input_event.x_norm, game_input_event.y_norm, target):
             rt_ms = max(0, game_input_event.created_at_ms - target.spawned_at_ms)
-            self._score += 1
             self._combo += 1
             self._max_combo = max(self._max_combo, self._combo)
+            score_delta = 1 if self._combo < 5 else (2 if self._combo < 10 else 3)
+            self._score += score_delta
             self._correct_count += 1
             self._trace_seal_count += 1
             self._rt_samples_ms.append(rt_ms)
-            self._events.append(
-                self._make_event(
-                    "target_click",
-                    game_input_event.created_at_ms,
-                    True,
-                    {
-                        "target_index": 0,
-                        "action_name": "target_primary",
-                        "hit": True,
-                        "reaction_time_ms": rt_ms,
-                        "combo": self._combo,
-                        "score_delta": 1,
-                        "target_id": target.target_id,
-                        "target_type": target.target_type,
-                        "trace_sealed": True,
-                    },
-                )
-            )
+            self._events.append(self._make_event("target_click", game_input_event.created_at_ms, True, {"target_index": 0, "action_name": "target_primary", "hit": True, "reaction_time_ms": rt_ms, "combo": self._combo, "max_combo": self._max_combo, "score_delta": score_delta, "target_id": target.target_id, "target_type": target.target_type, "trace_sealed": True}))
             self._visual_events.append(self._make_fx("trace_seal", target, "tracelock.effect.trace_seal"))
             self._spawn_target()
             return
 
         self._combo = 0
         self._false_action_count += 1
-        self._events.append(
-            self._make_event(
-                "background_click",
-                game_input_event.created_at_ms,
-                True,
-                {"target_index": 1, "action_name": "background", "hit": False},
-            )
-        )
+        self._events.append(self._make_event("background_click", game_input_event.created_at_ms, True, {"target_index": 1, "action_name": "background", "hit": False}))
         if target:
             self._visual_events.append(self._make_fx("lock_failed", target, "tracelock.effect.lock_failed"))
 
@@ -196,108 +177,27 @@ class TraceLockClient:
         target = self._active_target
         remaining_ratio = 0.0
         target_type = "marked_trace"
+        target_time_left_ms = 0
+        target_lifetime_ms = self._level_cfg[self._level].target_lifetime_ms
         target_entities: list[GameEntity] = []
         if target:
-            remaining = max(0, target.expires_at_ms - self._clock_ms)
-            lifetime = max(1, target.expires_at_ms - target.spawned_at_ms)
-            remaining_ratio = max(0.0, min(1.0, remaining / lifetime))
+            target_time_left_ms = max(0, target.expires_at_ms - self._clock_ms)
+            target_lifetime_ms = max(1, target.expires_at_ms - target.spawned_at_ms)
+            remaining_ratio = max(0.0, min(1.0, target_time_left_ms / target_lifetime_ms))
             target_type = target.target_type
             key = self._asset_for_target(target.target_type)
-            target_entities.append(
-                GameEntity(
-                    id=target.target_id,
-                    kind="target",
-                    role="primary",
-                    x=target.x,
-                    y=target.y,
-                    radius=target.radius,
-                    state="active",
-                    style_key=key,
-                    asset_key=key,
-                    interactive=True,
-                    hit_shape="circle",
-                    metadata={
-                        "target_id": target.target_id,
-                        "target_type": target.target_type,
-                        "remaining_lifetime_ratio": remaining_ratio,
-                    },
-                )
-            )
-            target_entities.append(
-                GameEntity(
-                    id=f"ring_{target.target_id}",
-                    kind="progress_ring",
-                    role="lock_progress",
-                    x=target.x,
-                    y=target.y,
-                    radius=target.radius * 1.25,
-                    state="active",
-                    style_key="tracelock.progress_ring.default",
-                    asset_key="tracelock.progress_ring.default",
-                    interactive=False,
-                    hit_shape="circle",
-                    metadata={"progress": remaining_ratio},
-                )
-            )
+            target_entities.append(GameEntity(id=target.target_id, kind="target", role="primary", x=target.x, y=target.y, radius=target.radius, state="active", style_key=key, asset_key=key, interactive=True, hit_shape="circle", metadata={"target_id": target.target_id, "target_type": target.target_type, "remaining_lifetime_ratio": remaining_ratio, "time_left_ms": target_time_left_ms, "target_lifetime_ms": target_lifetime_ms, "movement_type": target.movement_type, "level": self._level}))
+            target_entities.append(GameEntity(id=f"ring_{target.target_id}", kind="progress_ring", role="lock_progress", x=target.x, y=target.y, radius=target.radius * 1.25, state="active", style_key="tracelock.progress_ring.default", asset_key="tracelock.progress_ring.default", interactive=False, hit_shape="circle", metadata={"progress": remaining_ratio, "time_left_ms": target_time_left_ms, "target_lifetime_ms": target_lifetime_ms}))
 
-        cfg = self._level_cfg[self._level]
+        pressure = "high" if remaining_ratio < 0.25 else ("medium" if remaining_ratio < 0.6 else "low")
+        score_multiplier = 1 if self._combo < 5 else (2 if self._combo < 10 else 3)
         entities = target_entities + [
-            GameEntity(
-                id="focus_zone",
-                kind="focus_zone",
-                role="lock_area",
-                x=0.5,
-                y=0.5,
-                radius=0.42,
-                state="active",
-                style_key="tracelock.focus_zone.default",
-                asset_key="tracelock.focus_zone.default",
-                interactive=False,
-                hit_shape="circle",
-                metadata={},
-            ),
-            GameEntity(
-                id="round_timer",
-                kind="timer_bar",
-                role="round_timer",
-                x=0.5,
-                y=0.04,
-                radius=0.0,
-                state="active",
-                style_key="tracelock.timer.round",
-                asset_key="tracelock.timer.round",
-                interactive=False,
-                hit_shape="rect",
-                metadata={"progress": max(0.0, min(1.0, (self._game_duration_ms - self._clock_ms) / self._game_duration_ms))},
-            ),
+            GameEntity(id="focus_zone", kind="focus_zone", role="lock_area", x=0.5, y=0.5, radius=0.42, state="active", style_key="tracelock.focus_zone.default", asset_key="tracelock.focus_zone.default", interactive=False, hit_shape="circle", metadata={}),
+            GameEntity(id="round_timer", kind="timer_bar", role="round_timer", x=0.5, y=0.04, radius=0.0, state="active", style_key="tracelock.timer.round", asset_key="tracelock.timer.round", interactive=False, hit_shape="rect", metadata={"progress": max(0.0, min(1.0, (self._game_duration_ms - self._clock_ms) / self._game_duration_ms))}),
         ]
         visual_events = [v for v in self._visual_events]
         self._visual_events.clear()
-        return GameViewState(
-            game_id=self.game_id,
-            view_version="game_view.v1",
-            frame_id=self._frame_id,
-            score=self._score,
-            combo=self._combo,
-            level=self._level,
-            hud={
-                "score": self._score,
-                "combo": self._combo,
-                "level": self._level,
-                "time_left_ms": max(0, self._game_duration_ms - self._clock_ms),
-                "hint": self._hint,
-                "attention_fresh": bool(self._snapshot.get("attention_fresh", True)),
-                "gyro_fresh": bool(self._snapshot.get("gyro_fresh", True)),
-                "stream_alive": bool(self._snapshot.get("stream_alive", True)),
-                "target_lifetime_ms": cfg.target_lifetime_ms,
-                "target_type": target_type,
-                "protocol_name": "TraceLock Protocol",
-                "vendor": "Qilin Logic",
-            },
-            entities=entities,
-            visual_events=visual_events,
-            layout_hints={"canvas": "game_canvas", "render_mode": "contract_only"},
-        )
+        return GameViewState(game_id=self.game_id, view_version="game_view.v1", frame_id=self._frame_id, score=self._score, combo=self._combo, level=self._level, hud={"score": self._score, "combo": self._combo, "max_combo": self._max_combo, "score_multiplier": score_multiplier, "level": self._level, "time_left_ms": max(0, self._game_duration_ms - self._clock_ms), "hint": self._hint, "attention_fresh": bool(self._snapshot.get("attention_fresh", True)), "gyro_fresh": bool(self._snapshot.get("gyro_fresh", True)), "stream_alive": bool(self._snapshot.get("stream_alive", True)), "target_time_left_ms": target_time_left_ms, "target_lifetime_ms": target_lifetime_ms, "target_pressure_level": pressure, "target_type": target_type, "protocol_name": "TraceLock Protocol", "vendor": "Qilin Logic"}, entities=entities, visual_events=visual_events, layout_hints={"canvas": "game_canvas", "render_mode": "contract_only"})
 
     def collect_game_events(self) -> list[GameEvent]:
         out = list(self._events)
@@ -305,39 +205,13 @@ class TraceLockClient:
         return out
 
     def collect_behavior_sample(self) -> BehaviorSample:
-        action_count = self._action_count
         target_count = max(1, self._target_count)
         accuracy = self._correct_count / target_count
         omission = self._omission_count / target_count
-        false_action = self._false_action_count / max(1, action_count)
+        false_action = self._false_action_count / max(1, self._action_count)
         rtv = self._rtv()
         rt_stability = max(0.0, min(1.0, 1.0 - min(1.0, rtv / 400.0)))
-        return BehaviorSample(
-            window_ms=self._game_duration_ms,
-            target_count=self._target_count,
-            correct_count=self._correct_count,
-            omission_count=self._omission_count,
-            false_action_count=self._false_action_count,
-            action_count=action_count,
-            rt_samples_ms=list(self._rt_samples_ms),
-            accuracy=accuracy,
-            omission=omission,
-            false_action=false_action,
-            rt_stability=rt_stability,
-            game_specific={
-                "combo": self._combo,
-                "max_combo": self._max_combo,
-                "level": self._level,
-                "level_change_count": self._level_change_count,
-                "mean_reaction_time_ms": float(mean(self._rt_samples_ms)) if self._rt_samples_ms else 0.0,
-                "rtv": rtv,
-                "attention_stale_frames": self._attention_stale_frames,
-                "gyro_unstable_frames": self._gyro_unstable_frames,
-                "stable_focus_frames": self._stable_focus_frames,
-                "trace_drop_count": self._trace_drop_count,
-                "trace_seal_count": self._trace_seal_count,
-            },
-        )
+        return BehaviorSample(window_ms=self._game_duration_ms, target_count=self._target_count, correct_count=self._correct_count, omission_count=self._omission_count, false_action_count=self._false_action_count, action_count=self._action_count, rt_samples_ms=list(self._rt_samples_ms), accuracy=accuracy, omission=omission, false_action=false_action, rt_stability=rt_stability, game_specific={"combo": self._combo, "max_combo": self._max_combo, "level": self._level, "level_change_count": self._level_change_count, "mean_reaction_time_ms": float(mean(self._rt_samples_ms)) if self._rt_samples_ms else 0.0, "rtv": rtv, "attention_stale_frames": self._attention_stale_frames, "gyro_unstable_frames": self._gyro_unstable_frames, "stable_focus_frames": self._stable_focus_frames, "trace_drop_count": self._trace_drop_count, "trace_seal_count": self._trace_seal_count})
 
     def is_completed(self) -> bool:
         return self._completed
@@ -354,16 +228,39 @@ class TraceLockClient:
         target_type = "burst_trace" if (seed % 100) < int(cfg.burst_target_ratio * 100) else "marked_trace"
         if cfg.movement_enabled and seed % 11 == 0:
             target_type = "unstable_trace"
-        self._active_target = _Target(
-            target_id=f"trace_{self._target_seq}",
-            target_type=target_type,
-            x=max(0.1, min(0.9, x)),
-            y=max(0.12, min(0.9, y)),
-            radius=cfg.target_radius,
-            spawned_at_ms=self._clock_ms,
-            expires_at_ms=self._clock_ms + cfg.target_lifetime_ms,
-        )
+        movement_type = "static" if self._level <= 2 else ("drift" if self._level == 3 else ("linear" if self._level == 4 else "burst"))
+        speed = cfg.movement_speed
+        vx = speed
+        vy = speed * (0.7 if movement_type == "drift" else (1.0 if movement_type == "linear" else 1.4))
+        if seed % 2 == 0:
+            vx = -vx
+        if seed % 3 == 0:
+            vy = -vy
+        self._active_target = _Target(target_id=f"trace_{self._target_seq}", target_type=target_type, x=max(0.1, min(0.9, x)), y=max(0.12, min(0.9, y)), radius=cfg.target_radius, spawned_at_ms=self._clock_ms, expires_at_ms=self._clock_ms + cfg.target_lifetime_ms, vx=vx, vy=vy, movement_type=movement_type)
         self._target_count += 1
+
+    def _move_target(self, dt_ms: int) -> None:
+        t = self._active_target
+        if not t or t.movement_type == "static":
+            return
+        capped_dt = min(dt_ms, 120)
+        max_step = 0.03
+        dx = max(-max_step, min(max_step, t.vx * capped_dt))
+        dy = max(-max_step, min(max_step, t.vy * capped_dt))
+        t.x += dx
+        t.y += dy
+        if t.x < 0.08:
+            t.x = 0.08
+            t.vx = abs(t.vx)
+        elif t.x > 0.92:
+            t.x = 0.92
+            t.vx = -abs(t.vx)
+        if t.y < 0.08:
+            t.y = 0.08
+            t.vy = abs(t.vy)
+        elif t.y > 0.92:
+            t.y = 0.92
+            t.vy = -abs(t.vy)
 
     def _check_target_timeout(self) -> None:
         target = self._active_target
@@ -374,14 +271,7 @@ class TraceLockClient:
         self._combo = 0
         self._omission_count += 1
         self._trace_drop_count += 1
-        self._events.append(
-            self._make_event(
-                "target_omitted",
-                self._clock_ms,
-                False,
-                {"omission": True, "target_id": target.target_id, "trace_drop": True},
-            )
-        )
+        self._events.append(self._make_event("target_omitted", self._clock_ms, False, {"omission": True, "target_id": target.target_id, "trace_drop": True}))
         self._visual_events.append(self._make_fx("trace_drop", target, "tracelock.effect.trace_drop"))
         self._spawn_target()
 
@@ -413,7 +303,11 @@ class TraceLockClient:
             return
         self._last_difficulty_check_ms = self._clock_ms
         sample = self.collect_behavior_sample()
-        up = sample.accuracy >= 0.85 and sample.false_action <= 0.10 and sample.omission <= 0.10 and sample.rt_stability >= 0.70
+        state = str(self._snapshot.get("control_state", ""))
+        gyro_ok = bool(self._snapshot.get("gyro_fresh", True))
+        upgrade_allowed = state not in {"DISTRACTED", "FATIGUED"} and gyro_ok
+        high_focus = state == "HIGH_FOCUS"
+        up = upgrade_allowed and high_focus and sample.accuracy >= 0.85 and sample.false_action <= 0.10 and sample.omission <= 0.10 and sample.rt_stability >= 0.70
         down = sample.accuracy < 0.60 or sample.false_action > 0.25 or sample.omission > 0.25
         if self._clock_ms - self._last_level_change_ms < 10000:
             return
@@ -423,8 +317,8 @@ class TraceLockClient:
         elif down and self._level > 1:
             self._level -= 1
         if old != self._level:
-            self._last_level_change_ms = self._clock_ms
             self._level_change_count += 1
+            self._last_level_change_ms = self._clock_ms
             self._events.append(self._make_event("level_changed", self._clock_ms, False, {"old_level": old, "new_level": self._level}))
 
     def _make_event(self, event_type: str, created_at_ms: int, reportable: bool, payload: dict[str, Any]) -> GameEvent:
@@ -433,28 +327,15 @@ class TraceLockClient:
 
     def _make_fx(self, kind: str, target: _Target, effect_key: str) -> VisualEvent:
         self._fx_seq += 1
-        return VisualEvent(
-            event_id=f"trace_fx_{self._fx_seq}",
-            kind=kind,
-            target_id=target.target_id,
-            x=target.x,
-            y=target.y,
-            effect_key=effect_key,
-            style_key=effect_key,
-            intensity=1.0,
-            duration_ms=220,
-            payload={"target_type": target.target_type},
-        )
+        return VisualEvent(event_id=f"trace_fx_{self._fx_seq}", kind=kind, target_id=target.target_id, x=target.x, y=target.y, effect_key=effect_key, style_key=effect_key, intensity=1.0, duration_ms=220, payload={"target_type": target.target_type})
 
     def _is_hit(self, x: float, y: float, target: _Target) -> bool:
-        return sqrt((x - target.x) ** 2 + (y - target.y) ** 2) <= target.radius
+        dx = x - target.x
+        dy = y - target.y
+        return dx * dx + dy * dy <= target.radius * target.radius
 
     def _asset_for_target(self, target_type: str) -> str:
-        return {
-            "marked_trace": "tracelock.target.marked_trace",
-            "burst_trace": "tracelock.target.burst_trace",
-            "unstable_trace": "tracelock.target.unstable_trace",
-        }.get(target_type, "tracelock.target.marked_trace")
+        return {"marked_trace": "tracelock.target.marked_trace", "burst_trace": "tracelock.target.burst_trace", "unstable_trace": "tracelock.target.unstable_trace"}.get(target_type, "tracelock.target.marked_trace")
 
     def _rtv(self) -> float:
         if len(self._rt_samples_ms) <= 1:

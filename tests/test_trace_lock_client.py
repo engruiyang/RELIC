@@ -87,7 +87,7 @@ def test_level_change_completed_visualevent_and_manifest_checks() -> None:
         v = c.build_game_view()
         t = [e for e in v.entities if e.kind == "target"][0]
         c.handle_input(_evt(x=t.x, y=t.y, ts=(i + 1) * 100))
-    c.update({"attention_fresh": True, "gyro_fresh": True}, 5100)
+    c.update({"attention_fresh": True, "gyro_fresh": True, "control_state": "HIGH_FOCUS"}, 5100)
     events = c.collect_game_events()
     assert any(e.event_type == "level_changed" for e in events)
 
