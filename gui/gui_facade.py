@@ -134,6 +134,12 @@ class GuiFacade:
             return self._core_source.get_game_view()
         return {}
 
+    def get_game_hud(self) -> dict[str, Any]:
+        view = self.get_game_view() or {}
+        hud = dict(view.get("hud") or {})
+        hud.setdefault("game_id", view.get("game_id", self.get_app_state().get("current_game_id", "")))
+        return hud
+
     def handle_gui_command(self, command: str, args: dict[str, Any] | None = None) -> None:
         args = args or {}
         entry = {"command": command, "args": deepcopy(args)}
@@ -153,6 +159,8 @@ class GuiFacade:
                 self.last_command_result = self._live_control_source.start_live_debug_session(args.get("user_id"))
             elif command == "end_session":
                 self.last_command_result = self._live_control_source.end_live_debug_session()
+            elif command == "set_debug_difficulty":
+                self.last_command_result = self._live_control_source.set_debug_difficulty(args.get("level"))
             elif command == "open_last_report":
                 self.last_command_result = {"command": command, "accepted": True, "status": "noop", "message": "report_disabled_in_live_control", "result": "noop", "source": "live_control"}
             else:
