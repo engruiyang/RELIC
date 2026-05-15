@@ -6,6 +6,7 @@ from typing import Any
 from .gui_core_source import GuiCoreSnapshotSource
 from .gui_live_readonly_source import GuiLiveReadonlySource
 from .gui_live_control_source import GuiLiveControlSource
+from core.resource_managers import build_render_resource_bundle
 
 
 class GuiFacade:
@@ -35,6 +36,8 @@ class GuiFacade:
         self.last_platform_index: int | None = None
         self.last_platform_action = ""
         self.last_platform_result = ""
+
+        self._render_resources = self._build_safe_render_resources(game_id=game_id)
 
         self._core_source: GuiCoreSnapshotSource | None = None
         self._live_source: GuiLiveReadonlySource | None = None
@@ -227,6 +230,26 @@ class GuiFacade:
         y_norm = payload.get("y_norm")
         hit = payload.get("hit")
         print(f"[GUI EVENT] event_type={event_type} x={x_norm} y={y_norm} hit={hit} result={event_result}", flush=True)
+
+    def _build_safe_render_resources(self, game_id: str) -> dict[str, Any]:
+        try:
+            return build_render_resource_bundle(game_id=game_id, theme_id="default", layout_id="minimal_gui")
+        except Exception as exc:  # pragma: no cover
+            return {
+                "theme_id": "default",
+                "layout_id": "minimal_gui",
+                "game_id": game_id or "fake_game",
+                "assets": {},
+                "styles": {},
+                "layout_regions": {},
+                "missing_assets": [],
+                "missing_styles": [],
+                "missing_regions": [],
+                "error": str(exc),
+            }
+
+    def get_render_resources(self) -> dict[str, Any]:
+        return deepcopy(self._render_resources)
 
     def close(self) -> None:
         if self._core_source:
