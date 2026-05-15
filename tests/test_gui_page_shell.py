@@ -16,11 +16,16 @@ def test_minimal_gui_has_required_sections_and_controls() -> None:
         "Debug Panel",
         "Link Diagnostics",
         "NAC / Live Status",
+        "connection_status",
+        "stream_alive",
+        "attention_fresh",
+        "gyro_fresh",
+        "latest_report_path",
+        "session_id",
         "Start Training Session",
-        "Start Mock Session",
-        "Force L1",
-        "Force L5",
-        "Auto DDA",
+        "End Training Session",
+        "Start Mock Session (Debug)",
+        "Refresh Snapshot",
     ]:
         assert token in qml
 
@@ -29,10 +34,11 @@ def test_minimal_gui_has_required_sections_and_controls() -> None:
         "running: true; repeat: true",
         "ScrollView",
         "GameCanvas {",
+        "Repeater",
+        "Loader",
         "PlatformReporter",
         "ipc_mouse_data",
         "SQLite",
-        "assets/",
         "assets/*.json",
     ]:
         assert banned not in qml
