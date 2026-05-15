@@ -81,6 +81,8 @@ ApplicationWindow {
 
         Button { text: "Load Demo User"; onClicked: guiBridge.sendCommand("load_demo_user", "{}") }
         Button { text: "Start Mock Session"; onClicked: guiBridge.sendCommand("start_mock_session", "{}") }
+        Button { text: "Start Training Session"; onClicked: guiBridge.sendCommand("start_training_session", "{}") }
+        Button { text: "End Training Session"; onClicked: guiBridge.sendCommand("end_training_session", "{}") }
         Button { text: "End Session"; onClicked: guiBridge.sendCommand("end_session", "{}") }
         Button { text: "Refresh Snapshot"; onClicked: guiBridge.refresh() }
         Row {
@@ -135,7 +137,7 @@ ApplicationWindow {
         Text { text: "TraceLock HUD" }
         Text { text: "Protocol: " + (gameHudObj.protocol_name || "n/a") }
         Text { text: "Vendor: " + (gameHudObj.vendor || "n/a") }
-        Text { text: "Trace Score: " + (gameHudObj.score !== undefined ? gameHudObj.score : "n/a") + " | Sync Chain: " + (gameHudObj.combo !== undefined ? gameHudObj.combo : "n/a") + " | Max Combo: " + (gameHudObj.max_combo !== undefined ? gameHudObj.max_combo : "n/a") }
+        Text { text: "Trace Score: " + (gameHudObj.score !== undefined ? gameHudObj.score : "n/a") + " | Sync Chain / Combo: " + (gameHudObj.combo !== undefined ? gameHudObj.combo : "n/a") + " | Max Combo: " + (gameHudObj.max_combo !== undefined ? gameHudObj.max_combo : "n/a") }
         Text { text: "Multiplier: " + (gameHudObj.score_multiplier !== undefined ? gameHudObj.score_multiplier : "n/a") + " | Level/Load Tier: " + (gameHudObj.level !== undefined ? gameHudObj.level : "n/a") + "/" + (gameHudObj.load_tier !== undefined ? gameHudObj.load_tier : "n/a") }
         Text { text: "Movement: " + (gameHudObj.movement_type || "n/a") + " | Target Type: " + (gameHudObj.target_type || "n/a") }
         Text { text: "Target X/Y: " + (gameHudObj.target_x !== undefined && gameHudObj.target_x !== null ? gameHudObj.target_x : "n/a") + "/" + (gameHudObj.target_y !== undefined && gameHudObj.target_y !== null ? gameHudObj.target_y : "n/a") + " | VX/VY: " + (gameHudObj.target_vx !== undefined && gameHudObj.target_vx !== null ? gameHudObj.target_vx : "n/a") + "/" + (gameHudObj.target_vy !== undefined && gameHudObj.target_vy !== null ? gameHudObj.target_vy : "n/a") }
