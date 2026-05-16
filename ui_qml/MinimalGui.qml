@@ -7,6 +7,11 @@ ApplicationWindow {
     height: 700
     title: "RELIC Core"
 
+    color: "#101418"
+    property color colorPanel: "#1b222a"
+    property color colorText: "#eef3f8"
+    property color colorMuted: "#aeb8c2"
+
     property var appStateObj: ({})
     property var runtimeObj: ({})
     property var sessionObj: ({})
@@ -66,8 +71,9 @@ ApplicationWindow {
         anchors.margins: 16
         spacing: 8
 
-        Label { text: "RELIC Core / Live Bus Status"; font.pixelSize: 24; font.bold: true }
-        Label { text: "QML smoke shell loaded"; font.pixelSize: 16 }
+        Label { text: "RELIC Core / Developer Diagnostics Console"; color: colorText; font.pixelSize: 24; font.bold: true }
+        Label { text: "QML smoke shell loaded"; color: colorMuted; font.pixelSize: 16 }
+
 
 
         GroupBox {
@@ -83,11 +89,18 @@ ApplicationWindow {
                 Label { text: "last_command_error: " + safeText(getField(controlStateObj, "last_command_error")) }
                 Label { text: "command_count: " + safeText(getField(controlStateObj, "command_count")) }
                 Label { text: "app_elapsed_ms: " + safeText(getField(controlStateObj, "app_elapsed_ms")) }
-                Label { text: "session_elapsed_ms: " + safeText(getField(controlStateObj, "session_elapsed_ms")) }
+                Label { text: "session_active: " + safeText(getField(controlStateObj, "session_active")); color: colorText }
+                Label { text: "session_elapsed_ms: " + safeText(getField(controlStateObj, "session_elapsed_ms")); color: colorText }
+                Label { text: "last_session_status: " + safeText(getField(controlStateObj, "last_session_status")); color: colorText }
                 Label { text: "current_user_id: " + safeText(getField(controlStateObj, "current_user_id")) }
                 Label { text: "current_session_id: " + safeText(getField(controlStateObj, "current_session_id")) }
                 Label { text: "current_game_id: " + safeText(getField(controlStateObj, "current_game_id")) }
-                Label { text: "latest_report_path: " + safeText(getField(controlStateObj, "latest_report_path")) }
+                Label { text: "latest_report_path: " + safeText(getField(controlStateObj, "latest_report_path")); color: colorText }
+                Label { text: "user_type: " + safeText(getField(controlStateObj, "user_type")); color: colorText }
+                Label { text: "profile_loaded: " + safeText(getField(controlStateObj, "profile_loaded")); color: colorText }
+                Label { text: "last_calibration_id: " + safeText(getField(controlStateObj, "last_calibration_id")); color: colorText }
+                Label { text: "calibration_status: " + safeText(getField(controlStateObj, "calibration_status")); color: colorText }
+                Label { text: "calibration_usable: " + safeText(getField(controlStateObj, "calibration_usable")); color: colorText }
 
                 Row { spacing: 6
                     Button { text: "Refresh"; onClicked: if (guiBridge) { guiBridge.invokeAction("app.refresh_now", "{}") } }
@@ -111,6 +124,31 @@ ApplicationWindow {
                     Button { text: "Clear Last Error"; onClicked: if (guiBridge) { guiBridge.invokeAction("diagnostics.clear_last_error", "{}") } }
                     Button { text: "Refresh Diagnostics"; onClicked: if (guiBridge) { guiBridge.invokeAction("diagnostics.refresh", "{}") } }
                 }
+            }
+        }
+
+
+        GroupBox {
+            width: parent.width
+            title: "Profile"
+            Column {
+                spacing: 4
+                Label { text: "current_user_id: " + safeText(getField(controlStateObj, "current_user_id")); color: colorText }
+                Label { text: "user_type: " + safeText(getField(controlStateObj, "user_type")); color: colorText }
+                Label { text: "profile_loaded: " + safeText(getField(controlStateObj, "profile_loaded")); color: colorText }
+                Label { text: "last_calibration_id: " + safeText(getField(controlStateObj, "last_calibration_id")); color: colorText }
+                Label { text: "profile_status: " + safeText(getField(controlStateObj, "profile_status")); color: colorText }
+            }
+        }
+
+        GroupBox {
+            width: parent.width
+            title: "Calibration"
+            Column {
+                spacing: 4
+                Label { text: "calibration_status: " + safeText(getField(controlStateObj, "calibration_status")); color: colorText }
+                Label { text: "last_calibration_id: " + safeText(getField(controlStateObj, "last_calibration_id")); color: colorText }
+                Label { text: "calibration_usable: " + safeText(getField(controlStateObj, "calibration_usable")); color: colorText }
             }
         }
 

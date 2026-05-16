@@ -46,3 +46,31 @@ QML -> `GuiBridge.invokeAction` -> `GuiFacade.invoke_action` -> 既有 `handle_g
 
 ## 非目标
 不包含页面切换、GameCanvas、素材系统、正式训练页。
+
+
+## 定位说明
+- MinimalGui 是 **Developer Diagnostics Console**，不是最终正式 GUI 页面。
+- TASK21-C3 验收用户优先使用 `TEST`（`--user-id TEST --db-path data/relic_local.db`）。
+- `demo` / `ensure_demo_user` 仅作为 debug fallback。
+
+## Show Profile 反馈字段
+`user.show_profile` 返回结构化字段：
+- 无用户：`missing_user`
+- 用户不存在：`user_not_found`
+- profile 不存在：`profile_not_found`
+- 有 profile：`current_user_id`, `user_type`, `profile_loaded`, `last_calibration_id`, `attention_low_threshold`, `attention_high_threshold`, `preferred_game_id`, `difficulty_level`
+
+## Session 控制状态字段
+`controlStateJson` 至少包含：
+- `session_active`
+- `current_session_id`
+- `session_elapsed_ms`
+- `latest_report_path`
+- `last_session_status`
+
+## Calibration 语义
+- `calibration.start`: 当前仍为 `not_implemented`（需后续完整 Calibration 页面任务实现 user/source/type/progress/failure UI）。
+- `calibration.status`: 只读查询，返回 `missing_user` / `no_calibration` / `profile_without_calibration` / `accepted`，并在有绑定时返回 `last_calibration_id`, `calibration_usable`, `latest_valid`, `failure_reason`, `source`, `attention_baseline`, `gyro_noise_rms`。
+
+## 配色说明
+本轮仅做可读性修复（高对比诊断风格），不是完整主题系统。

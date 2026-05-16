@@ -8,6 +8,7 @@ from .gui_core_source import GuiCoreSnapshotSource
 from .gui_live_readonly_source import GuiLiveReadonlySource
 from .gui_live_control_source import GuiLiveControlSource
 from core.resource_managers import build_render_resource_bundle
+from storage.sqlite_store import SqliteStore
 
 
 class GuiFacade:
@@ -60,8 +61,8 @@ class GuiFacade:
 
         self._app_state = {
             "state": "READY",
-            "current_user_id": "demo_user",
-            "current_user_name": "Demo User",
+            "current_user_id": user_id,
+            "current_user_name": user_id,
             "device_connected": True,
             "calibration_status": "passed",
             "session_active": False,
@@ -91,7 +92,7 @@ class GuiFacade:
             "source": "mock",
         }
         self._session_state = {
-            "session_id": "mock_session",
+            "session_id": "",
             "user_id": "demo_user",
             "game_id": "fake_game",
             "session_active": False,
@@ -276,6 +277,37 @@ class GuiFacade:
             self._live_control_source.stop()
 
 
+    def _fetch_profile_summary(self, user_id: str) -> dict[str, Any]:
+        store = SqliteStore(self.db_path)
+        store.connect()
+        try:
+            user = store.get_user(user_id)
+            if not user:
+                return {"status": "user_not_found", "message": "user_not_found", "current_user_id": user_id}
+            profile = store.get_user_profile(user_id)
+            if not profile:
+                return {"status": "profile_not_found", "message": "profile_not_found", "current_user_id": user_id, "user_type": user.get("user_type", "local_user"), "profile_loaded": False, "last_calibration_id": "n/a", "attention_low_threshold": "n/a", "attention_high_threshold": "n/a", "preferred_game_id": "n/a", "difficulty_level": "n/a"}
+            return {"status": "accepted", "message": "profile_loaded", "current_user_id": user_id, "user_type": user.get("user_type", "local_user"), "profile_loaded": True, "last_calibration_id": profile.get("last_calibration_id") or "n/a", "attention_low_threshold": profile.get("attention_low_threshold", "n/a"), "attention_high_threshold": profile.get("attention_high_threshold", "n/a"), "preferred_game_id": profile.get("preferred_game_id", "n/a"), "difficulty_level": profile.get("difficulty_level", "n/a")}
+        finally:
+            store.close()
+
+    def _fetch_calibration_status(self, user_id: str) -> dict[str, Any]:
+        store = SqliteStore(self.db_path)
+        store.connect()
+        try:
+            profile = store.get_user_profile(user_id)
+            if not profile:
+                return {"status": "profile_without_calibration", "calibration_status": "profile_without_calibration", "last_calibration_id": "n/a", "calibration_usable": False, "latest_valid": False, "failure_reason": "profile_not_found", "source": "profile"}
+            cal_id = profile.get("last_calibration_id")
+            if not cal_id:
+                return {"status": "no_calibration", "calibration_status": "no_calibration", "last_calibration_id": "n/a", "calibration_usable": False, "latest_valid": False, "failure_reason": "no_calibration", "source": "profile"}
+            cp = store.get_calibration_profile(str(cal_id))
+            if not cp:
+                return {"status": "no_calibration", "calibration_status": "no_calibration", "last_calibration_id": cal_id, "calibration_usable": False, "latest_valid": False, "failure_reason": "calibration_id_not_found", "source": "profile"}
+            return {"status": "accepted", "calibration_status": "available", "last_calibration_id": cal_id, "calibration_usable": bool(cp.get("valid")), "latest_valid": bool(cp.get("valid")), "failure_reason": cp.get("failure_reason") or "", "source": cp.get("calibration_type") or "calibration_profile", "attention_baseline": cp.get("attention_baseline") if cp.get("attention_baseline") is not None else "n/a", "gyro_noise_rms": cp.get("gyro_noise_rms") if cp.get("gyro_noise_rms") is not None else "n/a"}
+        finally:
+            store.close()
+
     def get_control_manifest(self) -> list[dict[str, Any]]:
         readonly = self.mode in {"core", "live-readonly"}
         mode = self.mode
@@ -325,7 +357,14 @@ class GuiFacade:
             "command_count": self.command_count,
             "latest_report_path": session.get("latest_report_path") or session.get("report_path") or "",
             "app_elapsed_ms": now - self._started_at_ms,
-            "session_elapsed_ms": session_elapsed_ms,
+            "session_elapsed_ms": session_elapsed_ms if session_active else "n/a",
+            "last_session_status": session.get("training_status", "none"),
+            "profile_status": self.last_command_result.get("status", "") if isinstance(self.last_command_result, dict) and self.last_command.get("command") == "user.show_profile" else "",
+            "user_type": self.last_command_result.get("profile", {}).get("user_type", "") if isinstance(self.last_command_result, dict) else "",
+            "profile_loaded": self.last_command_result.get("profile", {}).get("profile_loaded", "") if isinstance(self.last_command_result, dict) else "",
+            "last_calibration_id": self.last_command_result.get("calibration", {}).get("last_calibration_id", self.last_command_result.get("profile", {}).get("last_calibration_id", "n/a")) if isinstance(self.last_command_result, dict) else "n/a",
+            "calibration_status": self.last_command_result.get("calibration", {}).get("calibration_status", "") if isinstance(self.last_command_result, dict) else "",
+            "calibration_usable": self.last_command_result.get("calibration", {}).get("calibration_usable", "") if isinstance(self.last_command_result, dict) else "",
         }
 
     def invoke_action(self, action_id: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -349,16 +388,18 @@ class GuiFacade:
             app = self.get_app_state()
             user_id = str(app.get("current_user_id") or "")
             if not user_id:
-                result = {"action_id": action_id, "status": "missing_user", "result": "missing_user", "accepted": False}
+                result = {"action_id": action_id, "status": "missing_user", "result": "missing_user", "message": "missing_user", "accepted": False}
             else:
-                result = {"action_id": action_id, "status": "accepted", "result": "profile", "accepted": True, "profile": {"user_id": user_id, "user_name": app.get("current_user_name", ""), "calibration_status": app.get("calibration_status", "unknown"), "source": app.get("source", "")}}
+                ps = self._fetch_profile_summary(user_id)
+                result = {"action_id": action_id, "status": ps.get("status", "profile_not_available"), "result": "profile", "message": ps.get("message", ""), "accepted": ps.get("status") == "accepted", "profile": ps}
         elif action_id == "calibration.status":
             app = self.get_app_state()
             user_id = str(app.get("current_user_id") or "")
             if not user_id:
-                result = {"action_id": action_id, "status": "missing_user", "result": "missing_user", "accepted": False, "calibration_status": "missing_user"}
+                result = {"action_id": action_id, "status": "missing_user", "result": "missing_user", "accepted": False, "calibration": {"calibration_status": "missing_user"}}
             else:
-                result = {"action_id": action_id, "status": "accepted", "result": "calibration_status", "accepted": True, "calibration_status": app.get("calibration_status", "unknown"), "user_id": user_id}
+                cs = self._fetch_calibration_status(user_id)
+                result = {"action_id": action_id, "status": cs.get("status", "no_calibration"), "result": "calibration_status", "accepted": cs.get("status") == "accepted", "calibration": cs, "user_id": user_id}
         elif action_id == "session.status":
             result = {"action_id": action_id, "status": "accepted", "result": "session_status", "accepted": True, "session": self.get_session_state()}
         elif action_id == "game.status":
@@ -377,6 +418,9 @@ class GuiFacade:
             elif action_id == "live.safe_stop" and self.mode != "live-control":
                 result = {"action_id": action_id, "status": "unsupported", "result": "unsupported", "accepted": False, "reason": "live_control_required"}
             else:
+                payload = dict(payload)
+                if action_id in {"session.start", "user.ensure_demo"} and "user_id" not in payload:
+                    payload["user_id"] = self.get_app_state().get("current_user_id") or payload.get("user_id")
                 self.handle_gui_command(cmd, payload)
                 status = self.last_command_result.get("status", "unknown") if isinstance(self.last_command_result, dict) else "unknown"
                 result = {"action_id": action_id, "status": status, "result": self.last_command_result, "accepted": bool(self.last_command_result.get("accepted", False)) if isinstance(self.last_command_result, dict) else False}

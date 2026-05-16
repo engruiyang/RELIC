@@ -8,7 +8,7 @@ from gui.gui_facade import GuiFacade
 def test_minimal_gui_has_required_sections_and_controls() -> None:
     qml = Path("ui_qml/MinimalGui.qml").read_text(encoding="utf-8")
     for token in [
-        "RELIC Core / Live Bus Status",
+        "RELIC Core / Developer Diagnostics Console",
         "QML smoke shell loaded",
         "Connection",
         "Runtime Snapshot",
