@@ -11,6 +11,8 @@ ApplicationWindow {
     property var runtimeObj: ({})
     property var sessionObj: ({})
     property var gameHudObj: ({})
+    property var controlManifestObj: ([])
+    property var controlStateObj: ({})
 
     function safeJsonParse(jsonText) {
         try {
@@ -38,12 +40,16 @@ ApplicationWindow {
             runtimeObj = ({})
             sessionObj = ({})
             gameHudObj = ({})
+            controlManifestObj = ([])
+            controlStateObj = ({})
             return
         }
         appStateObj = safeJsonParse(guiBridge.appState)
         runtimeObj = safeJsonParse(guiBridge.runtimeSnapshot)
         sessionObj = safeJsonParse(guiBridge.sessionState)
         gameHudObj = safeJsonParse(guiBridge.gameHudJson)
+        controlManifestObj = safeJsonParse(guiBridge.controlManifestJson)
+        controlStateObj = safeJsonParse(guiBridge.controlStateJson)
     }
 
     Connections {
@@ -62,6 +68,51 @@ ApplicationWindow {
 
         Label { text: "RELIC Core / Live Bus Status"; font.pixelSize: 24; font.bold: true }
         Label { text: "QML smoke shell loaded"; font.pixelSize: 16 }
+
+
+        GroupBox {
+            width: parent.width
+            title: "Control Panel"
+            Column {
+                spacing: 4
+                Label { text: "controlManifestJson parse: " + safeText(getField(controlManifestObj, "__parse_error__", "ok"), "ok") }
+                Label { text: "control_enabled: " + safeText(getField(controlStateObj, "control_enabled")) }
+                Label { text: "readonly: " + safeText(getField(controlStateObj, "readonly")) }
+                Label { text: "last_command: " + safeText(getField(controlStateObj, "last_command")) }
+                Label { text: "last_command_result: " + safeText(getField(controlStateObj, "last_command_result")) }
+                Label { text: "last_command_error: " + safeText(getField(controlStateObj, "last_command_error")) }
+                Label { text: "command_count: " + safeText(getField(controlStateObj, "command_count")) }
+                Label { text: "app_elapsed_ms: " + safeText(getField(controlStateObj, "app_elapsed_ms")) }
+                Label { text: "session_elapsed_ms: " + safeText(getField(controlStateObj, "session_elapsed_ms")) }
+                Label { text: "current_user_id: " + safeText(getField(controlStateObj, "current_user_id")) }
+                Label { text: "current_session_id: " + safeText(getField(controlStateObj, "current_session_id")) }
+                Label { text: "current_game_id: " + safeText(getField(controlStateObj, "current_game_id")) }
+                Label { text: "latest_report_path: " + safeText(getField(controlStateObj, "latest_report_path")) }
+
+                Row { spacing: 6
+                    Button { text: "Refresh"; onClicked: if (guiBridge) { guiBridge.invokeAction("app.refresh_now", "{}") } }
+                    Button { text: "Quit"; onClicked: if (guiBridge) { guiBridge.invokeAction("app.quit", "{}") } }
+                    Button { text: "Reconnect"; onClicked: if (guiBridge) { guiBridge.invokeAction("live.reconnect", "{}") } }
+                    Button { text: "Safe Stop"; onClicked: if (guiBridge) { guiBridge.invokeAction("live.safe_stop", "{}") } }
+                }
+                Row { spacing: 6
+                    Button { text: "Ensure Demo User"; onClicked: if (guiBridge) { guiBridge.invokeAction("user.ensure_demo", "{}") } }
+                    Button { text: "Show Profile"; onClicked: if (guiBridge) { guiBridge.invokeAction("user.show_profile", "{}") } }
+                    Button { text: "Start Calibration"; onClicked: if (guiBridge) { guiBridge.invokeAction("calibration.start", "{}") } }
+                    Button { text: "Calibration Status"; onClicked: if (guiBridge) { guiBridge.invokeAction("calibration.status", "{}") } }
+                }
+                Row { spacing: 6
+                    Button { text: "Start Session"; onClicked: if (guiBridge) { guiBridge.invokeAction("session.start", "{}") } }
+                    Button { text: "Stop Session"; onClicked: if (guiBridge) { guiBridge.invokeAction("session.stop", "{}") } }
+                    Button { text: "Session Status"; onClicked: if (guiBridge) { guiBridge.invokeAction("session.status", "{}") } }
+                    Button { text: "Game Status"; onClicked: if (guiBridge) { guiBridge.invokeAction("game.status", "{}") } }
+                }
+                Row { spacing: 6
+                    Button { text: "Clear Last Error"; onClicked: if (guiBridge) { guiBridge.invokeAction("diagnostics.clear_last_error", "{}") } }
+                    Button { text: "Refresh Diagnostics"; onClicked: if (guiBridge) { guiBridge.invokeAction("diagnostics.refresh", "{}") } }
+                }
+            }
+        }
 
         GroupBox {
             width: parent.width

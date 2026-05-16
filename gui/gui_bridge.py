@@ -16,6 +16,8 @@ class GuiBridge(QObject):
     runtimeSnapshotChanged = Signal()
     sessionStateChanged = Signal()
     gameHudJsonChanged = Signal()
+    controlManifestJsonChanged = Signal()
+    controlStateJsonChanged = Signal()
 
     def __init__(self, facade: GuiFacade) -> None:
         super().__init__()
@@ -49,6 +51,8 @@ class GuiBridge(QObject):
         self._last_platform_index = ""
         self._last_platform_action = ""
         self._last_platform_result = ""
+        self._control_manifest_json = "[]"
+        self._control_state_json = "{}"
         self.update_state_from_facade()
 
     def update_state_from_facade(self) -> None:
@@ -56,6 +60,8 @@ class GuiBridge(QObject):
         next_runtime_snapshot = dumps(self._facade.get_runtime_snapshot())
         next_session_state = dumps(self._facade.get_session_state())
         next_game_hud_json = dumps(self._facade.get_game_hud(), ensure_ascii=False)
+        next_control_manifest_json = dumps(self._facade.get_control_manifest(), ensure_ascii=False)
+        next_control_state_json = dumps(self._facade.get_control_state(), ensure_ascii=False)
 
         changed = False
         if next_app_state != self._app_state:
@@ -73,6 +79,14 @@ class GuiBridge(QObject):
         if next_game_hud_json != self._game_hud_json:
             self._game_hud_json = next_game_hud_json
             self.gameHudJsonChanged.emit()
+            changed = True
+        if next_control_manifest_json != self._control_manifest_json:
+            self._control_manifest_json = next_control_manifest_json
+            self.controlManifestJsonChanged.emit()
+            changed = True
+        if next_control_state_json != self._control_state_json:
+            self._control_state_json = next_control_state_json
+            self.controlStateJsonChanged.emit()
             changed = True
 
         self._game_view_json = dumps(self._facade.get_game_view())
@@ -128,6 +142,14 @@ class GuiBridge(QObject):
     @Property(str, notify=gameHudJsonChanged)
     def gameHudJson(self) -> str:
         return self._game_hud_json
+
+    @Property(str, notify=controlManifestJsonChanged)
+    def controlManifestJson(self) -> str:
+        return self._control_manifest_json
+
+    @Property(str, notify=controlStateJsonChanged)
+    def controlStateJson(self) -> str:
+        return self._control_state_json
 
     @Property(int, notify=stateChanged)
     def commandCount(self) -> int:
@@ -225,6 +247,16 @@ class GuiBridge(QObject):
     def refresh(self) -> None:
         self._facade.handle_gui_command("refresh_snapshot", {"silent": True})
         self.update_state_from_facade()
+
+    @Slot(str, str)
+    def invokeAction(self, action_id: str, payload_json: str = "{}") -> str:
+        try:
+            payload = loads(payload_json or "{}")
+        except JSONDecodeError:
+            payload = {}
+        result = self._facade.invoke_action(action_id, payload)
+        self.update_state_from_facade()
+        return dumps(result, ensure_ascii=False)
 
     @Slot(str, str)
     def sendCommand(self, command: str, args_json: str = "{}") -> None:

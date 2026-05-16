@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+import time
 from typing import Any
 
 from .gui_core_source import GuiCoreSnapshotSource
@@ -38,6 +39,8 @@ class GuiFacade:
         self.last_platform_result = ""
 
         self._render_resources = self._build_safe_render_resources(game_id=game_id)
+        self._started_at_ms = int(time.time() * 1000)
+        self._last_command_error = ""
 
         self._core_source: GuiCoreSnapshotSource | None = None
         self._live_source: GuiLiveReadonlySource | None = None
@@ -271,3 +274,93 @@ class GuiFacade:
             self._live_source.stop()
         if self._live_control_source:
             self._live_control_source.stop()
+
+
+    def get_control_manifest(self) -> list[dict[str, Any]]:
+        readonly = self.mode in {"core", "live-readonly"}
+        mode = self.mode
+        def item(action_id: str, label: str, category: str, supported: bool, readonly_allowed: bool, live_control_required: bool, description: str) -> dict[str, Any]:
+            enabled = supported and (readonly_allowed or not readonly)
+            if live_control_required and mode != "live-control":
+                enabled = False
+            return {"action_id": action_id, "label": label, "category": category, "enabled": enabled, "supported": supported, "readonly_allowed": readonly_allowed, "live_control_required": live_control_required, "description": description}
+        return [
+            item("app.refresh_now", "Refresh", "app", True, True, False, "refresh snapshots"),
+            item("app.quit", "Quit", "app", True, True, False, "quit app"),
+            item("live.reconnect", "Reconnect", "live", self.mode in {"live-readonly", "live-control"}, True, False, "reconnect live source"),
+            item("live.safe_stop", "Safe Stop", "live", True, False, False, "safe stop current action"),
+            item("user.ensure_demo", "Ensure Demo User", "user", True, False, False, "ensure demo user"),
+            item("user.show_profile", "Show Profile", "user", True, True, False, "show current profile"),
+            item("calibration.start", "Start Calibration", "calibration", False, False, False, "unsupported in minimal shell"),
+            item("calibration.status", "Calibration Status", "calibration", True, True, False, "show calibration status"),
+            item("session.start", "Start Session", "session", True, False, False, "start mock/debug/training session"),
+            item("session.stop", "Stop Session", "session", True, False, False, "stop current session"),
+            item("session.status", "Session Status", "session", True, True, False, "show session status"),
+            item("game.status", "Game Status", "game", True, True, False, "show game hud/state"),
+            item("diagnostics.clear_last_error", "Clear Last Error", "diagnostics", True, True, False, "clear last command error"),
+            item("diagnostics.refresh", "Refresh Diagnostics", "diagnostics", True, True, False, "refresh diagnostics")
+        ]
+
+    def get_control_state(self) -> dict[str, Any]:
+        app = self.get_app_state()
+        session = self.get_session_state()
+        now = int(time.time() * 1000)
+        session_active = bool(session.get("session_active"))
+        session_elapsed_ms = session.get("session_elapsed_ms")
+        if session_elapsed_ms is None and session_active and session.get("started_at_ms"):
+            session_elapsed_ms = max(0, now - int(session.get("started_at_ms")))
+        return {
+            "mode": self.mode,
+            "control_enabled": self.mode != "core",
+            "readonly": self.mode in {"core", "live-readonly"},
+            "current_user_id": app.get("current_user_id", ""),
+            "current_session_id": session.get("session_id", ""),
+            "current_game_id": app.get("current_game_id", session.get("game_id", "")),
+            "session_active": session_active,
+            "calibration_active": False,
+            "live_connected": app.get("connection_status") == "connected" or app.get("source") in {"live_readonly", "live_control"},
+            "last_command": self.last_command.get("command", "") if isinstance(self.last_command, dict) else "",
+            "last_command_result": self.last_command_result.get("status", "") if isinstance(self.last_command_result, dict) else "",
+            "last_command_error": self._last_command_error,
+            "command_count": self.command_count,
+            "latest_report_path": session.get("latest_report_path") or session.get("report_path") or "",
+            "app_elapsed_ms": now - self._started_at_ms,
+            "session_elapsed_ms": session_elapsed_ms,
+        }
+
+    def invoke_action(self, action_id: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+        payload = payload or {}
+        map_cmd = {
+            "app.refresh_now": "refresh_snapshot",
+            "live.reconnect": "refresh_snapshot",
+            "live.safe_stop": "end_session",
+            "user.ensure_demo": "load_demo_user",
+            "session.start": "start_training_session" if self.mode == "live-control" else "start_mock_session",
+            "session.stop": "end_training_session" if self.mode == "live-control" else "end_session",
+            "diagnostics.refresh": "refresh_snapshot",
+        }
+        if action_id == "app.quit":
+            return {"action_id": action_id, "status": "accepted", "result": "quit_requested", "accepted": True}
+        if action_id == "user.show_profile":
+            return {"action_id": action_id, "status": "accepted", "result": "profile", "profile": self.get_app_state()}
+        if action_id == "calibration.status":
+            return {"action_id": action_id, "status": "accepted", "result": "calibration_status", "calibration_status": self.get_app_state().get("calibration_status", "n/a")}
+        if action_id == "session.status":
+            return {"action_id": action_id, "status": "accepted", "result": "session_status", "session": self.get_session_state()}
+        if action_id == "game.status":
+            return {"action_id": action_id, "status": "accepted", "result": "game_status", "game_hud": self.get_game_hud()}
+        if action_id == "diagnostics.clear_last_error":
+            self._last_command_error = ""
+            return {"action_id": action_id, "status": "accepted", "result": "cleared"}
+        if action_id == "calibration.start":
+            return {"action_id": action_id, "status": "unsupported", "result": "unsupported", "accepted": False}
+        cmd = map_cmd.get(action_id)
+        if not cmd:
+            return {"action_id": action_id, "status": "unsupported", "result": "unsupported", "accepted": False}
+        if self.mode in {"core", "live-readonly"} and action_id in {"live.safe_stop", "user.ensure_demo", "session.start", "session.stop"}:
+            return {"action_id": action_id, "status": "readonly_not_allowed", "result": "readonly_not_allowed", "accepted": False}
+        self.handle_gui_command(cmd, payload)
+        status = self.last_command_result.get("status", "unknown") if isinstance(self.last_command_result, dict) else "unknown"
+        if status in {"failed", "rejected", "readonly_rejected"}:
+            self._last_command_error = status
+        return {"action_id": action_id, "status": status, "result": self.last_command_result, "accepted": bool(self.last_command_result.get("accepted", False)) if isinstance(self.last_command_result, dict) else False}
