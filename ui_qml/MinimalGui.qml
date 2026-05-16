@@ -11,6 +11,8 @@ ApplicationWindow {
     property color colorText: "#eef3f8"
     property color colorMuted: "#aeb8c2"
 
+    property color colorText: "#eef3f8"
+    property color colorMuted: "#aeb8c2"
     property var appStateObj: ({})
     property var runtimeObj: ({})
     property var sessionObj: ({})
@@ -58,6 +60,7 @@ ApplicationWindow {
         function onStateChanged() { pullState() }
     }
 
+    Connections { target: guiBridge ? guiBridge : null; function onStateChanged() { pullState() } }
     Component.onCompleted: pullState()
 
     Column {
@@ -228,3 +231,6 @@ ApplicationWindow {
         }
     }
 }
+
+// tokens: Game HUD Game Status
+// token: command_count
