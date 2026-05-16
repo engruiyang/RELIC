@@ -27,6 +27,8 @@ def run_minimal_qt(mode: str = "mock", db_path: str = "data/relic_local.db", dur
     qml_path = Path(__file__).resolve().parent.parent / "ui_qml" / "MinimalGui.qml"
     engine.load(str(qml_path))
     if not engine.rootObjects():
+        print(f"[GUI ERROR] QML load failed path={qml_path}", flush=True)
+        print("[GUI ERROR] rootObjects empty; check QML syntax", flush=True)
         return 1
     try:
         return app.exec()
