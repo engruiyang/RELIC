@@ -56,3 +56,10 @@ def test_live_control_session_state_transition() -> None:
     s2 = f.get_control_state()
     assert s2["session_active"] is False or r2["status"] == "training_stopped"
     f.close()
+
+
+def test_no_demo_loaded_message_for_test_user():
+    f = GuiFacade(mode="live-control", user_id="TEST")
+    r = f.invoke_action("user.load_current", {})
+    assert "demo_user_loaded" not in str(r)
+    f.close()

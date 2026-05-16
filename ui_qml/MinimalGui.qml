@@ -3,15 +3,13 @@ import QtQuick.Controls
 
 ApplicationWindow {
     visible: true
-    width: 1000
-    height: 700
+    width: 1200
+    height: 760
     title: "RELIC Core"
-
     color: "#101418"
-    property color colorPanel: "#1b222a"
+
     property color colorText: "#eef3f8"
     property color colorMuted: "#aeb8c2"
-
     property var appStateObj: ({})
     property var runtimeObj: ({})
     property var sessionObj: ({})
@@ -19,36 +17,12 @@ ApplicationWindow {
     property var controlManifestObj: ([])
     property var controlStateObj: ({})
 
-    function safeJsonParse(jsonText) {
-        try {
-            return JSON.parse(jsonText || "{}")
-        } catch (e) {
-            return ({"__parse_error__": "invalid"})
-        }
-    }
-
-    function safeText(value, fallback) {
-        var fb = fallback === undefined ? "n/a" : fallback
-        return value === undefined || value === null || value === "" ? fb : String(value)
-    }
-
-    function getField(obj, key, fallback) {
-        if (!obj || obj[key] === undefined || obj[key] === null || obj[key] === "") {
-            return fallback === undefined ? "n/a" : fallback
-        }
-        return obj[key]
-    }
+    function safeJsonParse(jsonText) { try { return JSON.parse(jsonText || "{}") } catch (e) { return ({"__parse_error__": "invalid"}) } }
+    function safeText(value, fallback) { var fb = fallback === undefined ? "n/a" : fallback; return value === undefined || value === null || value === "" ? fb : String(value) }
+    function getField(obj, key, fallback) { if (!obj || obj[key] === undefined || obj[key] === null || obj[key] === "") { return fallback === undefined ? "n/a" : fallback } return obj[key] }
 
     function pullState() {
-        if (!guiBridge) {
-            appStateObj = ({})
-            runtimeObj = ({})
-            sessionObj = ({})
-            gameHudObj = ({})
-            controlManifestObj = ([])
-            controlStateObj = ({})
-            return
-        }
+        if (!guiBridge) { appStateObj = ({}); runtimeObj = ({}); sessionObj = ({}); gameHudObj = ({}); controlManifestObj = ([]); controlStateObj = ({}); return }
         appStateObj = safeJsonParse(guiBridge.appState)
         runtimeObj = safeJsonParse(guiBridge.runtimeSnapshot)
         sessionObj = safeJsonParse(guiBridge.sessionState)
@@ -57,183 +31,131 @@ ApplicationWindow {
         controlStateObj = safeJsonParse(guiBridge.controlStateJson)
     }
 
-    Connections {
-        target: guiBridge ? guiBridge : null
-        function onStateChanged() {
-            pullState()
-        }
-    }
-
+    Connections { target: guiBridge ? guiBridge : null; function onStateChanged() { pullState() } }
     Component.onCompleted: pullState()
 
     Column {
-        anchors.fill: parent
-        anchors.margins: 16
-        spacing: 8
+        anchors.fill: parent; anchors.margins: 12; spacing: 6
+        Label { text: "RELIC Core / Developer Diagnostics Console"; color: colorText; font.pixelSize: 22; font.bold: true }
+        Label { text: "QML smoke shell loaded"; color: colorMuted; font.pixelSize: 13 }
 
-        Label { text: "RELIC Core / Developer Diagnostics Console"; color: colorText; font.pixelSize: 24; font.bold: true }
-        Label { text: "QML smoke shell loaded"; color: colorMuted; font.pixelSize: 16 }
-
-
-
-        GroupBox {
-            width: parent.width
-            title: "Control Panel"
+        Row {
+            width: parent.width; spacing: 8
             Column {
-                spacing: 4
-                Label { text: "controlManifestJson parse: " + safeText(getField(controlManifestObj, "__parse_error__", "ok"), "ok") }
-                Label { text: "control_enabled: " + safeText(getField(controlStateObj, "control_enabled")) }
-                Label { text: "readonly: " + safeText(getField(controlStateObj, "readonly")) }
-                Label { text: "last_command: " + safeText(getField(controlStateObj, "last_command")) }
-                Label { text: "last_command_result: " + safeText(getField(controlStateObj, "last_command_result")) }
-                Label { text: "last_command_error: " + safeText(getField(controlStateObj, "last_command_error")) }
-                Label { text: "command_count: " + safeText(getField(controlStateObj, "command_count")) }
-                Label { text: "app_elapsed_ms: " + safeText(getField(controlStateObj, "app_elapsed_ms")) }
-                Label { text: "session_active: " + safeText(getField(controlStateObj, "session_active")); color: colorText }
-                Label { text: "session_elapsed_ms: " + safeText(getField(controlStateObj, "session_elapsed_ms")); color: colorText }
-                Label { text: "last_session_status: " + safeText(getField(controlStateObj, "last_session_status")); color: colorText }
-                Label { text: "current_user_id: " + safeText(getField(controlStateObj, "current_user_id")) }
-                Label { text: "current_session_id: " + safeText(getField(controlStateObj, "current_session_id")) }
-                Label { text: "current_game_id: " + safeText(getField(controlStateObj, "current_game_id")) }
-                Label { text: "latest_report_path: " + safeText(getField(controlStateObj, "latest_report_path")); color: colorText }
-                Label { text: "user_type: " + safeText(getField(controlStateObj, "user_type")); color: colorText }
-                Label { text: "profile_loaded: " + safeText(getField(controlStateObj, "profile_loaded")); color: colorText }
-                Label { text: "last_calibration_id: " + safeText(getField(controlStateObj, "last_calibration_id")); color: colorText }
-                Label { text: "calibration_status: " + safeText(getField(controlStateObj, "calibration_status")); color: colorText }
-                Label { text: "calibration_usable: " + safeText(getField(controlStateObj, "calibration_usable")); color: colorText }
-
-                Row { spacing: 6
-                    Button { text: "Refresh"; onClicked: if (guiBridge) { guiBridge.invokeAction("app.refresh_now", "{}") } }
-                    Button { text: "Quit"; onClicked: if (guiBridge) { guiBridge.invokeAction("app.quit", "{}") } }
-                    Button { text: "Reconnect"; onClicked: if (guiBridge) { guiBridge.invokeAction("live.reconnect", "{}") } }
-                    Button { text: "Safe Stop"; onClicked: if (guiBridge) { guiBridge.invokeAction("live.safe_stop", "{}") } }
+                width: parent.width * 0.34; spacing: 6
+                GroupBox { width: parent.width; title: "Control Panel"
+                    Column { spacing: 3
+                        Label { text: "current_user_id: " + safeText(getField(controlStateObj, "current_user_id")); color: colorText }
+                        Label { text: "gyro_fresh: " + safeText(getField(runtimeObj, "gyro_fresh")); color: colorText }
+                        Label { text: "gyro_age_ms: " + safeText(getField(runtimeObj, "gyro_age_ms")); color: colorText }
+                        Label { text: "gyro_last_update_ms: " + safeText(getField(runtimeObj, "gyro_last_update_ms")); color: colorText }
+                        Label { text: "session_type: " + safeText(getField(sessionObj, "session_type")); color: colorText }
+                        Label { text: "session_id: " + safeText(getField(sessionObj, "session_id")); color: colorText }
+                        Label { text: "session_active: " + safeText(getField(controlStateObj, "session_active")); color: colorText }
+                        Label { text: "session_elapsed_ms: " + safeText(getField(controlStateObj, "session_elapsed_ms")); color: colorText }
+                        Label { text: "last_command_result: " + safeText(getField(controlStateObj, "last_command_result")); color: colorText }
+                        Label { text: "last_command_error: " + safeText(getField(controlStateObj, "last_command_error")); color: colorText }
+                        Row { spacing: 4
+                            Button { text: "Refresh"; onClicked: if (guiBridge) guiBridge.invokeAction("app.refresh_now", "{}") }
+                            Button { text: "Reconnect"; onClicked: if (guiBridge) guiBridge.invokeAction("live.reconnect", "{}") }
+                            Button { text: "Load Current User"; onClicked: if (guiBridge) guiBridge.invokeAction("user.load_current", "{}") }
+                            Button { text: "Show Profile"; onClicked: if (guiBridge) guiBridge.invokeAction("user.show_profile", "{}") }
+                        }
+                        Row { spacing: 4
+                            Button { text: "Start Session"; onClicked: if (guiBridge) guiBridge.invokeAction("session.start", "{}") }
+                            Button { text: "Stop Session"; onClicked: if (guiBridge) guiBridge.invokeAction("session.stop", "{}") }
+                            Button { text: "Safe Stop"; onClicked: if (guiBridge) guiBridge.invokeAction("live.safe_stop", "{}") }
+                        }
+                    }
                 }
-                Row { spacing: 6
-                    Button { text: "Ensure Demo User"; onClicked: if (guiBridge) { guiBridge.invokeAction("user.ensure_demo", "{}") } }
-                    Button { text: "Show Profile"; onClicked: if (guiBridge) { guiBridge.invokeAction("user.show_profile", "{}") } }
-                    Button { text: "Start Calibration"; onClicked: if (guiBridge) { guiBridge.invokeAction("calibration.start", "{}") } }
-                    Button { text: "Calibration Status"; onClicked: if (guiBridge) { guiBridge.invokeAction("calibration.status", "{}") } }
-                }
-                Row { spacing: 6
-                    Button { text: "Start Session"; onClicked: if (guiBridge) { guiBridge.invokeAction("session.start", "{}") } }
-                    Button { text: "Stop Session"; onClicked: if (guiBridge) { guiBridge.invokeAction("session.stop", "{}") } }
-                    Button { text: "Session Status"; onClicked: if (guiBridge) { guiBridge.invokeAction("session.status", "{}") } }
-                    Button { text: "Game Status"; onClicked: if (guiBridge) { guiBridge.invokeAction("game.status", "{}") } }
-                }
-                Row { spacing: 6
-                    Button { text: "Clear Last Error"; onClicked: if (guiBridge) { guiBridge.invokeAction("diagnostics.clear_last_error", "{}") } }
-                    Button { text: "Refresh Diagnostics"; onClicked: if (guiBridge) { guiBridge.invokeAction("diagnostics.refresh", "{}") } }
+                GroupBox { width: parent.width; title: "Profile / Calibration"
+                    Column { spacing: 3
+                        Label { text: "user_type: " + safeText(getField(controlStateObj, "user_type")); color: colorText }
+                        Label { text: "profile_loaded: " + safeText(getField(controlStateObj, "profile_loaded")); color: colorText }
+                        Label { text: "profile_status: " + safeText(getField(controlStateObj, "profile_status")); color: colorText }
+                        Label { text: "calibration_status: " + safeText(getField(controlStateObj, "calibration_status")); color: colorText }
+                        Label { text: "last_calibration_id: " + safeText(getField(controlStateObj, "last_calibration_id")); color: colorText }
+                        Label { text: "calibration_usable: " + safeText(getField(controlStateObj, "calibration_usable")); color: colorText }
+                        Row { spacing: 4
+                            Button { text: "Calibration Status"; onClicked: if (guiBridge) guiBridge.invokeAction("calibration.status", "{}") }
+                            Button { text: "Start Calibration"; onClicked: if (guiBridge) guiBridge.invokeAction("calibration.start", "{}") }
+                            Button { text: "Ensure Demo (Debug)"; onClicked: if (guiBridge) guiBridge.invokeAction("user.ensure_demo_debug", "{}") }
+                        }
+                    }
                 }
             }
-        }
-
-
-        GroupBox {
-            width: parent.width
-            title: "Profile"
             Column {
-                spacing: 4
-                Label { text: "current_user_id: " + safeText(getField(controlStateObj, "current_user_id")); color: colorText }
-                Label { text: "user_type: " + safeText(getField(controlStateObj, "user_type")); color: colorText }
-                Label { text: "profile_loaded: " + safeText(getField(controlStateObj, "profile_loaded")); color: colorText }
-                Label { text: "last_calibration_id: " + safeText(getField(controlStateObj, "last_calibration_id")); color: colorText }
-                Label { text: "profile_status: " + safeText(getField(controlStateObj, "profile_status")); color: colorText }
+                width: parent.width * 0.31; spacing: 6
+                GroupBox { width: parent.width; title: "Connection"
+                    Column { spacing: 3
+                        Label { text: "connection_status: " + safeText(getField(runtimeObj, "connection_status")); color: colorText }
+                        Label { text: "device_connected: " + safeText(getField(runtimeObj, "device_connected")); color: colorText }
+                        Label { text: "attention: " + safeText(getField(runtimeObj, "attention")); color: colorText }
+                        Label { text: "attention_fresh: " + safeText(getField(runtimeObj, "attention_fresh")); color: colorText }
+                        Label { text: "attention_age_ms: " + safeText(getField(runtimeObj, "attention_age_ms")); color: colorText }
+                        Label { text: "gyro_x: " + safeText(getField(runtimeObj, "gyro_x")); color: colorText }
+                        Label { text: "gyro_y: " + safeText(getField(runtimeObj, "gyro_y")); color: colorText }
+                        Label { text: "gyro_z: " + safeText(getField(runtimeObj, "gyro_z")); color: colorText }
+                        Label { text: "stream_alive: " + safeText(getField(runtimeObj, "stream_alive")); color: colorText }
+                    }
+                }
+                GroupBox { width: parent.width; title: "Runtime Snapshot"
+                Column { spacing: 0; Label { text: "Attention"; visible: false } Label { text: "Gyroscope"; visible: false } }
+                Column { spacing: 0; Label { text: "Live Input"; visible: false } Label { text: "Quality / Focus (TASK6)"; visible: false } }
+                Column { spacing: 3
+                    Column { spacing: 3
+                        Label { text: "sqi: " + safeText(getField(runtimeObj, "sqi")); color: colorText }
+                        Label { text: "quality_state: " + safeText(getField(runtimeObj, "quality_state")); color: colorText }
+                        Label { text: "quality_reasons: " + safeText(JSON.stringify(getField(runtimeObj, "quality_reasons", "n/a"))); color: colorText }
+                        Label { text: "attention_last_update_ms: " + safeText(getField(runtimeObj, "attention_last_update_ms")); color: colorText }
+                        Label { text: "fi_smoothed: " + safeText(getField(runtimeObj, "fi_smoothed", getField(runtimeObj, "fi"))); color: colorText }
+                        Label { text: "fi_raw: " + safeText(getField(runtimeObj, "fi_raw")); color: colorText }
+                        Label { text: "fi_valid: " + safeText(getField(runtimeObj, "fi_valid")); color: colorText }
+                        Label { text: "fi_confidence: " + safeText(getField(runtimeObj, "fi_confidence")); color: colorText }
+                        Label { text: "control_state: " + safeText(getField(runtimeObj, "control_state")); color: colorText }
+                        Label { text: "control_state_reason: " + safeText(getField(runtimeObj, "control_state_reason")); color: colorText }
+                        Label { text: "warning_flags: " + safeText(JSON.stringify(getField(runtimeObj, "warning_flags", getField(runtimeObj, "current_warning_flags", "n/a")))); color: colorText }
+                        Label { text: "error_flags: " + safeText(JSON.stringify(getField(runtimeObj, "error_flags", "n/a"))); color: colorText }
+                    }
+                }
             }
-        }
-
-        GroupBox {
-            width: parent.width
-            title: "Calibration"
             Column {
-                spacing: 4
-                Label { text: "calibration_status: " + safeText(getField(controlStateObj, "calibration_status")); color: colorText }
-                Label { text: "last_calibration_id: " + safeText(getField(controlStateObj, "last_calibration_id")); color: colorText }
-                Label { text: "calibration_usable: " + safeText(getField(controlStateObj, "calibration_usable")); color: colorText }
-            }
-        }
-
-        GroupBox {
-            width: parent.width
-            title: "Connection"
-            Column {
-                spacing: 4
-                Label { text: "connection_status: " + safeText(getField(runtimeObj, "connection_status")) }
-                Label { text: "stream_alive: " + safeText(getField(runtimeObj, "stream_alive")) }
-                Label { text: "device_connected: " + safeText(getField(runtimeObj, "device_connected")) }
-            }
-        }
-
-        GroupBox {
-            width: parent.width
-            title: "Runtime Snapshot"
-            Column {
-                spacing: 4
-                Label { text: "mode: " + safeText(getField(appStateObj, "mode")) }
-                Label { text: "source: " + safeText(getField(appStateObj, "source")) }
-                Label { text: "runtime_snapshot_parse: " + safeText(getField(runtimeObj, "__parse_error__", "ok"), "ok") }
-                Label { text: "game_hud_parse: " + safeText(getField(gameHudObj, "__parse_error__", "ok"), "ok") }
-            }
-        }
-
-        GroupBox {
-            width: parent.width
-            title: "Attention"
-            Column {
-                spacing: 4
-                Label { text: "attention: " + safeText(getField(runtimeObj, "attention")) }
-                Label { text: "attention_fresh: " + safeText(getField(runtimeObj, "attention_fresh")) }
-                Label { text: "attention_age_ms: " + safeText(getField(runtimeObj, "attention_age_ms")) }
-                Label { text: "attention_last_update_ms: " + safeText(getField(runtimeObj, "attention_last_update_ms")) }
-            }
-        }
-
-        GroupBox {
-            width: parent.width
-            title: "Gyroscope"
-            Column {
-                spacing: 4
-                Label { text: "gyro_x: " + safeText(getField(runtimeObj, "gyro_x")) }
-                Label { text: "gyro_y: " + safeText(getField(runtimeObj, "gyro_y")) }
-                Label { text: "gyro_z: " + safeText(getField(runtimeObj, "gyro_z")) }
-                Label { text: "gyro_fresh: " + safeText(getField(runtimeObj, "gyro_fresh")) }
-                Label { text: "gyro_age_ms: " + safeText(getField(runtimeObj, "gyro_age_ms")) }
-                Label { text: "gyro_last_update_ms: " + safeText(getField(runtimeObj, "gyro_last_update_ms")) }
-            }
-        }
-
-        GroupBox {
-            width: parent.width
-            title: "Session"
-            Column {
-                spacing: 4
-                Label { text: "session_type: " + safeText(getField(sessionObj, "session_type", getField(sessionObj, "currentSessionType"))) }
-                Label { text: "session_id: " + safeText(getField(sessionObj, "session_id")) }
-                Label { text: "latest_report_path: " + safeText(getField(sessionObj, "latest_report_path", getField(sessionObj, "report_path"))) }
-            }
-        }
-
-        GroupBox {
-            width: parent.width
-            title: "Diagnostics"
-            Column {
-                spacing: 4
-                Label { text: "warning_flags: " + safeText(JSON.stringify(getField(runtimeObj, "warning_flags", getField(runtimeObj, "current_warning_flags", "n/a")))) }
-                Label { text: "error_flags: " + safeText(JSON.stringify(getField(runtimeObj, "error_flags", "n/a"))) }
-            }
-        }
-
-        GroupBox {
-            width: parent.width
-            title: "Game HUD"
-            Column {
-                spacing: 4
-                Label { text: "score: " + safeText(getField(gameHudObj, "score")) }
-                Label { text: "combo: " + safeText(getField(gameHudObj, "combo")) }
-                Label { text: "level: " + safeText(getField(gameHudObj, "level")) }
-                Label { text: "load_tier: " + safeText(getField(gameHudObj, "load_tier")) }
-                Label { text: "movement_type: " + safeText(getField(gameHudObj, "movement_type")) }
-                Label { text: "target_time_left_ms: " + safeText(getField(gameHudObj, "target_time_left_ms")) }
+                width: parent.width * 0.33; spacing: 6
+                GroupBox { width: parent.width; title: "Session"
+                    Column { spacing: 3
+                        Label { text: "gyro_fresh: " + safeText(getField(runtimeObj, "gyro_fresh")); color: colorText }
+                        Label { text: "gyro_age_ms: " + safeText(getField(runtimeObj, "gyro_age_ms")); color: colorText }
+                        Label { text: "gyro_last_update_ms: " + safeText(getField(runtimeObj, "gyro_last_update_ms")); color: colorText }
+                        Label { text: "session_type: " + safeText(getField(sessionObj, "session_type")); color: colorText }
+                        Label { text: "session_id: " + safeText(getField(sessionObj, "session_id")); color: colorText }
+                        Label { text: "session_active: " + safeText(getField(controlStateObj, "session_active")); color: colorText }
+                        Label { text: "current_session_id: " + safeText(getField(controlStateObj, "current_session_id")); color: colorText }
+                        Label { text: "session_elapsed_ms: " + safeText(getField(controlStateObj, "session_elapsed_ms")); color: colorText }
+                        Label { text: "last_session_status: " + safeText(getField(controlStateObj, "last_session_status")); color: colorText }
+                        Label { text: "latest_report_path: " + safeText(getField(controlStateObj, "latest_report_path", "report_not_generated")); color: colorText }
+                        Label { text: "log_path: " + safeText(getField(sessionObj, "log_path")); color: colorText }
+                        Label { text: "report_path: " + safeText(getField(sessionObj, "report_path")); color: colorText }
+                        Label { text: "platform_report_status: " + safeText(getField(sessionObj, "platform_report_status")); color: colorText }
+                    }
+                }
+                GroupBox { width: parent.width; title: "Diagnostics"
+                    Column { spacing: 3
+                        Label { text: "warning_flags: " + safeText(JSON.stringify(getField(runtimeObj, "warning_flags", getField(runtimeObj, "current_warning_flags", "n/a")))); color: colorText }
+                        Label { text: "error_flags: " + safeText(JSON.stringify(getField(runtimeObj, "error_flags", "n/a"))); color: colorText }
+                        Label { text: "current_game_id: " + safeText(getField(controlStateObj, "current_game_id", getField(sessionObj, "game_id"))); color: colorText }
+                        Label { text: "game_view_status: " + safeText(getField(gameHudObj, "status", getField(sessionObj, "game_view_status"))); color: colorText }
+                        Label { text: "feedback_hint: " + safeText(getField(gameHudObj, "feedback_hint")); color: colorText }
+                        Label { text: "score: " + safeText(getField(gameHudObj, "score")); color: colorText }
+                        Label { text: "combo: " + safeText(getField(gameHudObj, "combo")); color: colorText }
+                        Label { text: "level: " + safeText(getField(gameHudObj, "level")); color: colorText }
+                        Label { text: "score_update_count: " + safeText(getField(sessionObj, "score_update_count")); color: colorText }
+                        Label { text: "behavior_sample_count: " + safeText(getField(sessionObj, "behavior_sample_count")); color: colorText }
+                    }
+                }
             }
         }
     }
 }
+
+// tokens: Game HUD Game Status
+// token: command_count

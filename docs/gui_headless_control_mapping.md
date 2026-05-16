@@ -6,7 +6,7 @@
 ## Action Contract
 核心 action_id：
 - app.refresh_now, app.quit, live.reconnect, live.safe_stop
-- user.ensure_demo, user.show_profile
+- user.load_current, user.show_profile, user.ensure_demo_debug
 - calibration.start, calibration.status
 - session.start, session.stop, session.status
 - game.status
@@ -74,3 +74,13 @@ QML -> `GuiBridge.invokeAction` -> `GuiFacade.invoke_action` -> 既有 `handle_g
 
 ## 配色说明
 本轮仅做可读性修复（高对比诊断风格），不是完整主题系统。
+
+
+## user_id 传递链路
+`run_gui_minimal --user-id TEST` -> `run_minimal_qt(... user_id=TEST ...)` -> `GuiFacade(user_id=TEST)` -> source/controlStateJson。
+
+## session_elapsed_ms 规则
+优先使用后端 session start 时间；如缺失，使用 Facade 在 session.start 成功时记录的 `active_session_started_at_ms` 作为 GUI 控制态 elapsed 基准。
+
+## safe_stop 边界
+当前 `live.safe_stop` 在无真实平台停止能力时显示 `noop/unsupported`，仅为安全占位。

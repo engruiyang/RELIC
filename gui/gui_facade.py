@@ -42,6 +42,7 @@ class GuiFacade:
         self._render_resources = self._build_safe_render_resources(game_id=game_id)
         self._started_at_ms = int(time.time() * 1000)
         self._last_command_error = ""
+        self._active_session_started_at_ms: int | None = None
 
         self._core_source: GuiCoreSnapshotSource | None = None
         self._live_source: GuiLiveReadonlySource | None = None
@@ -158,7 +159,7 @@ class GuiFacade:
             elif command == "load_demo_user":
                 uid = str(args.get("user_id", "demo_user"))
                 self._live_control_source.user_id = uid
-                self.last_command_result = {"command": command, "accepted": True, "status": "accepted", "message": "demo_user_loaded", "result": "accepted", "source": "live_control", "user_id": uid}
+                self.last_command_result = {"command": command, "accepted": True, "status": "accepted", "message": "user_loaded", "result": "accepted", "source": "live_control", "user_id": uid}
             elif command == "start_mock_session":
                 self.last_command_result = self._live_control_source.start_live_debug_session(args.get("user_id"))
             elif command == "start_training_session":
@@ -321,7 +322,8 @@ class GuiFacade:
             item("app.quit", "Quit", "app", True, True, False, "quit app"),
             item("live.reconnect", "Reconnect", "live", self.mode in {"live-readonly", "live-control"}, True, False, "reconnect live source"),
             item("live.safe_stop", "Safe Stop", "live", self.mode == "live-control", False, True, "safe stop current action (live-control backend required)"),
-            item("user.ensure_demo", "Ensure Demo User", "user", True, False, False, "ensure demo user"),
+            item("user.load_current", "Load Current User", "user", True, True, False, "load current user from run args"),
+            item("user.ensure_demo_debug", "Ensure Demo User (Debug)", "user", True, False, False, "debug fallback only"),
             item("user.show_profile", "Show Profile", "user", True, True, False, "show current profile"),
             item("calibration.start", "Start Calibration", "calibration", False, False, False, "not implemented: requires calibration workflow/progress UI"),
             item("calibration.status", "Calibration Status", "calibration", True, True, False, "show calibration status"),
@@ -339,14 +341,16 @@ class GuiFacade:
         now = int(time.time() * 1000)
         session_active = bool(session.get("session_active"))
         session_elapsed_ms = session.get("session_elapsed_ms")
-        if session_elapsed_ms is None and session_active and session.get("started_at_ms"):
-            session_elapsed_ms = max(0, now - int(session.get("started_at_ms")))
+        if session_active:
+            base_start = self._active_session_started_at_ms or session.get("started_at_ms")
+            if base_start:
+                session_elapsed_ms = max(0, now - int(base_start))
         return {
             "mode": self.mode,
             "control_enabled": self.mode != "core",
             "readonly": self.mode in {"core", "live-readonly"},
             "current_user_id": app.get("current_user_id", ""),
-            "current_session_id": session.get("session_id", ""),
+            "current_session_id": session.get("session_id", "") or ("session_id_unavailable" if session_active else ""),
             "current_game_id": app.get("current_game_id", session.get("game_id", "")),
             "session_active": session_active,
             "calibration_active": False,
@@ -375,7 +379,8 @@ class GuiFacade:
             "app.refresh_now": "refresh_snapshot",
             "live.reconnect": "refresh_snapshot",
             "live.safe_stop": "end_session",
-            "user.ensure_demo": "load_demo_user",
+            "user.load_current": "load_demo_user",
+            "user.ensure_demo_debug": "load_demo_user",
             "session.start": "start_training_session" if self.mode == "live-control" else "start_mock_session",
             "session.stop": "end_training_session" if self.mode == "live-control" else "end_session",
             "diagnostics.refresh": "refresh_snapshot",
@@ -404,6 +409,13 @@ class GuiFacade:
             result = {"action_id": action_id, "status": "accepted", "result": "session_status", "accepted": True, "session": self.get_session_state()}
         elif action_id == "game.status":
             result = {"action_id": action_id, "status": "accepted", "result": "game_status", "accepted": True, "game_hud": self.get_game_hud()}
+        elif action_id == "user.load_current":
+            uid = str(self.get_app_state().get("current_user_id") or "")
+            if not uid:
+                result = {"action_id": action_id, "status": "missing_user", "result": "missing_user", "accepted": False}
+            else:
+                self.handle_gui_command("load_demo_user", {"user_id": uid})
+                result = {"action_id": action_id, "status": "current_user_loaded", "result": "current_user_loaded", "accepted": True, "user_id": uid}
         elif action_id == "diagnostics.clear_last_error":
             self._last_command_error = ""
             result = {"action_id": action_id, "status": "accepted", "result": "cleared", "accepted": True}
@@ -413,17 +425,23 @@ class GuiFacade:
             cmd = map_cmd.get(action_id)
             if not cmd:
                 result = {"action_id": action_id, "status": "unsupported", "result": "unsupported", "accepted": False}
-            elif self.mode in {"core", "live-readonly"} and action_id in {"live.safe_stop", "user.ensure_demo", "session.start", "session.stop"}:
+            elif self.mode in {"core", "live-readonly"} and action_id in {"live.safe_stop", "user.ensure_demo_debug", "session.start", "session.stop"}:
                 result = {"action_id": action_id, "status": "readonly_not_allowed", "result": "readonly_not_allowed", "accepted": False}
             elif action_id == "live.safe_stop" and self.mode != "live-control":
                 result = {"action_id": action_id, "status": "unsupported", "result": "unsupported", "accepted": False, "reason": "live_control_required"}
             else:
                 payload = dict(payload)
-                if action_id in {"session.start", "user.ensure_demo"} and "user_id" not in payload:
+                if action_id in {"session.start", "user.ensure_demo_debug", "user.load_current"} and "user_id" not in payload:
                     payload["user_id"] = self.get_app_state().get("current_user_id") or payload.get("user_id")
                 self.handle_gui_command(cmd, payload)
                 status = self.last_command_result.get("status", "unknown") if isinstance(self.last_command_result, dict) else "unknown"
                 result = {"action_id": action_id, "status": status, "result": self.last_command_result, "accepted": bool(self.last_command_result.get("accepted", False)) if isinstance(self.last_command_result, dict) else False}
+
+        if action_id == "session.start" and str(result.get("status")) in {"training_started", "live_debug_started", "completed"}:
+            if not self._active_session_started_at_ms:
+                self._active_session_started_at_ms = int(time.time() * 1000)
+        if action_id in {"session.stop", "live.safe_stop"} and str(result.get("status")) in {"training_completed", "training_stopped", "live_debug_stopped", "noop"}:
+            self._active_session_started_at_ms = None
 
         self.last_command_result = deepcopy(result)
         status = str(result.get("status") or "")
