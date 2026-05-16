@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 from copy import deepcopy
+import time
 from typing import Any
 
 from .gui_core_source import GuiCoreSnapshotSource
 from .gui_live_readonly_source import GuiLiveReadonlySource
 from .gui_live_control_source import GuiLiveControlSource
 from core.resource_managers import build_render_resource_bundle
+from storage.sqlite_store import SqliteStore
 
 
 class GuiFacade:
@@ -38,6 +40,9 @@ class GuiFacade:
         self.last_platform_result = ""
 
         self._render_resources = self._build_safe_render_resources(game_id=game_id)
+        self._started_at_ms = int(time.time() * 1000)
+        self._last_command_error = ""
+        self._active_session_started_at_ms: int | None = None
 
         self._core_source: GuiCoreSnapshotSource | None = None
         self._live_source: GuiLiveReadonlySource | None = None
@@ -57,8 +62,8 @@ class GuiFacade:
 
         self._app_state = {
             "state": "READY",
-            "current_user_id": "demo_user",
-            "current_user_name": "Demo User",
+            "current_user_id": user_id,
+            "current_user_name": user_id,
             "device_connected": True,
             "calibration_status": "passed",
             "session_active": False,
@@ -88,7 +93,7 @@ class GuiFacade:
             "source": "mock",
         }
         self._session_state = {
-            "session_id": "mock_session",
+            "session_id": "",
             "user_id": "demo_user",
             "game_id": "fake_game",
             "session_active": False,
@@ -154,7 +159,7 @@ class GuiFacade:
             elif command == "load_demo_user":
                 uid = str(args.get("user_id", "demo_user"))
                 self._live_control_source.user_id = uid
-                self.last_command_result = {"command": command, "accepted": True, "status": "accepted", "message": "demo_user_loaded", "result": "accepted", "source": "live_control", "user_id": uid}
+                self.last_command_result = {"command": command, "accepted": True, "status": "accepted", "message": "user_loaded", "result": "accepted", "source": "live_control", "user_id": uid}
             elif command == "start_mock_session":
                 self.last_command_result = self._live_control_source.start_live_debug_session(args.get("user_id"))
             elif command == "start_training_session":
@@ -271,3 +276,174 @@ class GuiFacade:
             self._live_source.stop()
         if self._live_control_source:
             self._live_control_source.stop()
+
+
+    def _fetch_profile_summary(self, user_id: str) -> dict[str, Any]:
+        store = SqliteStore(self.db_path)
+        store.connect()
+        try:
+            user = store.get_user(user_id)
+            if not user:
+                return {"status": "user_not_found", "message": "user_not_found", "current_user_id": user_id}
+            profile = store.get_user_profile(user_id)
+            if not profile:
+                return {"status": "profile_not_found", "message": "profile_not_found", "current_user_id": user_id, "user_type": user.get("user_type", "local_user"), "profile_loaded": False, "last_calibration_id": "n/a", "attention_low_threshold": "n/a", "attention_high_threshold": "n/a", "preferred_game_id": "n/a", "difficulty_level": "n/a"}
+            return {"status": "accepted", "message": "profile_loaded", "current_user_id": user_id, "user_type": user.get("user_type", "local_user"), "profile_loaded": True, "last_calibration_id": profile.get("last_calibration_id") or "n/a", "attention_low_threshold": profile.get("attention_low_threshold", "n/a"), "attention_high_threshold": profile.get("attention_high_threshold", "n/a"), "preferred_game_id": profile.get("preferred_game_id", "n/a"), "difficulty_level": profile.get("difficulty_level", "n/a")}
+        finally:
+            store.close()
+
+    def _fetch_calibration_status(self, user_id: str) -> dict[str, Any]:
+        store = SqliteStore(self.db_path)
+        store.connect()
+        try:
+            profile = store.get_user_profile(user_id)
+            if not profile:
+                return {"status": "profile_without_calibration", "calibration_status": "profile_without_calibration", "last_calibration_id": "n/a", "calibration_usable": False, "latest_valid": False, "failure_reason": "profile_not_found", "source": "profile"}
+            cal_id = profile.get("last_calibration_id")
+            if not cal_id:
+                return {"status": "no_calibration", "calibration_status": "no_calibration", "last_calibration_id": "n/a", "calibration_usable": False, "latest_valid": False, "failure_reason": "no_calibration", "source": "profile"}
+            cp = store.get_calibration_profile(str(cal_id))
+            if not cp:
+                return {"status": "no_calibration", "calibration_status": "no_calibration", "last_calibration_id": cal_id, "calibration_usable": False, "latest_valid": False, "failure_reason": "calibration_id_not_found", "source": "profile"}
+            return {"status": "accepted", "calibration_status": "available", "last_calibration_id": cal_id, "calibration_usable": bool(cp.get("valid")), "latest_valid": bool(cp.get("valid")), "failure_reason": cp.get("failure_reason") or "", "source": cp.get("calibration_type") or "calibration_profile", "attention_baseline": cp.get("attention_baseline") if cp.get("attention_baseline") is not None else "n/a", "gyro_noise_rms": cp.get("gyro_noise_rms") if cp.get("gyro_noise_rms") is not None else "n/a"}
+        finally:
+            store.close()
+
+    def get_control_manifest(self) -> list[dict[str, Any]]:
+        readonly = self.mode in {"core", "live-readonly"}
+        mode = self.mode
+        def item(action_id: str, label: str, category: str, supported: bool, readonly_allowed: bool, live_control_required: bool, description: str) -> dict[str, Any]:
+            enabled = supported and (readonly_allowed or not readonly)
+            if live_control_required and mode != "live-control":
+                enabled = False
+            return {"action_id": action_id, "label": label, "category": category, "enabled": enabled, "supported": supported, "readonly_allowed": readonly_allowed, "live_control_required": live_control_required, "description": description}
+        return [
+            item("app.refresh_now", "Refresh", "app", True, True, False, "refresh snapshots"),
+            item("app.quit", "Quit", "app", True, True, False, "quit app"),
+            item("live.reconnect", "Reconnect", "live", self.mode in {"live-readonly", "live-control"}, True, False, "reconnect live source"),
+            item("live.safe_stop", "Safe Stop", "live", self.mode == "live-control", False, True, "safe stop current action (live-control backend required)"),
+            item("user.load_current", "Load Current User", "user", True, True, False, "load current user from run args"),
+            item("user.ensure_demo_debug", "Ensure Demo User (Debug)", "user", True, False, False, "debug fallback only"),
+            item("user.show_profile", "Show Profile", "user", True, True, False, "show current profile"),
+            item("calibration.start", "Start Calibration", "calibration", False, False, False, "not implemented: requires calibration workflow/progress UI"),
+            item("calibration.status", "Calibration Status", "calibration", True, True, False, "show calibration status"),
+            item("session.start", "Start Session", "session", True, False, False, "start mock/debug/training session"),
+            item("session.stop", "Stop Session", "session", True, False, False, "stop current session"),
+            item("session.status", "Session Status", "session", True, True, False, "show session status"),
+            item("game.status", "Game Status", "game", True, True, False, "show game hud/state"),
+            item("diagnostics.clear_last_error", "Clear Last Error", "diagnostics", True, True, False, "clear last command error"),
+            item("diagnostics.refresh", "Refresh Diagnostics", "diagnostics", True, True, False, "refresh diagnostics")
+        ]
+
+    def get_control_state(self) -> dict[str, Any]:
+        app = self.get_app_state()
+        session = self.get_session_state()
+        now = int(time.time() * 1000)
+        session_active = bool(session.get("session_active"))
+        session_elapsed_ms = session.get("session_elapsed_ms")
+        if session_active:
+            base_start = self._active_session_started_at_ms or session.get("started_at_ms")
+            if base_start:
+                session_elapsed_ms = max(0, now - int(base_start))
+        return {
+            "mode": self.mode,
+            "control_enabled": self.mode != "core",
+            "readonly": self.mode in {"core", "live-readonly"},
+            "current_user_id": app.get("current_user_id", ""),
+            "current_session_id": session.get("session_id", "") or ("session_id_unavailable" if session_active else ""),
+            "current_game_id": app.get("current_game_id", session.get("game_id", "")),
+            "session_active": session_active,
+            "calibration_active": False,
+            "live_connected": app.get("connection_status") == "connected" or app.get("source") in {"live_readonly", "live_control"},
+            "last_command": self.last_command.get("command", "") if isinstance(self.last_command, dict) else "",
+            "last_command_result": self.last_command_result.get("status", "") if isinstance(self.last_command_result, dict) else "",
+            "last_command_error": self._last_command_error,
+            "command_count": self.command_count,
+            "latest_report_path": session.get("latest_report_path") or session.get("report_path") or "",
+            "app_elapsed_ms": now - self._started_at_ms,
+            "session_elapsed_ms": session_elapsed_ms if session_active else "n/a",
+            "last_session_status": session.get("training_status", "none"),
+            "profile_status": self.last_command_result.get("status", "") if isinstance(self.last_command_result, dict) and self.last_command.get("command") == "user.show_profile" else "",
+            "user_type": self.last_command_result.get("profile", {}).get("user_type", "") if isinstance(self.last_command_result, dict) else "",
+            "profile_loaded": self.last_command_result.get("profile", {}).get("profile_loaded", "") if isinstance(self.last_command_result, dict) else "",
+            "last_calibration_id": self.last_command_result.get("calibration", {}).get("last_calibration_id", self.last_command_result.get("profile", {}).get("last_calibration_id", "n/a")) if isinstance(self.last_command_result, dict) else "n/a",
+            "calibration_status": self.last_command_result.get("calibration", {}).get("calibration_status", "") if isinstance(self.last_command_result, dict) else "",
+            "calibration_usable": self.last_command_result.get("calibration", {}).get("calibration_usable", "") if isinstance(self.last_command_result, dict) else "",
+        }
+
+    def invoke_action(self, action_id: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+        payload = payload or {}
+        self.last_command = {"command": action_id, "args": deepcopy(payload), "type": "action_id"}
+        self.command_count += 1
+        map_cmd = {
+            "app.refresh_now": "refresh_snapshot",
+            "live.reconnect": "refresh_snapshot",
+            "live.safe_stop": "end_session",
+            "user.load_current": "load_demo_user",
+            "user.ensure_demo_debug": "load_demo_user",
+            "session.start": "start_training_session" if self.mode == "live-control" else "start_mock_session",
+            "session.stop": "end_training_session" if self.mode == "live-control" else "end_session",
+            "diagnostics.refresh": "refresh_snapshot",
+        }
+
+        result: dict[str, Any]
+        if action_id == "app.quit":
+            result = {"action_id": action_id, "status": "accepted", "result": "quit_requested", "accepted": True}
+        elif action_id == "user.show_profile":
+            app = self.get_app_state()
+            user_id = str(app.get("current_user_id") or "")
+            if not user_id:
+                result = {"action_id": action_id, "status": "missing_user", "result": "missing_user", "message": "missing_user", "accepted": False}
+            else:
+                ps = self._fetch_profile_summary(user_id)
+                result = {"action_id": action_id, "status": ps.get("status", "profile_not_available"), "result": "profile", "message": ps.get("message", ""), "accepted": ps.get("status") == "accepted", "profile": ps}
+        elif action_id == "calibration.status":
+            app = self.get_app_state()
+            user_id = str(app.get("current_user_id") or "")
+            if not user_id:
+                result = {"action_id": action_id, "status": "missing_user", "result": "missing_user", "accepted": False, "calibration": {"calibration_status": "missing_user"}}
+            else:
+                cs = self._fetch_calibration_status(user_id)
+                result = {"action_id": action_id, "status": cs.get("status", "no_calibration"), "result": "calibration_status", "accepted": cs.get("status") == "accepted", "calibration": cs, "user_id": user_id}
+        elif action_id == "session.status":
+            result = {"action_id": action_id, "status": "accepted", "result": "session_status", "accepted": True, "session": self.get_session_state()}
+        elif action_id == "game.status":
+            result = {"action_id": action_id, "status": "accepted", "result": "game_status", "accepted": True, "game_hud": self.get_game_hud()}
+        elif action_id == "user.load_current":
+            uid = str(self.get_app_state().get("current_user_id") or "")
+            if not uid:
+                result = {"action_id": action_id, "status": "missing_user", "result": "missing_user", "accepted": False}
+            else:
+                self.handle_gui_command("load_demo_user", {"user_id": uid})
+                result = {"action_id": action_id, "status": "current_user_loaded", "result": "current_user_loaded", "accepted": True, "user_id": uid}
+        elif action_id == "diagnostics.clear_last_error":
+            self._last_command_error = ""
+            result = {"action_id": action_id, "status": "accepted", "result": "cleared", "accepted": True}
+        elif action_id == "calibration.start":
+            result = {"action_id": action_id, "status": "not_implemented", "result": "not_implemented", "accepted": False, "reason": "requires calibration workflow/progress UI"}
+        else:
+            cmd = map_cmd.get(action_id)
+            if not cmd:
+                result = {"action_id": action_id, "status": "unsupported", "result": "unsupported", "accepted": False}
+            elif self.mode in {"core", "live-readonly"} and action_id in {"live.safe_stop", "user.ensure_demo_debug", "session.start", "session.stop"}:
+                result = {"action_id": action_id, "status": "readonly_not_allowed", "result": "readonly_not_allowed", "accepted": False}
+            elif action_id == "live.safe_stop" and self.mode != "live-control":
+                result = {"action_id": action_id, "status": "unsupported", "result": "unsupported", "accepted": False, "reason": "live_control_required"}
+            else:
+                payload = dict(payload)
+                if action_id in {"session.start", "user.ensure_demo_debug", "user.load_current"} and "user_id" not in payload:
+                    payload["user_id"] = self.get_app_state().get("current_user_id") or payload.get("user_id")
+                self.handle_gui_command(cmd, payload)
+                status = self.last_command_result.get("status", "unknown") if isinstance(self.last_command_result, dict) else "unknown"
+                result = {"action_id": action_id, "status": status, "result": self.last_command_result, "accepted": bool(self.last_command_result.get("accepted", False)) if isinstance(self.last_command_result, dict) else False}
+
+        if action_id == "session.start" and str(result.get("status")) in {"training_started", "live_debug_started", "completed"}:
+            if not self._active_session_started_at_ms:
+                self._active_session_started_at_ms = int(time.time() * 1000)
+        if action_id in {"session.stop", "live.safe_stop"} and str(result.get("status")) in {"training_completed", "training_stopped", "live_debug_stopped", "noop"}:
+            self._active_session_started_at_ms = None
+
+        self.last_command_result = deepcopy(result)
+        status = str(result.get("status") or "")
+        self._last_command_error = "" if status in {"accepted", "completed", "training_started", "training_completed", "live_debug_started", "live_debug_stopped", "noop"} else status
+        return result

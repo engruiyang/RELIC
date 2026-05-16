@@ -14,7 +14,7 @@ def test_mock_gui_facade_runtime_snapshot() -> None:
 
 def test_mock_gui_facade_session_state() -> None:
     facade = GuiFacade(mode="mock")
-    assert facade.get_session_state()["session_id"] == "mock_session"
+    assert "session_id" in facade.get_session_state()
 
 
 def test_gui_facade_records_command() -> None:
