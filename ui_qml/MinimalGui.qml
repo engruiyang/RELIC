@@ -11,17 +11,27 @@ ApplicationWindow {
     property var runtimeObj: ({})
     property var sessionObj: ({})
     property var gameHudObj: ({})
+    property var controlManifestObj: ([])
+    property var controlStateObj: ({})
 
-    function safeParseJson(jsonText) {
+    function safeJsonParse(jsonText) {
         try {
             return JSON.parse(jsonText || "{}")
         } catch (e) {
-            return ({})
+            return ({"__parse_error__": "invalid"})
         }
     }
 
-    function na(value) {
-        return value === undefined || value === null || value === "" ? "n/a" : value
+    function safeText(value, fallback) {
+        var fb = fallback === undefined ? "n/a" : fallback
+        return value === undefined || value === null || value === "" ? fb : String(value)
+    }
+
+    function getField(obj, key, fallback) {
+        if (!obj || obj[key] === undefined || obj[key] === null || obj[key] === "") {
+            return fallback === undefined ? "n/a" : fallback
+        }
+        return obj[key]
     }
 
     function pullState() {
@@ -30,12 +40,16 @@ ApplicationWindow {
             runtimeObj = ({})
             sessionObj = ({})
             gameHudObj = ({})
+            controlManifestObj = ([])
+            controlStateObj = ({})
             return
         }
-        appStateObj = safeParseJson(guiBridge.appState)
-        runtimeObj = safeParseJson(guiBridge.runtimeSnapshot)
-        sessionObj = safeParseJson(guiBridge.sessionState)
-        gameHudObj = safeParseJson(guiBridge.gameHudJson)
+        appStateObj = safeJsonParse(guiBridge.appState)
+        runtimeObj = safeJsonParse(guiBridge.runtimeSnapshot)
+        sessionObj = safeJsonParse(guiBridge.sessionState)
+        gameHudObj = safeJsonParse(guiBridge.gameHudJson)
+        controlManifestObj = safeJsonParse(guiBridge.controlManifestJson)
+        controlStateObj = safeJsonParse(guiBridge.controlStateJson)
     }
 
     Connections {
@@ -52,110 +66,135 @@ ApplicationWindow {
         anchors.margins: 16
         spacing: 8
 
-        Label { text: "RELIC Core / TraceLock Control Shell"; font.pixelSize: 24; font.bold: true }
+        Label { text: "RELIC Core / Live Bus Status"; font.pixelSize: 24; font.bold: true }
         Label { text: "QML smoke shell loaded"; font.pixelSize: 16 }
 
+
         GroupBox {
             width: parent.width
-            title: "Protocol Select"
+            title: "Control Panel"
             Column {
                 spacing: 4
-                Label { text: "mode: " + na(appStateObj.mode) }
-                Label { text: "source: " + na(appStateObj.source) }
-                Label { text: "game_id: " + na(appStateObj.current_game_id || appStateObj.game_id) }
-                Label { text: "currentSessionType: " + na(sessionObj.currentSessionType || sessionObj.session_type) }
-            }
-        }
+                Label { text: "controlManifestJson parse: " + safeText(getField(controlManifestObj, "__parse_error__", "ok"), "ok") }
+                Label { text: "control_enabled: " + safeText(getField(controlStateObj, "control_enabled")) }
+                Label { text: "readonly: " + safeText(getField(controlStateObj, "readonly")) }
+                Label { text: "last_command: " + safeText(getField(controlStateObj, "last_command")) }
+                Label { text: "last_command_result: " + safeText(getField(controlStateObj, "last_command_result")) }
+                Label { text: "last_command_error: " + safeText(getField(controlStateObj, "last_command_error")) }
+                Label { text: "command_count: " + safeText(getField(controlStateObj, "command_count")) }
+                Label { text: "app_elapsed_ms: " + safeText(getField(controlStateObj, "app_elapsed_ms")) }
+                Label { text: "session_elapsed_ms: " + safeText(getField(controlStateObj, "session_elapsed_ms")) }
+                Label { text: "current_user_id: " + safeText(getField(controlStateObj, "current_user_id")) }
+                Label { text: "current_session_id: " + safeText(getField(controlStateObj, "current_session_id")) }
+                Label { text: "current_game_id: " + safeText(getField(controlStateObj, "current_game_id")) }
+                Label { text: "latest_report_path: " + safeText(getField(controlStateObj, "latest_report_path")) }
 
-        GroupBox {
-            width: parent.width
-            title: "TraceLock Training"
-            Column {
-                spacing: 4
-                Label { text: "Trace Score: " + na(gameHudObj.score) }
-                Label { text: "Sync Chain / Combo: " + na(gameHudObj.combo) }
-                Label { text: "Max Combo: " + na(gameHudObj.max_combo) }
-                Label { text: "Multiplier: " + na(gameHudObj.score_multiplier) }
-                Label { text: "Load Tier / Level: " + na(gameHudObj.load_tier) + " / " + na(gameHudObj.level) }
-                Label { text: "Movement Type: " + na(gameHudObj.movement_type) }
-                Label { text: "Lock Window: " + na(gameHudObj.target_time_left_ms) }
-                Label { text: "Trace Retention: " + na(gameHudObj.accuracy) }
-                Label { text: "Trace Drop: " + na(gameHudObj.omission) }
-                Label { text: "False Action: " + na(gameHudObj.false_action) }
-                Label { text: "RT Stability: " + na(gameHudObj.rt_stability) }
-            }
-        }
-
-        GroupBox {
-            width: parent.width
-            title: "Training Controls"
-            Column {
-                spacing: 6
-                Row {
-                    spacing: 8
-                    Button { text: "Start Training Session"; onClicked: { if (guiBridge) { guiBridge.sendCommand("start_training_session", "{}") } } }
-                    Button { text: "End Training Session"; onClicked: { if (guiBridge) { guiBridge.sendCommand("end_training_session", "{}") } } }
-                    Button {
-                        text: "Refresh Snapshot"
-                        onClicked: {
-                            if (guiBridge) {
-                                guiBridge.sendCommand("refresh_snapshot", "{}")
-                            }
-                            pullState()
-                        }
-                    }
+                Row { spacing: 6
+                    Button { text: "Refresh"; onClicked: if (guiBridge) { guiBridge.invokeAction("app.refresh_now", "{}") } }
+                    Button { text: "Quit"; onClicked: if (guiBridge) { guiBridge.invokeAction("app.quit", "{}") } }
+                    Button { text: "Reconnect"; onClicked: if (guiBridge) { guiBridge.invokeAction("live.reconnect", "{}") } }
+                    Button { text: "Safe Stop"; onClicked: if (guiBridge) { guiBridge.invokeAction("live.safe_stop", "{}") } }
                 }
-                Label { text: "session_id: " + na(sessionObj.session_id) }
-                Label { text: "latest_report_path: " + na(sessionObj.latest_report_path || sessionObj.report_path) }
-                Label { text: "training_status: " + na(sessionObj.training_status) }
-            }
-        }
-
-        GroupBox {
-            width: parent.width
-            title: "Debug Panel"
-            Column {
-                spacing: 6
-                Row {
-                    spacing: 8
-                    Button { text: "Start Mock Session (Debug)"; onClicked: { if (guiBridge) { guiBridge.sendCommand("start_mock_session", "{}") } } }
-                    Button { text: "End Session"; onClicked: { if (guiBridge) { guiBridge.sendCommand("end_session", "{}") } } }
+                Row { spacing: 6
+                    Button { text: "Ensure Demo User"; onClicked: if (guiBridge) { guiBridge.invokeAction("user.ensure_demo", "{}") } }
+                    Button { text: "Show Profile"; onClicked: if (guiBridge) { guiBridge.invokeAction("user.show_profile", "{}") } }
+                    Button { text: "Start Calibration"; onClicked: if (guiBridge) { guiBridge.invokeAction("calibration.start", "{}") } }
+                    Button { text: "Calibration Status"; onClicked: if (guiBridge) { guiBridge.invokeAction("calibration.status", "{}") } }
                 }
-                Row {
-                    spacing: 8
-                    Button { text: "Force L1"; onClicked: { if (guiBridge) { guiBridge.sendCommand("set_debug_difficulty", "{\"level\":1}") } } }
-                    Button { text: "Force L2"; onClicked: { if (guiBridge) { guiBridge.sendCommand("set_debug_difficulty", "{\"level\":2}") } } }
-                    Button { text: "Force L3"; onClicked: { if (guiBridge) { guiBridge.sendCommand("set_debug_difficulty", "{\"level\":3}") } } }
-                    Button { text: "Force L4"; onClicked: { if (guiBridge) { guiBridge.sendCommand("set_debug_difficulty", "{\"level\":4}") } } }
-                    Button { text: "Force L5"; onClicked: { if (guiBridge) { guiBridge.sendCommand("set_debug_difficulty", "{\"level\":5}") } } }
-                    Button { text: "Auto DDA"; onClicked: { if (guiBridge) { guiBridge.sendCommand("set_debug_difficulty", "{\"level\":null}") } } }
+                Row { spacing: 6
+                    Button { text: "Start Session"; onClicked: if (guiBridge) { guiBridge.invokeAction("session.start", "{}") } }
+                    Button { text: "Stop Session"; onClicked: if (guiBridge) { guiBridge.invokeAction("session.stop", "{}") } }
+                    Button { text: "Session Status"; onClicked: if (guiBridge) { guiBridge.invokeAction("session.status", "{}") } }
+                    Button { text: "Game Status"; onClicked: if (guiBridge) { guiBridge.invokeAction("game.status", "{}") } }
+                }
+                Row { spacing: 6
+                    Button { text: "Clear Last Error"; onClicked: if (guiBridge) { guiBridge.invokeAction("diagnostics.clear_last_error", "{}") } }
+                    Button { text: "Refresh Diagnostics"; onClicked: if (guiBridge) { guiBridge.invokeAction("diagnostics.refresh", "{}") } }
                 }
             }
         }
 
         GroupBox {
             width: parent.width
-            title: "Link Diagnostics"
-            Label { text: "latest_report_path: " + na(sessionObj.latest_report_path || sessionObj.report_path) }
+            title: "Connection"
+            Column {
+                spacing: 4
+                Label { text: "connection_status: " + safeText(getField(runtimeObj, "connection_status")) }
+                Label { text: "stream_alive: " + safeText(getField(runtimeObj, "stream_alive")) }
+                Label { text: "device_connected: " + safeText(getField(runtimeObj, "device_connected")) }
+            }
         }
 
         GroupBox {
             width: parent.width
-            title: "NAC / Live Status"
+            title: "Runtime Snapshot"
             Column {
                 spacing: 4
-                Label { text: "connection_status: " + na(runtimeObj.connection_status) }
-                Label { text: "stream_alive: " + na(runtimeObj.stream_alive) }
-                Label { text: "attention: " + na(runtimeObj.attention) }
-                Label { text: "attention_fresh: " + na(runtimeObj.attention_fresh) }
-                Label { text: "attention_age_ms: " + na(runtimeObj.attention_age_ms) }
-                Label { text: "gyro_x: " + na(runtimeObj.gyro_x) }
-                Label { text: "gyro_y: " + na(runtimeObj.gyro_y) }
-                Label { text: "gyro_z: " + na(runtimeObj.gyro_z) }
-                Label { text: "gyro_fresh: " + na(runtimeObj.gyro_fresh) }
-                Label { text: "gyro_age_ms: " + na(runtimeObj.gyro_age_ms) }
-                Label { text: "warning_flags: " + na(JSON.stringify(runtimeObj.warning_flags || runtimeObj.current_warning_flags)) }
-                Label { text: "error_flags: " + na(JSON.stringify(runtimeObj.error_flags)) }
+                Label { text: "mode: " + safeText(getField(appStateObj, "mode")) }
+                Label { text: "source: " + safeText(getField(appStateObj, "source")) }
+                Label { text: "runtime_snapshot_parse: " + safeText(getField(runtimeObj, "__parse_error__", "ok"), "ok") }
+                Label { text: "game_hud_parse: " + safeText(getField(gameHudObj, "__parse_error__", "ok"), "ok") }
+            }
+        }
+
+        GroupBox {
+            width: parent.width
+            title: "Attention"
+            Column {
+                spacing: 4
+                Label { text: "attention: " + safeText(getField(runtimeObj, "attention")) }
+                Label { text: "attention_fresh: " + safeText(getField(runtimeObj, "attention_fresh")) }
+                Label { text: "attention_age_ms: " + safeText(getField(runtimeObj, "attention_age_ms")) }
+                Label { text: "attention_last_update_ms: " + safeText(getField(runtimeObj, "attention_last_update_ms")) }
+            }
+        }
+
+        GroupBox {
+            width: parent.width
+            title: "Gyroscope"
+            Column {
+                spacing: 4
+                Label { text: "gyro_x: " + safeText(getField(runtimeObj, "gyro_x")) }
+                Label { text: "gyro_y: " + safeText(getField(runtimeObj, "gyro_y")) }
+                Label { text: "gyro_z: " + safeText(getField(runtimeObj, "gyro_z")) }
+                Label { text: "gyro_fresh: " + safeText(getField(runtimeObj, "gyro_fresh")) }
+                Label { text: "gyro_age_ms: " + safeText(getField(runtimeObj, "gyro_age_ms")) }
+                Label { text: "gyro_last_update_ms: " + safeText(getField(runtimeObj, "gyro_last_update_ms")) }
+            }
+        }
+
+        GroupBox {
+            width: parent.width
+            title: "Session"
+            Column {
+                spacing: 4
+                Label { text: "session_type: " + safeText(getField(sessionObj, "session_type", getField(sessionObj, "currentSessionType"))) }
+                Label { text: "session_id: " + safeText(getField(sessionObj, "session_id")) }
+                Label { text: "latest_report_path: " + safeText(getField(sessionObj, "latest_report_path", getField(sessionObj, "report_path"))) }
+            }
+        }
+
+        GroupBox {
+            width: parent.width
+            title: "Diagnostics"
+            Column {
+                spacing: 4
+                Label { text: "warning_flags: " + safeText(JSON.stringify(getField(runtimeObj, "warning_flags", getField(runtimeObj, "current_warning_flags", "n/a")))) }
+                Label { text: "error_flags: " + safeText(JSON.stringify(getField(runtimeObj, "error_flags", "n/a"))) }
+            }
+        }
+
+        GroupBox {
+            width: parent.width
+            title: "Game HUD"
+            Column {
+                spacing: 4
+                Label { text: "score: " + safeText(getField(gameHudObj, "score")) }
+                Label { text: "combo: " + safeText(getField(gameHudObj, "combo")) }
+                Label { text: "level: " + safeText(getField(gameHudObj, "level")) }
+                Label { text: "load_tier: " + safeText(getField(gameHudObj, "load_tier")) }
+                Label { text: "movement_type: " + safeText(getField(gameHudObj, "movement_type")) }
+                Label { text: "target_time_left_ms: " + safeText(getField(gameHudObj, "target_time_left_ms")) }
             }
         }
     }
