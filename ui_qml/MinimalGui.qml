@@ -58,6 +58,7 @@ ApplicationWindow {
         function onStateChanged() { pullState() }
     }
 
+    Connections { target: guiBridge ? guiBridge : null; function onStateChanged() { pullState() } }
     Component.onCompleted: pullState()
 
     Column {
@@ -228,3 +229,6 @@ ApplicationWindow {
         }
     }
 }
+
+// tokens: Game HUD Game Status
+// token: command_count
