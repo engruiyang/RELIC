@@ -63,10 +63,10 @@ ApplicationWindow {
 
     Column {
         anchors.fill: parent
-        anchors.margins: 12
-        spacing: 6
+        anchors.margins: 10
+        spacing: 4
 
-        Label { text: "RELIC Core / Developer Diagnostics Console"; color: colorText; font.pixelSize: 22; font.bold: true }
+        Label { text: "RELIC Core / Developer Diagnostics Console"; color: colorText; font.pixelSize: 20; font.bold: true }
         Label { text: "QML smoke shell loaded"; color: colorMuted; font.pixelSize: 13 }
 
         Row {
@@ -86,7 +86,7 @@ ApplicationWindow {
                         Label { text: "control_enabled: " + safeText(getField(controlStateObj, "control_enabled")); color: colorText }
                         Label { text: "readonly: " + safeText(getField(controlStateObj, "readonly")); color: colorText }
                         Label { text: "last_command: " + safeText(getField(controlStateObj, "last_command")); color: colorText }
-                        Label { text: "last_command_result: " + safeText(getField(controlStateObj, "last_command_result")); color: colorText }
+                        Text { text: "last_command_result: " + safeText(getField(controlStateObj, "last_command_result")); color: colorText; width: parent.width; elide: Text.ElideRight }
                         Label { text: "last_command_error: " + safeText(getField(controlStateObj, "last_command_error")); color: colorText }
                         Label { text: "command_count: " + safeText(getField(controlStateObj, "command_count")); color: colorText }
 
@@ -126,9 +126,9 @@ ApplicationWindow {
                         Label { text: "user_type: " + safeText(getField(controlStateObj, "user_type")); color: colorText }
                         Label { text: "profile_status: " + safeText(getField(controlStateObj, "profile_status")); color: colorText }
                         Label { text: "profile_loaded: " + safeText(getField(controlStateObj, "profile_loaded")); color: colorText }
-                        Label { text: "calibration_status: " + safeText(getField(controlStateObj, "calibration_status")); color: colorText }
+                        Text { text: "calibration_status: " + safeText(getField(controlStateObj, "calibration_status")); color: colorText; width: parent.width; elide: Text.ElideRight }
                         Label { text: "calibration_usable: " + safeText(getField(controlStateObj, "calibration_usable")); color: colorText }
-                        Label { text: "last_calibration_id: " + safeText(getField(controlStateObj, "last_calibration_id")); color: colorText }
+                        Text { text: "last_calibration_id: " + safeText(getField(controlStateObj, "last_calibration_id")); color: colorText; width: parent.width; elide: Text.ElideRight }
                     }
                 }
             }
@@ -193,7 +193,7 @@ ApplicationWindow {
                         Label { text: "fi_smoothed: " + safeText(getField(runtimeObj, "fi_smoothed", getField(runtimeObj, "fi"))); color: colorText }
                         Label { text: "fi_valid: " + safeText(getField(runtimeObj, "fi_valid")); color: colorText }
                         Label { text: "control_state: " + safeText(getField(runtimeObj, "control_state")); color: colorText }
-                        Label { text: "control_state_reason: " + safeText(getField(runtimeObj, "control_state_reason")); color: colorText }
+                        Text { text: "control_state_reason: " + safeText(getField(runtimeObj, "control_state_reason")); color: colorText; width: parent.width; elide: Text.ElideRight }
                     }
                 }
 
@@ -207,7 +207,7 @@ ApplicationWindow {
                         Label { text: "session_active: " + safeText(getField(controlStateObj, "session_active")); color: colorText }
                         Label { text: "current_session_id: " + safeText(getField(controlStateObj, "current_session_id")); color: colorText }
                         Label { text: "session_elapsed_ms: " + safeText(getField(controlStateObj, "session_elapsed_ms")); color: colorText }
-                        Label { text: "latest_report_path: " + safeText(getField(controlStateObj, "latest_report_path")); color: colorText }
+                        Text { text: "latest_report_path: " + safeText(getField(controlStateObj, "latest_report_path")); color: colorText; width: parent.width; elide: Text.ElideRight }
                     }
                 }
 
@@ -216,8 +216,8 @@ ApplicationWindow {
                     title: "Diagnostics / Game HUD"
                     Column {
                         spacing: 3
-                        Label { text: "warning_flags: " + safeText(JSON.stringify(getField(runtimeObj, "warning_flags", getField(runtimeObj, "current_warning_flags", "n/a")))); color: colorText }
-                        Label { text: "error_flags: " + safeText(JSON.stringify(getField(runtimeObj, "error_flags", "n/a"))); color: colorText }
+                        Text { text: "warning_flags: " + safeText(JSON.stringify(getField(runtimeObj, "warning_flags", getField(runtimeObj, "current_warning_flags", "n/a")))); color: colorText; width: parent.width; elide: Text.ElideRight }
+                        Text { text: "error_flags: " + safeText(JSON.stringify(getField(runtimeObj, "error_flags", "n/a"))); color: colorText; width: parent.width; elide: Text.ElideRight }
                         Label { text: "game_id: " + safeText(getField(controlStateObj, "current_game_id", getField(sessionObj, "game_id"))); color: colorText }
                         Label { text: "score: " + safeText(getField(gameHudObj, "score")); color: colorText }
                         Label { text: "behavior_sample_count: " + safeText(getField(sessionObj, "behavior_sample_count")); color: colorText }

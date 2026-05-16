@@ -84,3 +84,12 @@ QML -> `GuiBridge.invokeAction` -> `GuiFacade.invoke_action` -> 既有 `handle_g
 
 ## safe_stop 边界
 当前 `live.safe_stop` 在无真实平台停止能力时显示 `noop/unsupported`，仅为安全占位。
+
+
+## TASK21 收口补充（append-only）
+- MinimalGui 当前定位：Developer Diagnostics Console（开发诊断台），用于 action contract 与 live 字段验收，不是最终正式 GUI 页面。
+- 正式验收路径以 TEST 用户为主；`demo/ensure_demo_debug` 仅 debug fallback。
+- TASK6-TASK9 摘要字段已接入诊断台：attention/gyro、sqi/quality_state、fi_smoothed/fi_valid、control_state、calibration_usable、session_active/session_elapsed_ms、game HUD 摘要。
+- calibration.start 仍未实现完整流程，留给后续 Calibration 页面。
+- GameCanvas 仍未恢复，留给后续 Training/Game 页面。
+- 当前布局目标是首屏可见关键诊断状态，不是正式页面系统。
