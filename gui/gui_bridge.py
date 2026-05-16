@@ -12,6 +12,10 @@ except ImportError as exc:  # pragma: no cover
 
 class GuiBridge(QObject):
     stateChanged = Signal()
+    appStateChanged = Signal()
+    runtimeSnapshotChanged = Signal()
+    sessionStateChanged = Signal()
+    gameHudJsonChanged = Signal()
 
     def __init__(self, facade: GuiFacade) -> None:
         super().__init__()
@@ -45,15 +49,34 @@ class GuiBridge(QObject):
         self._last_platform_index = ""
         self._last_platform_action = ""
         self._last_platform_result = ""
-        self._refresh_internal()
+        self.update_state_from_facade()
 
-    def _refresh_internal(self) -> None:
-        self._app_state = dumps(self._facade.get_app_state())
-        self._runtime_snapshot = dumps(self._facade.get_runtime_snapshot())
-        self._session_state = dumps(self._facade.get_session_state())
+    def update_state_from_facade(self) -> None:
+        next_app_state = dumps(self._facade.get_app_state())
+        next_runtime_snapshot = dumps(self._facade.get_runtime_snapshot())
+        next_session_state = dumps(self._facade.get_session_state())
+        next_game_hud_json = dumps(self._facade.get_game_hud(), ensure_ascii=False)
+
+        changed = False
+        if next_app_state != self._app_state:
+            self._app_state = next_app_state
+            self.appStateChanged.emit()
+            changed = True
+        if next_runtime_snapshot != self._runtime_snapshot:
+            self._runtime_snapshot = next_runtime_snapshot
+            self.runtimeSnapshotChanged.emit()
+            changed = True
+        if next_session_state != self._session_state:
+            self._session_state = next_session_state
+            self.sessionStateChanged.emit()
+            changed = True
+        if next_game_hud_json != self._game_hud_json:
+            self._game_hud_json = next_game_hud_json
+            self.gameHudJsonChanged.emit()
+            changed = True
+
         self._game_view_json = dumps(self._facade.get_game_view())
         self._render_resources_json = dumps(self._facade.get_render_resources(), ensure_ascii=False)
-        self._game_hud_json = dumps(self._facade.get_game_hud(), ensure_ascii=False)
         self._command_count = self._facade.command_count
         self._event_count = self._facade.event_count
         self._last_command = dumps(self._facade.last_command) if self._facade.last_command else ""
@@ -78,17 +101,19 @@ class GuiBridge(QObject):
         self._last_platform_index = "" if self._facade.last_platform_index is None else str(self._facade.last_platform_index)
         self._last_platform_action = self._facade.last_platform_action
         self._last_platform_result = self._facade.last_platform_result
-        self.stateChanged.emit()
 
-    @Property(str, notify=stateChanged)
+        if changed:
+            self.stateChanged.emit()
+
+    @Property(str, notify=appStateChanged)
     def appState(self) -> str:
         return self._app_state
 
-    @Property(str, notify=stateChanged)
+    @Property(str, notify=runtimeSnapshotChanged)
     def runtimeSnapshot(self) -> str:
         return self._runtime_snapshot
 
-    @Property(str, notify=stateChanged)
+    @Property(str, notify=sessionStateChanged)
     def sessionState(self) -> str:
         return self._session_state
 
@@ -96,13 +121,14 @@ class GuiBridge(QObject):
     def gameViewJson(self) -> str:
         return self._game_view_json
 
-
     @Property(str, notify=stateChanged)
     def renderResourcesJson(self) -> str:
         return self._render_resources_json
-    @Property(str, notify=stateChanged)
+
+    @Property(str, notify=gameHudJsonChanged)
     def gameHudJson(self) -> str:
         return self._game_hud_json
+
     @Property(int, notify=stateChanged)
     def commandCount(self) -> int:
         return self._command_count
@@ -110,7 +136,6 @@ class GuiBridge(QObject):
     @Property(str, notify=stateChanged)
     def lastCommand(self) -> str:
         return self._last_command
-
 
     @Property(str, notify=stateChanged)
     def lastCommandResult(self) -> str:
@@ -123,7 +148,6 @@ class GuiBridge(QObject):
     @Property(str, notify=stateChanged)
     def lastEvent(self) -> str:
         return self._last_event
-
 
     @Property(str, notify=stateChanged)
     def lastEventResult(self) -> str:
@@ -200,7 +224,7 @@ class GuiBridge(QObject):
     @Slot()
     def refresh(self) -> None:
         self._facade.handle_gui_command("refresh_snapshot", {"silent": True})
-        self._refresh_internal()
+        self.update_state_from_facade()
 
     @Slot(str, str)
     def sendCommand(self, command: str, args_json: str = "{}") -> None:
@@ -210,7 +234,7 @@ class GuiBridge(QObject):
             print(f"[GUI BRIDGE ERROR] invalid args_json for command={command}: {args_json}", flush=True)
             args = {}
         self._facade.handle_gui_command(command, args)
-        self._refresh_internal()
+        self.update_state_from_facade()
 
     @Slot(str, str)
     def sendEvent(self, event_type: str, payload_json: str = "{}") -> None:
@@ -223,4 +247,4 @@ class GuiBridge(QObject):
             )
             payload = {}
         self._facade.handle_gui_event(event_type, payload)
-        self._refresh_internal()
+        self.update_state_from_facade()
