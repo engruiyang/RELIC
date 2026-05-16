@@ -75,6 +75,7 @@ ApplicationWindow {
         Label { text: "QML smoke shell loaded"; color: colorMuted; font.pixelSize: 16 }
 
 
+
         GroupBox {
             width: parent.width
             title: "Control Panel"
