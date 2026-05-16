@@ -288,10 +288,10 @@ class GuiFacade:
             item("app.refresh_now", "Refresh", "app", True, True, False, "refresh snapshots"),
             item("app.quit", "Quit", "app", True, True, False, "quit app"),
             item("live.reconnect", "Reconnect", "live", self.mode in {"live-readonly", "live-control"}, True, False, "reconnect live source"),
-            item("live.safe_stop", "Safe Stop", "live", True, False, False, "safe stop current action"),
+            item("live.safe_stop", "Safe Stop", "live", self.mode == "live-control", False, True, "safe stop current action (live-control backend required)"),
             item("user.ensure_demo", "Ensure Demo User", "user", True, False, False, "ensure demo user"),
             item("user.show_profile", "Show Profile", "user", True, True, False, "show current profile"),
-            item("calibration.start", "Start Calibration", "calibration", False, False, False, "unsupported in minimal shell"),
+            item("calibration.start", "Start Calibration", "calibration", False, False, False, "not implemented: requires calibration workflow/progress UI"),
             item("calibration.status", "Calibration Status", "calibration", True, True, False, "show calibration status"),
             item("session.start", "Start Session", "session", True, False, False, "start mock/debug/training session"),
             item("session.stop", "Stop Session", "session", True, False, False, "stop current session"),
@@ -330,6 +330,8 @@ class GuiFacade:
 
     def invoke_action(self, action_id: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
         payload = payload or {}
+        self.last_command = {"command": action_id, "args": deepcopy(payload), "type": "action_id"}
+        self.command_count += 1
         map_cmd = {
             "app.refresh_now": "refresh_snapshot",
             "live.reconnect": "refresh_snapshot",
@@ -339,28 +341,47 @@ class GuiFacade:
             "session.stop": "end_training_session" if self.mode == "live-control" else "end_session",
             "diagnostics.refresh": "refresh_snapshot",
         }
+
+        result: dict[str, Any]
         if action_id == "app.quit":
-            return {"action_id": action_id, "status": "accepted", "result": "quit_requested", "accepted": True}
-        if action_id == "user.show_profile":
-            return {"action_id": action_id, "status": "accepted", "result": "profile", "profile": self.get_app_state()}
-        if action_id == "calibration.status":
-            return {"action_id": action_id, "status": "accepted", "result": "calibration_status", "calibration_status": self.get_app_state().get("calibration_status", "n/a")}
-        if action_id == "session.status":
-            return {"action_id": action_id, "status": "accepted", "result": "session_status", "session": self.get_session_state()}
-        if action_id == "game.status":
-            return {"action_id": action_id, "status": "accepted", "result": "game_status", "game_hud": self.get_game_hud()}
-        if action_id == "diagnostics.clear_last_error":
+            result = {"action_id": action_id, "status": "accepted", "result": "quit_requested", "accepted": True}
+        elif action_id == "user.show_profile":
+            app = self.get_app_state()
+            user_id = str(app.get("current_user_id") or "")
+            if not user_id:
+                result = {"action_id": action_id, "status": "missing_user", "result": "missing_user", "accepted": False}
+            else:
+                result = {"action_id": action_id, "status": "accepted", "result": "profile", "accepted": True, "profile": {"user_id": user_id, "user_name": app.get("current_user_name", ""), "calibration_status": app.get("calibration_status", "unknown"), "source": app.get("source", "")}}
+        elif action_id == "calibration.status":
+            app = self.get_app_state()
+            user_id = str(app.get("current_user_id") or "")
+            if not user_id:
+                result = {"action_id": action_id, "status": "missing_user", "result": "missing_user", "accepted": False, "calibration_status": "missing_user"}
+            else:
+                result = {"action_id": action_id, "status": "accepted", "result": "calibration_status", "accepted": True, "calibration_status": app.get("calibration_status", "unknown"), "user_id": user_id}
+        elif action_id == "session.status":
+            result = {"action_id": action_id, "status": "accepted", "result": "session_status", "accepted": True, "session": self.get_session_state()}
+        elif action_id == "game.status":
+            result = {"action_id": action_id, "status": "accepted", "result": "game_status", "accepted": True, "game_hud": self.get_game_hud()}
+        elif action_id == "diagnostics.clear_last_error":
             self._last_command_error = ""
-            return {"action_id": action_id, "status": "accepted", "result": "cleared"}
-        if action_id == "calibration.start":
-            return {"action_id": action_id, "status": "unsupported", "result": "unsupported", "accepted": False}
-        cmd = map_cmd.get(action_id)
-        if not cmd:
-            return {"action_id": action_id, "status": "unsupported", "result": "unsupported", "accepted": False}
-        if self.mode in {"core", "live-readonly"} and action_id in {"live.safe_stop", "user.ensure_demo", "session.start", "session.stop"}:
-            return {"action_id": action_id, "status": "readonly_not_allowed", "result": "readonly_not_allowed", "accepted": False}
-        self.handle_gui_command(cmd, payload)
-        status = self.last_command_result.get("status", "unknown") if isinstance(self.last_command_result, dict) else "unknown"
-        if status in {"failed", "rejected", "readonly_rejected"}:
-            self._last_command_error = status
-        return {"action_id": action_id, "status": status, "result": self.last_command_result, "accepted": bool(self.last_command_result.get("accepted", False)) if isinstance(self.last_command_result, dict) else False}
+            result = {"action_id": action_id, "status": "accepted", "result": "cleared", "accepted": True}
+        elif action_id == "calibration.start":
+            result = {"action_id": action_id, "status": "not_implemented", "result": "not_implemented", "accepted": False, "reason": "requires calibration workflow/progress UI"}
+        else:
+            cmd = map_cmd.get(action_id)
+            if not cmd:
+                result = {"action_id": action_id, "status": "unsupported", "result": "unsupported", "accepted": False}
+            elif self.mode in {"core", "live-readonly"} and action_id in {"live.safe_stop", "user.ensure_demo", "session.start", "session.stop"}:
+                result = {"action_id": action_id, "status": "readonly_not_allowed", "result": "readonly_not_allowed", "accepted": False}
+            elif action_id == "live.safe_stop" and self.mode != "live-control":
+                result = {"action_id": action_id, "status": "unsupported", "result": "unsupported", "accepted": False, "reason": "live_control_required"}
+            else:
+                self.handle_gui_command(cmd, payload)
+                status = self.last_command_result.get("status", "unknown") if isinstance(self.last_command_result, dict) else "unknown"
+                result = {"action_id": action_id, "status": status, "result": self.last_command_result, "accepted": bool(self.last_command_result.get("accepted", False)) if isinstance(self.last_command_result, dict) else False}
+
+        self.last_command_result = deepcopy(result)
+        status = str(result.get("status") or "")
+        self._last_command_error = "" if status in {"accepted", "completed", "training_started", "training_completed", "live_debug_started", "live_debug_stopped", "noop"} else status
+        return result
