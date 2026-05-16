@@ -11,14 +11,12 @@ ApplicationWindow {
     property color colorText: "#eef3f8"
     property color colorMuted: "#aeb8c2"
 
-    property color colorText: "#eef3f8"
-    property color colorMuted: "#aeb8c2"
-    property var appStateObj: ({})
-    property var runtimeObj: ({})
-    property var sessionObj: ({})
-    property var gameHudObj: ({})
-    property var controlManifestObj: ([])
-    property var controlStateObj: ({})
+    property var appStateObj: null
+    property var runtimeObj: null
+    property var sessionObj: null
+    property var gameHudObj: null
+    property var controlManifestObj: null
+    property var controlStateObj: null
 
     function safeJsonParse(jsonText) {
         try { return JSON.parse(jsonText || "{}") }
