@@ -19,6 +19,7 @@ ApplicationWindow {
     property var gameHudObj: ({})
     property var controlManifestObj: ([])
     property var controlStateObj: ({})
+    property var pageCommandManifestObj: ({})
 
     function safeJsonParse(jsonText) { try { return JSON.parse(jsonText || "{}") } catch (e) { return ({"__parse_error__":"invalid"}) } }
     function safeText(value, fallback) { var fb = fallback === undefined ? "n/a" : fallback; return value === undefined || value === null || value === "" ? fb : String(value) }
@@ -33,6 +34,7 @@ ApplicationWindow {
         gameHudObj = safeJsonParse(guiBridge.gameHudJson)
         controlManifestObj = safeJsonParse(guiBridge.controlManifestJson)
         controlStateObj = safeJsonParse(guiBridge.controlStateJson)
+        pageCommandManifestObj = safeJsonParse(guiBridge.pageCommandManifestJson)
     }
 
     function nextActionHint() {
@@ -118,6 +120,7 @@ ApplicationWindow {
                     }
                     Column { visible: currentPage === "user"; spacing: 4
                         Label { text: "User / Profile"; color: colorText; font.pixelSize: 18; font.bold: true }
+                        Label { text: "Page Commands: user.*"; color: colorMuted }
                         Label { text: "user_type: " + safeText(getField(controlStateObj, "user_type")); color: colorText }
                         Label { text: "profile_loaded: " + safeText(getField(controlStateObj, "profile_loaded")); color: colorText }
                         Label { text: "last_calibration_id: " + safeText(getField(controlStateObj, "last_calibration_id")); color: colorText }
@@ -129,6 +132,7 @@ ApplicationWindow {
                     }
                     Column { visible: currentPage === "calibration"; spacing: 4
                         Label { text: "Calibration"; color: colorText; font.pixelSize: 18; font.bold: true }
+                        Label { text: "Page Commands: calibration.*"; color: colorMuted }
                         Label { text: "latest_valid: " + safeText(getField(controlStateObj, "latest_valid")); color: colorText }
                         Label { text: "failure_reason: " + safeText(getField(controlStateObj, "failure_reason")); color: colorText }
                         Label { text: "source: " + safeText(getField(controlStateObj, "source")); color: colorText }
@@ -141,6 +145,7 @@ ApplicationWindow {
                     }
                     Column { visible: currentPage === "training"; spacing: 4
                         Label { text: "Training"; color: colorText; font.pixelSize: 18; font.bold: true }
+                        Label { text: "Page Commands: training.* / game.*"; color: colorMuted }
                         Label { text: "selected_game_id: " + safeText(getField(controlStateObj, "selected_game_id", getField(controlStateObj, "current_game_id"))); color: colorText }
                         Label { text: "fi_smoothed: " + safeText(getField(runtimeObj, "fi_smoothed")); color: colorText }
                         Label { text: "score: " + safeText(getField(gameHudObj, "score")); color: colorText }
@@ -155,6 +160,7 @@ ApplicationWindow {
                     }
                     Column { visible: currentPage === "report"; spacing: 4
                         Label { text: "Report"; color: colorText; font.pixelSize: 18; font.bold: true }
+                        Label { text: "Page Commands: report.*"; color: colorMuted }
                         Label { text: "last_session_status: " + safeText(getField(controlStateObj, "last_session_status")); color: colorText }
                         Label { text: "report_status: " + safeText(getField(controlStateObj, "report_status")); color: colorText }
                         Label { text: "log_path: " + safeText(getField(controlStateObj, "log_path")); color: colorText }
@@ -163,6 +169,8 @@ ApplicationWindow {
                     }
                     Column { visible: currentPage === "diagnostics"; spacing: 2
                         Label { text: "Diagnostics"; color: colorText; font.pixelSize: 18; font.bold: true }
+                        Label { text: "Page Commands: runtime.* / diagnostics.*"; color: colorMuted }
+                        Label { text: "Developer Lab: developer.task6b_* / game.debug_*"; color: colorMuted }
                         Label { text: "Connection / Runtime"; color: colorMuted }
                         Label { text: "Attention"; color: colorMuted }
                         Label { text: "Gyroscope"; color: colorMuted }
@@ -207,6 +215,7 @@ ApplicationWindow {
                     Label { text: "error_flags: " + safeText(getField(runtimeObj, "error_flags")); color: colorText }
                     Label { text: "guiBridge.appState / guiBridge.runtimeSnapshot / guiBridge.sessionState / guiBridge.gameHudJson / guiBridge.controlManifestJson / guiBridge.controlStateJson"; color: colorMuted; wrapMode: Text.WordWrap }
                     Label { text: "action path: guiBridge.invokeAction"; color: colorMuted }
+                    Label { text: "pageCommandManifestJson schema: " + safeText(getField(pageCommandManifestObj, "schema_version")); color: colorMuted }
                 }
             }
         }

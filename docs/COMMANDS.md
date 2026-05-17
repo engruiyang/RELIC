@@ -367,3 +367,8 @@ python tools/inspect_task8c_live.py `
 - GameCanvas 恢复不在 TASK22（属于 TASK24）。
 
 - TASK23 AppShell commands: `docs/commands/gui_task23_app_shell_commands.md`
+
+## TASK23A / Command Registry（append-only）
+- 新增 `gui/command_registry.py`，输出 `pageCommandManifestJson`（`schema_version=gui_commands.v1`）。
+- Developer Lab 命令首版仅 `manual/copy_only`，禁止 GUI subprocess。
+- 建议先运行：`python -m pytest tests/test_gui_command_registry.py`。
