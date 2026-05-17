@@ -205,43 +205,43 @@ class DataCenter:
 
         s.fi_provisional = not bool(s.fi_valid)
         s.recovering = (
-    s.device_connected
-    and s.stream_alive
-    and s.sensor_stream_active
-    and not s.training_data_valid
-)
+            s.device_connected
+            and s.stream_alive
+            and s.sensor_stream_active
+            and not s.training_data_valid
+        )
 
        if not s.device_connected or not s.stream_alive or not s.sensor_stream_active:
-    s.control_state = "NO_SIGNAL"
-    s.control_state_reason = "no_signal"
-elif s.attention is None:
-    s.control_state = "RECOVERING"
-    s.control_state_reason = "attention_missing"
-elif not s.training_data_valid:
-    if s.attention < 30:
-        s.control_state = "DISTRACTED"
-        s.control_state_reason = "low_attention_warmup"
-    elif s.attention < 45:
-        s.control_state = "LOW_FOCUS"
-        s.control_state_reason = "moderate_attention_warmup"
-    else:
-        s.control_state = "RECOVERING"
-        s.control_state_reason = "warmup"
-elif s.attention < 30:
-    s.control_state = "DISTRACTED"
-    s.control_state_reason = "low_attention"
-elif s.attention < 45:
-    s.control_state = "LOW_FOCUS"
-    s.control_state_reason = "moderate_attention"
-else:
-    s.control_state = "FOCUSED"
-    s.control_state_reason = "attention_ok"
-
-   def tick(self, now_ms: int, events: list[dict] | None = None) -> RealtimeSnapshot:
-    """Compatibility API for legacy callers/tests."""
-    if events is not None:
-        self.ingest_events(events, now_ms=now_ms)
-    else:
-        self._snapshot.now_ms = now_ms
-        self._refresh_derived_flags(now_ms)
-    return self.get_snapshot()
+           s.control_state = "NO_SIGNAL"
+           s.control_state_reason = "no_signal"
+       elif s.attention is None:
+           s.control_state = "RECOVERING"
+           s.control_state_reason = "attention_missing"
+       elif not s.training_data_valid:
+           if s.attention < 30:
+               s.control_state = "DISTRACTED"
+               s.control_state_reason = "low_attention_warmup"
+           elif s.attention < 45:
+               s.control_state = "LOW_FOCUS"
+               s.control_state_reason = "moderate_attention_warmup"
+           else:
+               s.control_state = "RECOVERING"
+               s.control_state_reason = "warmup"
+       elif s.attention < 30:
+           s.control_state = "DISTRACTED"
+           s.control_state_reason = "low_attention"
+       elif s.attention < 45:
+           s.control_state = "LOW_FOCUS"
+           s.control_state_reason = "moderate_attention"
+       else:
+           s.control_state = "FOCUSED"
+           s.control_state_reason = "attention_ok"
+       
+       def tick(self, now_ms: int, events: list[dict] | None = None) -> RealtimeSnapshot:
+           """Compatibility API for legacy callers/tests."""
+           if events is not None:
+               self.ingest_events(events, now_ms=now_ms)
+           else:
+               self._snapshot.now_ms = now_ms
+               self._refresh_derived_flags(now_ms)
+           return self.get_snapshot()
