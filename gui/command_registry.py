@@ -1,0 +1,87 @@
+from __future__ import annotations
+
+from dataclasses import asdict, dataclass
+from typing import Any
+
+
+@dataclass(frozen=True)
+class CommandDescriptor:
+    command_id: str
+    display_name: str
+    page_id: str
+    category: str
+    cli_reference: str
+    native_action_id: str | None
+    status: str
+    execution_mode: str
+    requires_user: bool
+    requires_profile: bool
+    requires_calibration: bool
+    writes_db: bool
+    connects_platform: bool
+    generates_files: bool
+    danger_level: str
+    params_schema: dict[str, Any]
+    result_schema: dict[str, Any]
+    typical_outputs: list[str]
+    notes: str
+
+
+_COMMANDS: list[CommandDescriptor] = [
+    CommandDescriptor("user.load_demo_debug","Load Demo User (Debug)","user","user","python -m ui_cli.run_user_debug --mode demo",None,"active","manual",False,False,False,True,False,False,"writes_db",{"mode":"demo"},{"current_user_id":"str"},["current_user_id","user_type"],"Debug fallback only."),
+    CommandDescriptor("user.guest","Guest Mode","user","user","python -m ui_cli.run_user_debug --mode guest",None,"active","manual",False,False,False,False,False,False,"safe",{"mode":"guest"},{"current_user_id":"guest"},["persisted=False"],"No persisted profile write."),
+    CommandDescriptor("user.load","Load User","user","user","python -m ui_cli.run_user_debug --mode user --user-id TEST",None,"active","manual",True,False,False,True,False,False,"writes_db",{"user_id":"str"},{"current_user_id":"str","profile_loaded":"bool"},["current_user_id","profile_loaded"],"TASK23B to make native."),
+    CommandDescriptor("user.list","List Users","user","user","python -m ui_cli.run_user_debug --list-users",None,"active","copy_only",False,False,False,False,False,False,"safe",{}, {"user_count":"int","users":"list"},["user_count","user_id"],"CLI/manual now."),
+    CommandDescriptor("user.create","Create User","user","user","python -m ui_cli.run_user_debug --create-user TEST --display-name \"Test\"",None,"active","manual",False,False,False,True,False,False,"writes_db",{"user_id":"str","display_name":"str"},{"create_user_result":"str"},["create_user_result"],"Writes users/profile tables."),
+    CommandDescriptor("user.show_profile","Show Profile","user","user","GUI/native action user.show_profile","user.show_profile","native_ready","native",True,False,False,False,False,False,"safe",{"user_id":"str"},{"profile_loaded":"bool"},["profile_loaded","last_calibration_id"],"Available via guiBridge.invokeAction."),
+    CommandDescriptor("calibration.status","Calibration Status","calibration","calibration","python -m ui_cli.run_calibration_debug --action status --mode user --user-id TEST","calibration.status","native_ready","native",True,False,False,False,False,False,"safe",{"user_id":"str"},{"calibration_status":"str"},["latest_valid","last_calibration_id"],"Native readonly status."),
+    CommandDescriptor("calibration.start","Start Calibration","calibration","calibration","python -m ui_cli.run_calibration_debug --action start --mode user --user-id TEST",None,"not_implemented","disabled",True,False,False,True,False,False,"writes_db",{"user_id":"str","calibration_type":"str"},{"calibration_id":"str","valid":"bool"},["calibration_id","failure_reason"],"Deferred to TASK23B."),
+    CommandDescriptor("calibration.cancel","Cancel Calibration","calibration","calibration","python -m ui_cli.run_calibration_debug --action cancel --mode user --user-id TEST",None,"active","manual",True,False,False,False,False,False,"normal",{"user_id":"str"},{"valid":"bool","failure_reason":"str"},["cancelled_by_user"],"CLI/manual now."),
+    CommandDescriptor("calibration.list","List Calibrations","calibration","calibration","python -m ui_cli.run_calibration_debug --action list --mode user --user-id TEST",None,"active","copy_only",True,False,False,False,False,False,"safe",{"user_id":"str"},{"calibrations":"list"},["calibration_count"],"CLI/manual now."),
+    CommandDescriptor("calibration.latest","Latest Calibration","calibration","calibration","python -m ui_cli.run_calibration_debug --action latest --mode user --user-id TEST",None,"active","copy_only",True,False,False,False,False,False,"safe",{"user_id":"str"},{"calibration_id":"str","valid":"bool"},["calibration_id","valid"],"CLI/manual now."),
+    CommandDescriptor("calibration.show","Show Calibration","calibration","calibration","python -m ui_cli.run_calibration_debug --action show --calibration-id cal_xxx",None,"active","copy_only",False,False,False,False,False,False,"safe",{"calibration_id":"str"},{"attention_baseline":"float"},["gyro_noise_rms"],"CLI/manual now."),
+    CommandDescriptor("calibration.bind","Bind Calibration","calibration","calibration","python -m ui_cli.run_calibration_debug --action bind --mode user --user-id TEST --calibration-id cal_xxx",None,"active","manual",True,True,False,True,False,False,"writes_db",{"user_id":"str","calibration_id":"str"},{"new_last_calibration_id":"str"},["old_last_calibration_id"],"Writes user_profile binding."),
+    CommandDescriptor("calibration.start_verbose_events","Start Calibration Verbose Events","calibration","calibration","python -m ui_cli.run_calibration_debug --action start --mode user --user-id TEST --verbose-events",None,"active","copy_only",True,False,False,True,False,False,"advanced",{}, {"events":"list"},["events"],"Developer debug output."),
+    CommandDescriptor("calibration.start_json_events","Start Calibration JSON Events","calibration","calibration","python -m ui_cli.run_calibration_debug --action start --mode user --user-id TEST --json-events",None,"active","copy_only",True,False,False,True,False,False,"advanced",{}, {"events":"list"},["events"],"Structured debug output."),
+    CommandDescriptor("calibration.start_fast","Start Calibration Fast","calibration","calibration","python -m ui_cli.run_calibration_debug --action start --mode user --user-id TEST --fast",None,"active","manual",True,False,False,True,False,False,"writes_db",{}, {"valid":"bool"},["calibration_id"],"Fast testing mode."),
+    CommandDescriptor("calibration.start_no_progress","Start Calibration No Progress","calibration","calibration","python -m ui_cli.run_calibration_debug --action start --mode user --user-id TEST --no-progress",None,"active","copy_only",True,False,False,True,False,False,"advanced",{}, {"valid":"bool"},["valid"],"Debug output mode."),
+    CommandDescriptor("runtime.core_debug_mock","Core Debug Mock","diagnostics","runtime","python -m ui_cli.run_core_debug --bridge mock",None,"active","copy_only",False,False,False,False,False,False,"advanced",{}, {"tick":"int"},["attention","gyro"],"CLI debug only."),
+    CommandDescriptor("runtime.core_debug_live","Core Debug Live","diagnostics","runtime","python -m ui_cli.run_core_debug --bridge live --host 127.0.0.1 --port 8000",None,"active","copy_only",False,False,False,False,True,False,"connects_live",{"host":"str","port":"int"},{"connected":"bool"},["stream_alive"],"CLI debug only."),
+    CommandDescriptor("runtime.core_debug_live_user","Core Debug Live User","diagnostics","runtime","python -m ui_cli.run_core_debug --bridge live --mode user --user-id TEST",None,"active","copy_only",True,True,False,False,True,False,"connects_live",{"user_id":"str"},{"formal_training_allowed":"bool"},["quality_reasons"],"CLI debug only."),
+    CommandDescriptor("runtime.refresh_snapshot","Refresh Snapshot","diagnostics","runtime","GUI/native action app.refresh_now","app.refresh_now","native_ready","native",False,False,False,False,False,False,"safe",{}, {"status":"str"},["refreshed"],"Native refresh."),
+    CommandDescriptor("runtime.live_connect","Live Connect","diagnostics","runtime","python -m ui_cli.run_core_debug --bridge live ...",None,"active","manual",False,False,False,False,True,False,"connects_live",{"host":"str","port":"int"},{"connection_status":"str"},["connected"],"Connection command card."),
+    CommandDescriptor("runtime.live_reconnect","Live Reconnect","diagnostics","runtime","GUI/native action live.reconnect","live.reconnect","native_ready","native",False,False,False,False,True,False,"connects_live",{}, {"status":"str"},["refreshed"],"Native reconnect/refresh."),
+    CommandDescriptor("diagnostics.refresh","Refresh Diagnostics","diagnostics","diagnostics","GUI/native action diagnostics.refresh","diagnostics.refresh","native_ready","native",False,False,False,False,False,False,"safe",{}, {"status":"str"},["accepted"],"Native diagnostics refresh."),
+    CommandDescriptor("training.start_session","Start Session","training","training","GUI/native action session.start","session.start","native_ready","native",True,False,False,True,False,True,"writes_db",{"user_id":"str"},{"session_id":"str","status":"str"},["training_started"],"Mapped to session.start action."),
+    CommandDescriptor("training.stop_session","Stop Session","training","training","GUI/native action session.stop","session.stop","native_ready","native",False,False,False,True,False,True,"writes_db",{}, {"status":"str","latest_report_path":"str"},["training_completed"],"Mapped to session.stop action."),
+    CommandDescriptor("training.list_sessions","List Sessions","training","training","python -m ui_cli.run_session_debug --list-sessions --db-path data/relic_task7b.db",None,"active","copy_only",False,False,False,False,False,False,"safe",{}, {"sessions":"list"},["session_id","status","score"],"CLI/manual now."),
+    CommandDescriptor("training.show_session","Show Session","training","training","python -m ui_cli.run_session_debug --show-session <SESSION_ID> --db-path data/relic_task7b.db",None,"active","copy_only",False,False,False,False,False,False,"safe",{"session_id":"str"},{"behavior_sample_count":"int"},["game_event_count"],"CLI/manual now."),
+    CommandDescriptor("training.session_debug_demo","Session Debug Demo","training","training","python -m ui_cli.run_session_debug --mode demo --duration-sec 1 --user-id demo_user --db-path data/relic_task7b.db",None,"active","manual",True,False,False,True,False,True,"generates_files",{}, {"session_id":"str"},["game_event_count"],"CLI debug command."),
+    CommandDescriptor("training.session_status","Session Status","training","training","GUI/native action session.status","session.status","native_ready","native",False,False,False,False,False,False,"safe",{}, {"session":"object"},["session_active"],"Native action exists."),
+    CommandDescriptor("game.debug_mock","Game Debug Mock","developer_lab","game","python -m ui_cli.run_game_debug --bridge mock --mode demo --duration-sec 5 --user-id demo_user --db-path data/relic_task8c_mock.db --game-id fake_game --print-jsonl",None,"active","copy_only",True,False,False,True,False,True,"generates_files",{"game_id":"str"},{"tick":"int"},["event_types","view_state"],"Headless CLI pipeline."),
+    CommandDescriptor("game.debug_live","Game Debug Live","developer_lab","game","python -m ui_cli.run_game_debug --bridge live --mode user --user-id TEST --host 127.0.0.1 --port 8000 --duration-sec 60 --db-path data/relic_local.db --game-id fake_game --print-jsonl",None,"active","copy_only",True,True,True,True,True,True,"connects_live",{"user_id":"str","host":"str","port":"int"},{"sqi":"float","fi_smoothed":"float"},["event_types","tick"],"Headless CLI pipeline."),
+    CommandDescriptor("game.debug_live_record_pipeline","Game Debug Live Record Pipeline","developer_lab","game","python -m ui_cli.run_game_debug --bridge live ... --record-pipeline-jsonl logs/game_debug/live_TEST_pipeline.jsonl",None,"active","copy_only",True,True,True,True,True,True,"generates_files",{"out_path":"str"},{"pipeline_path":"str"},["warnings","errors"],"Writes pipeline JSONL."),
+    CommandDescriptor("game.status","Game Status","training","game","GUI/native action game.status","game.status","native_ready","native",False,False,False,False,False,False,"safe",{}, {"game_hud":"object"},["score","combo","level"],"Native HUD query."),
+    CommandDescriptor("game.fake_game","Fake Game Reference","training","game","docs/game_integration_guide.md fake_game references",None,"manual","manual",False,False,False,False,False,False,"safe",{}, {},["fake_game"],"Reference only."),
+    CommandDescriptor("game.trace_lock_reference","Trace Lock Reference","training","game","docs/game_integration_guide.md + docs/games/trace_lock_design.md",None,"manual","manual",False,False,False,False,False,False,"safe",{}, {},["trace_lock"],"Reference only."),
+    CommandDescriptor("report.latest","Latest Report","report","report","Use session/report fields from GUI state",None,"active","manual",False,False,False,False,False,False,"safe",{}, {"latest_report_path":"str"},["latest_report_path"],"Shell-ready report card."),
+    CommandDescriptor("report.show_session","Show Session Report","report","report","python -m ui_cli.run_session_debug --show-session <SESSION_ID> ...",None,"active","copy_only",False,False,False,False,False,False,"safe",{"session_id":"str"},{"session":"object"},["behavior_sample_count"],"Manual report inspection."),
+    CommandDescriptor("report.list_sessions","List Session Reports","report","report","python -m ui_cli.run_session_debug --list-sessions ...",None,"active","copy_only",False,False,False,False,False,False,"safe",{}, {"sessions":"list"},["session_id","status"],"Manual listing."),
+    CommandDescriptor("report.replay_summary","Replay Summary","report","report","Session/replay docs references",None,"planned","disabled",False,False,False,False,False,False,"advanced",{}, {},["replay"],"Future TASK25+ extension."),
+    CommandDescriptor("report.open_path_manual","Open Report Path Manual","report","report","manual open latest_report_path in local file system",None,"manual","manual",False,False,False,False,False,False,"advanced",{"path":"str"},{"status":"manual"},["open_path"],"No GUI file opener yet."),
+    CommandDescriptor("developer.task6b_record_mock","Task6B Record Mock","developer_lab","task6b","bash scripts/task6b_record.sh mock demo 180 baseline",None,"active","copy_only",False,False,False,False,False,True,"generates_files",{"duration_sec":"int"},{"session_id":"str"},["logs/task6b/*.jsonl"],"Developer lab only."),
+    CommandDescriptor("developer.task6b_record_live","Task6B Record Live","developer_lab","task6b","bash scripts/task6b_record.sh live TEST 180 real_trial",None,"active","copy_only",True,True,False,False,True,True,"connects_live",{"user_id":"str","duration_sec":"int"},{"stream_alive":"bool"},["labels/task6b/*.frames.csv"],"Developer lab only."),
+    CommandDescriptor("developer.task6b_evaluate","Task6B Evaluate","developer_lab","task6b","python -m ui_cli.evaluate_task6b --input \"logs/task6b/*.jsonl\" --labels \"labels/task6b/*.frames.csv\" --config config/task6b.yaml --out reports/task6b_eval.json",None,"active","copy_only",False,False,False,False,False,True,"generates_files",{"out":"str"},{"macro_f1":"float"},["frame_accuracy","confusion_matrix"],"Offline eval."),
+    CommandDescriptor("developer.task6b_eval_script","Task6B Eval Script","developer_lab","task6b","bash scripts/task6b_eval.sh",None,"active","copy_only",False,False,False,False,False,True,"generates_files",{}, {"overall":"object"},["reports/task6b_eval.json"],"Script wrapper."),
+    CommandDescriptor("developer.task6b_tune","Task6B Tune","developer_lab","task6b","python -m ui_cli.tune_task6b --input \"logs/task6b/*.jsonl\" --labels \"labels/task6b/*.frames.csv\" --base-config config/task6b.yaml --trials 300 --method random --seed 42 --out config/task6b_tuned_candidates.json --report reports/task6b_tune_report.json",None,"active","copy_only",False,False,False,False,False,True,"advanced",{"trials":"int"},{"top_candidates":"list"},["macro_f1","score"],"Offline tuning."),
+    CommandDescriptor("developer.task6b_tune_script","Task6B Tune Script","developer_lab","task6b","bash scripts/task6b_tune.sh",None,"active","copy_only",False,False,False,False,False,True,"advanced",{}, {"top_candidates":"list"},["reports/task6b_tune_report.json"],"Script wrapper."),
+    CommandDescriptor("developer.task6b_calibrate","Task6B Calibrate","developer_lab","task6b","python -m ui_cli.calibrate_task6b ... --out-config config/task6b_calibrated.yaml",None,"active","copy_only",False,False,False,False,False,True,"advanced",{"out_config":"str"},{"calibrated_config":"str"},["reports/task6b_calibration_report.json"],"Produces calibrated config."),
+    CommandDescriptor("developer.inspect_task8_live","Inspect Task8 Live Pipeline","developer_lab","developer","python -m ui_cli.run_game_debug --bridge live ... --print-jsonl",None,"active","copy_only",True,True,True,True,True,True,"advanced",{}, {"tick":"int"},["pipeline jsonl"],"Manual live inspection command."),
+]
+
+
+def build_page_command_manifest() -> dict[str, Any]:
+    pages: dict[str, list[dict[str, Any]]] = {}
+    for c in _COMMANDS:
+        pages.setdefault(c.page_id, []).append(asdict(c))
+    return {"schema_version": "gui_commands.v1", "pages": pages, "command_count": len(_COMMANDS)}

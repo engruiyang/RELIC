@@ -18,9 +18,11 @@ class DataCenter:
         self._attention_lost_ms = attention_lost_ms
         self._gyro_fresh_ms = gyro_fresh_ms
         self._gyro_lost_ms = gyro_lost_ms
+        self._event_quality_reasons: list[str] = []
 
     def ingest_events(self, events: list[dict], now_ms: int) -> None:
         self._snapshot.now_ms = now_ms
+        self._event_quality_reasons = []
         for event in events:
             self._apply_event(event, now_ms)
         self._refresh_derived_flags(now_ms)
@@ -40,7 +42,20 @@ class DataCenter:
         self._snapshot.signal_reliable = bool(gate_result.get("signal_reliable", False))
         self._snapshot.estimation_allowed = bool(gate_result.get("estimation_allowed", False))
 
+    def _append_event_reasons(self, event: dict) -> None:
+        reasons = []
+        if isinstance(event.get("quality_reasons"), list):
+            reasons.extend(str(x) for x in event.get("quality_reasons", []))
+        if isinstance(event.get("warning_flags"), list):
+            reasons.extend(str(x) for x in event.get("warning_flags", []))
+        if event.get("reason") is not None:
+            reasons.append(str(event.get("reason")))
+        for r in reasons:
+            if r and r not in self._event_quality_reasons:
+                self._event_quality_reasons.append(r)
+
     def _apply_event(self, event: dict, now_ms: int) -> None:
+        self._append_event_reasons(event)
         event_type = event.get("type")
         if event_type == "device_status":
             self._snapshot.device_connected = bool(event.get("connected", False))
@@ -60,12 +75,27 @@ class DataCenter:
             self._snapshot.gyro_z = event.get("z")
             self._snapshot.gyro_last_update_ms = now_ms
             self._snapshot.gyro_seen_once = True
+            self._snapshot.focus_seen_once = True
+        elif event_type == "algorithm_frame":
+            algo = str(event.get("algorithm") or "")
+            data = event.get("data") or {}
+            if algo == "attention":
+                self._snapshot.attention = data.get("attention")
+                self._snapshot.attention_last_update_ms = now_ms
+                self._snapshot.attention_seen_once = True
+            elif algo == "gyroscope":
+                self._snapshot.gyro_x = data.get("gyro_x", data.get("focus_x"))
+                self._snapshot.gyro_y = data.get("gyro_y", data.get("focus_y"))
+                self._snapshot.gyro_z = data.get("gyro_z")
+                self._snapshot.gyro_last_update_ms = now_ms
+                self._snapshot.gyro_seen_once = True
+                self._snapshot.focus_seen_once = True
 
     def _refresh_derived_flags(self, now_ms: int) -> None:
         s = self._snapshot
         s.warning_flags = []
         s.error_flags = []
-        s.quality_reasons = []
+        s.quality_reasons = list(self._event_quality_reasons)
 
         if s.attention_last_update_ms is None:
             s.attention_age_ms = None
@@ -78,11 +108,13 @@ class DataCenter:
             elif s.attention_age_ms <= self._attention_lost_ms:
                 s.attention_fresh = False
                 s.warning_flags.append("attention_stale")
-                s.quality_reasons.append("attention_stale")
+                if "attention_stale" not in s.quality_reasons:
+                    s.quality_reasons.append("attention_stale")
             else:
                 s.attention_fresh = False
                 s.error_flags.append("attention_lost")
-                s.quality_reasons.append("attention_lost")
+                if "attention_lost" not in s.quality_reasons:
+                    s.quality_reasons.append("attention_lost")
 
         if s.gyro_last_update_ms is None:
             s.gyro_age_ms = None
@@ -95,21 +127,26 @@ class DataCenter:
             elif s.gyro_age_ms <= self._gyro_lost_ms:
                 s.gyro_fresh = False
                 s.warning_flags.append("gyro_stale")
-                s.quality_reasons.append("gyro_stale")
+                if "gyro_stale" not in s.quality_reasons:
+                    s.quality_reasons.append("gyro_stale")
             else:
                 s.gyro_fresh = False
                 s.error_flags.append("gyro_lost")
-                s.quality_reasons.append("gyro_lost")
+                if "gyro_lost" not in s.quality_reasons:
+                    s.quality_reasons.append("gyro_lost")
 
         if not s.device_connected:
             s.error_flags.append("device_disconnected")
-            s.quality_reasons.append("device_disconnected")
+            if "device_disconnected" not in s.quality_reasons:
+                s.quality_reasons.append("device_disconnected")
 
         if not s.stream_alive or not s.sensor_stream_active:
             s.error_flags.append("stream_inactive")
-            s.quality_reasons.append("stream_inactive")
+            if "stream_inactive" not in s.quality_reasons:
+                s.quality_reasons.append("stream_inactive")
 
         s.display_data_available = s.device_connected and (s.attention_seen_once or s.gyro_seen_once)
+        s.focus_seen_once = bool(s.focus_seen_once or s.gyro_seen_once)
 
         s.training_data_valid = (
             s.device_connected
@@ -135,3 +172,29 @@ class DataCenter:
             and not s.warning_flags
             and not s.error_flags
         )
+
+        s.fi_provisional = not bool(s.fi_valid)
+
+        if not s.device_connected or not s.stream_alive or not s.sensor_stream_active:
+            s.control_state = "NO_SIGNAL"
+            s.control_state_reason = "no_signal"
+        elif not s.training_data_valid:
+            s.control_state = "RECOVERING"
+            s.control_state_reason = "recovering"
+        elif s.attention is None:
+            s.control_state = "RECOVERING"
+            s.control_state_reason = "attention_missing"
+        elif s.attention < 30:
+            s.control_state = "DISTRACTED"
+            s.control_state_reason = "low_attention"
+        elif s.attention < 45:
+            s.control_state = "LOW_FOCUS"
+            s.control_state_reason = "moderate_attention"
+        else:
+            s.control_state = "FOCUSED"
+            s.control_state_reason = "attention_ok"
+
+    def tick(self, now_ms: int, events: list[dict] | None = None) -> RealtimeSnapshot:
+        """Compatibility API for legacy callers/tests."""
+        self.ingest_events(events or [], now_ms=now_ms)
+        return self.get_snapshot()

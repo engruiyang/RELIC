@@ -18,20 +18,32 @@ class MockAdapter:
         ]
 
         if self.mode == "stream_drop" and self.tick >= 20:
-            events[1] = {"type": "stream_status", "alive": False, "active": False}
+            events[1] = {"type": "stream_status", "alive": False, "active": False, "reason": "stream_drop"}
 
         if self._should_emit_attention():
-            events.append({"type": "attention", "value": 70 + (self.tick % 15)})
+            att = 70 + (self.tick % 15)
+            if self.mode == "missing_start" and self.tick <= 30:
+                pass
+            else:
+                events.append({"type": "attention", "value": att})
 
         if self._should_emit_gyro():
             k = float(self.tick)
-            events.append({"type": "gyroscope", "x": 0.1 * k, "y": 0.2 * k, "z": -0.1 * k})
+            gyro_event = {"type": "gyroscope", "x": 0.1 * k, "y": 0.2 * k, "z": -0.1 * k}
+            if self.mode == "focus_jump" and self.tick % 15 == 0:
+                gyro_event["quality_reasons"] = ["focus_jump"]
+            if self.mode == "gyro_spike" and self.tick % 12 == 0:
+                gyro_event["quality_reasons"] = list(gyro_event.get("quality_reasons", [])) + ["gyro_spike"]
+            events.append(gyro_event)
+
+        if self.mode == "partial_stale" and self.tick % 20 == 0:
+            events.append({"type": "diagnostic", "quality_reasons": ["gyro_stale"]})
 
         return events
 
     def _should_emit_attention(self) -> bool:
         # ~1Hz when app tick is 20Hz
-        if self.mode == "attention_missing_start":
+        if self.mode in {"attention_missing_start", "missing_start"}:
             if self.tick <= 40:
                 return False
         if self.mode == "attention_short_dropout":
@@ -46,3 +58,8 @@ class MockAdapter:
         if self.mode == "gyro_short_dropout" and 15 <= self.tick <= 30:
             return False
         return True
+
+
+    def poll(self, dt_ms: int | None = None) -> list[dict]:
+        """Compatibility API for legacy callers/tests."""
+        return self.read()
