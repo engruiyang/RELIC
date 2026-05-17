@@ -8,6 +8,7 @@ Item {
     property var sessionObj: ({})
     property var gameHudObj: ({})
     property string commandSummary: ""
+    property var actionResultObj: ({})
     property string selectedCommandId: ""
     property string selectedStatus: ""
     property string selectedExecutionMode: ""
