@@ -34,6 +34,15 @@ Item {
     Label { text: "difficulty_level: " + safeText(controlStateObj.difficulty_level) }
   }}
   GroupBox { title: "Page Commands"; Label { text: commandSummary; wrapMode: Text.WordWrap } }
+        GroupBox {
+            title: "Dynamic Content"
+            Column {
+                PageListPanel { width: parent.width; height: 80; items: (controlStateObj.items || []) }
+                PageDetailPanel { width: parent.width; height: 80; detailObj: (controlStateObj || {}) }
+                PageResultPanel { width: parent.width; actionResult: (controlStateObj.last_action_result || {"status":"n/a"}) }
+            }
+        }
+
   PageFeedbackPanel { pageId: "user"; selectedCommandId: parent.selectedCommandId; selectedStatus: parent.selectedStatus; selectedExecutionMode: parent.selectedExecutionMode; selectedNativeActionId: parent.selectedNativeActionId; lastCommand: safeText(controlStateObj.last_command); lastResult: safeText(controlStateObj.last_command_result); lastError: safeText(controlStateObj.last_command_error) }
  }
 }

@@ -12,5 +12,7 @@ def test_page_actions_return_status_message_or_result() -> None:
     ]:
         r = f.invoke_action(action, {'user_id': 'TEST'})
         assert isinstance(r, dict)
+        assert 'action_id' in r
         assert 'status' in r
+        assert 'message' in r
         assert 'result' in r
