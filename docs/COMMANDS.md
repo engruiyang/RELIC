@@ -357,3 +357,11 @@ python tools/inspect_task8c_live.py `
 说明：
 - TASK22 不恢复 GameCanvas，不做页面切换。
 - 平台 mock/report/replay 只消费标准 GameEvent。
+
+
+## TASK22-FINALIZE / 验收补充（append-only）
+- `run_game_debug` 为无头 CLI pipeline 验收命令，不会打开 GUI 窗口。
+- 若 live 命令出现 `ConnectionRefusedError`，优先检查 `127.0.0.1:8000` 平台是否已启动并就绪。
+- TASK22 成功验收关注：RuntimeSnapshotView / attention/gyro/sqi/fi/control_state / GameViewState / score_update_count / behavior_sample_count / GameEvent 协议 / TraceLock 测试。
+- GUI 页面切换不在 TASK22（属于 TASK23）。
+- GameCanvas 恢复不在 TASK22（属于 TASK24）。

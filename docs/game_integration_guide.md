@@ -76,3 +76,19 @@ TASK6 的 SQI/FI/control_state 进入 RuntimeSnapshotView；TASK7 的 SessionMan
 10. 证明链路有效的测试：`test_game_contracts`, `test_minimal_game_template`, `test_fake_click_game_client`, `test_game_view_render_contract`, `test_game_event_to_platform_mock`, `test_task8_game_flow`, `test_task8_live_game_pipeline`, TraceLock 系列。
 11. 当前主要短板是文档聚合不足（本任务已补），不是核心代码缺陷。
 12. 命名上存在 TraceLock/ShardLock/碎片锁定并行称呼；当前规范名称沿用 `trace_lock`（不做大规模重命名）。
+
+
+## 14) TASK22-FINALIZE 验收补充（append-only）
+- `run_game_debug` 是**无头 CLI pipeline** 验收入口，不会打开 GUI 窗口。
+- live 命令若报 `ConnectionRefusedError`，通常表示平台 `127.0.0.1:8000` 未启动或未就绪；请先启动平台后重试。
+- TASK22 成功验收标准：
+  - RuntimeSnapshotView 可见；
+  - attention / gyro / sqi / fi / control_state 可见；
+  - GameViewState 可见；
+  - score_update_count 增长；
+  - behavior_sample_count 在有效信号后增长；
+  - GameEvent 符合协议；
+  - TraceLock 相关测试通过。
+- GUI 弹窗不是 TASK22 验收目标。
+- GUI 页面切换属于 TASK23。
+- GameCanvas 恢复属于 TASK24。
