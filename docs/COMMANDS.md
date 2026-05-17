@@ -314,3 +314,54 @@ python tools/inspect_task8c_live.py `
 - [ ] no long-term quality_state=error
 - [ ] no all-UNRELIABLE_SIGNAL after startup
 - [ ] GameViewState updates
+
+
+## TASK21 / GUI Developer Diagnostics Console Commands
+
+| 命令 | 用途 | 入口文件 | 是否写数据库 | 是否连接平台 | 是否生成文件 | 典型输出或观察点 | 状态 |
+|---|---|---|---|---|---|---|---|
+| `python -m ui_cli.run_gui_minimal --mode core-control --user-id TEST --db-path data/relic_local.db --duration-sec 120` | 启动 core-control 诊断台 | `ui_cli/run_gui_minimal.py` | 否（只读为主） | 否 | 否 | GUI 打开，TEST 用户状态可见 | active |
+| `python -m ui_cli.run_gui_minimal --mode live-readonly --host 127.0.0.1 --port 8000 --user-id TEST --db-path data/relic_local.db` | 启动 live-readonly 诊断台 | `ui_cli/run_gui_minimal.py` | 否（只读） | 是 | 否 | attention/gyro 刷新 | active |
+| `python -m ui_cli.run_gui_minimal --mode live-control --host 127.0.0.1 --port 8000 --user-id TEST --db-path data/relic_local.db` | 启动 live-control 诊断台 | `ui_cli/run_gui_minimal.py` | 是（session/report） | 是 | 是 | session_active/elapsed/report_path 可见 | active |
+| `python -m pytest tests/test_gui_qml_loads.py` | QML 真实加载回归 | `tests/test_gui_qml_loads.py` | 否 | 否 | 否 | rootObjects 非空 | regression |
+| `python -m pytest tests/test_gui_qml_loads.py tests/test_gui_page_shell.py tests/test_gui_live_bus_status.py tests/test_gui_runtime_refresh.py tests/test_gui_action_contract.py tests/test_gui_minimal_controls.py tests/test_gui_feedback_state.py` | TASK21 GUI 测试集合 | `tests/` | 否 | 否 | 否 | 关键 GUI 测试全通过 | regression |
+| `python -m pytest tests -k "gui"` | GUI 全集 | `tests/` | 否 | 否 | 否 | gui 相关用例通过 | regression |
+| `pytest -q tests/test_gui_page_shell.py tests/test_gui_bus_status_doc.py tests/test_training_session_pipeline.py tests/test_trace_lock_movement_visibility.py tests/test_trace_lock_hud_observability.py tests/test_trace_lock_gameplay_tuning.py tests/test_trace_lock_client.py tests/test_gui_live_control_trace_lock.py tests/test_trace_lock_visual_contract.py tests/test_gui_render_resources.py tests/test_resource_managers.py tests/test_minimal_game_template.py tests/test_game_contracts.py tests/test_fake_click_game_client.py tests/test_game_view_render_contract.py tests/test_gui_mouse_to_game_client.py tests/test_game_event_to_platform_mock.py tests/test_gui_live_control.py tests/test_gui_live_readonly.py tests/test_live_stream_check.py tests/test_gui_protocol.py tests/test_gui_facade.py tests/test_gui_bridge.py tests/test_gui_core_source.py tests/test_gui_command_dispatcher.py tests/test_gui_core_control.py tests/test_gui_mouse_input.py tests/test_platform_reporter.py tests/test_replay_adapter.py tests/test_task9_e2e_demo.py tests/test_session_report_writer.py tests/test_runtime_contract.py tests/test_session_manager.py tests/test_game_manager.py tests/test_task8_game_flow.py` | 关键回归集 | `tests/` | 否 | 部分 | 部分 | 关键链路稳定 | regression |
+| `Select-String -Path ui_qml/MinimalGui.qml -Pattern "interval: 100","ScrollView","GameCanvas","Loader","Repeater"` | 禁用结构检查 | `ui_qml/MinimalGui.qml` | 否 | 否 | 否 | 不应命中 | diagnostic |
+| `Select-String -Path gui/*.py,ui_qml/*.qml -Pattern "subprocess","os.system","Popen","run_core_debug","run_user_debug","run_calibration_debug","run_session_debug"` | subprocess 绕行检查 | `gui/*.py,ui_qml/*.qml` | 否 | 否 | 否 | 不应出现 GUI 绕行调用 | diagnostic |
+| `python -m ui_cli.run_game_debug --bridge live --mode user --user-id TEST --host 127.0.0.1 --port 8000 --duration-sec 20 --db-path data/relic_local.db --game-id fake_game --print-jsonl` | Task8 live 对照命令 | `ui_cli/run_game_debug.py` | 是 | 是 | 是 | live pipeline 对照输出 | local-manual |
+
+说明：
+- live-readonly/live-control 需要平台 `127.0.0.1:8000` 先启动。
+- TEST 路径依赖 `data/relic_local.db` 中存在 TEST 用户与 profile。
+- calibration.start 当前仍 `not_implemented`。
+- safe_stop 当前为 `noop/unsupported`，不代表真实平台急停。
+- MinimalGui 是 Developer Diagnostics Console，不是最终正式 GUI 页面。
+
+
+## TASK22 / Game Integration Bus 固化命令
+
+- 文档与契约测试：
+  - `python -m pytest tests/test_game_integration_guide.py tests/test_game_reference_contract.py`
+- game 核心测试：
+  - `python -m pytest tests/test_game_contracts.py tests/test_minimal_game_template.py tests/test_fake_click_game_client.py tests/test_game_view_render_contract.py tests/test_game_event_to_platform_mock.py tests/test_task8_game_flow.py`
+- TraceLock 测试：
+  - `python -m pytest tests/test_trace_lock_client.py tests/test_trace_lock_visual_contract.py tests/test_trace_lock_hud_observability.py tests/test_trace_lock_movement_visibility.py tests/test_gui_live_control_trace_lock.py`
+- game 全集：
+  - `python -m pytest tests -k "game"`
+- mock game pipeline 验收：
+  - `python -m ui_cli.run_game_debug --bridge mock --mode user --user-id TEST --db-path data/relic_local.db --game-id fake_game --duration-sec 5 --print-jsonl`
+- live game pipeline 验收：
+  - `python -m ui_cli.run_game_debug --bridge live --mode user --user-id TEST --host 127.0.0.1 --port 8000 --db-path data/relic_local.db --game-id fake_game --duration-sec 20 --print-jsonl`
+
+说明：
+- TASK22 不恢复 GameCanvas，不做页面切换。
+- 平台 mock/report/replay 只消费标准 GameEvent。
+
+
+## TASK22-FINALIZE / 验收补充（append-only）
+- `run_game_debug` 为无头 CLI pipeline 验收命令，不会打开 GUI 窗口。
+- 若 live 命令出现 `ConnectionRefusedError`，优先检查 `127.0.0.1:8000` 平台是否已启动并就绪。
+- TASK22 成功验收关注：RuntimeSnapshotView / attention/gyro/sqi/fi/control_state / GameViewState / score_update_count / behavior_sample_count / GameEvent 协议 / TraceLock 测试。
+- GUI 页面切换不在 TASK22（属于 TASK23）。
+- GameCanvas 恢复不在 TASK22（属于 TASK24）。
