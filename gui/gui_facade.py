@@ -9,6 +9,7 @@ from .gui_live_readonly_source import GuiLiveReadonlySource
 from .gui_live_control_source import GuiLiveControlSource
 from core.resource_managers import build_render_resource_bundle
 from storage.sqlite_store import SqliteStore
+from .command_registry import build_page_command_manifest
 
 
 class GuiFacade:
@@ -269,6 +270,10 @@ class GuiFacade:
     def get_render_resources(self) -> dict[str, Any]:
         return deepcopy(self._render_resources)
 
+
+    def get_page_command_manifest(self) -> dict[str, Any]:
+        return deepcopy(build_page_command_manifest())
+
     def close(self) -> None:
         if self._core_source:
             self._core_source.close()
@@ -371,6 +376,28 @@ class GuiFacade:
             "calibration_usable": self.last_command_result.get("calibration", {}).get("calibration_usable", "") if isinstance(self.last_command_result, dict) else "",
         }
 
+    def _list_users_summary(self) -> dict[str, Any]:
+        store = SqliteStore(self.db_path)
+        store.connect()
+        try:
+            users = store.list_users()
+            return {"status": "accepted", "user_count": len(users), "users": users}
+        finally:
+            store.close()
+
+    def _create_user_summary(self, user_id: str, display_name: str) -> dict[str, Any]:
+        if not user_id:
+            return {"status": "missing_input", "message": "missing_user_id"}
+        store = SqliteStore(self.db_path)
+        store.connect()
+        try:
+            if store.get_user(user_id):
+                return {"status": "accepted", "message": "user_exists", "user_id": user_id}
+            store.upsert_user({"user_id": user_id, "display_name": display_name or user_id, "user_type": "local_user", "created_at": "", "last_login_at": ""})
+            return {"status": "created", "message": "user_created", "user_id": user_id}
+        finally:
+            store.close()
+
     def invoke_action(self, action_id: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
         payload = payload or {}
         self.last_command = {"command": action_id, "args": deepcopy(payload), "type": "action_id"}
@@ -421,6 +448,29 @@ class GuiFacade:
             result = {"action_id": action_id, "status": "accepted", "result": "cleared", "accepted": True}
         elif action_id == "calibration.start":
             result = {"action_id": action_id, "status": "not_implemented", "result": "not_implemented", "accepted": False, "reason": "requires calibration workflow/progress UI"}
+        elif action_id == "user.list":
+            s = self._list_users_summary()
+            result = {"action_id": action_id, "status": s.get("status"), "result": s, "message": "user_list", "accepted": True}
+        elif action_id == "user.create":
+            uid = str(payload.get("user_id") or "")
+            display_name = str(payload.get("display_name") or uid or "")
+            s = self._create_user_summary(uid, display_name)
+            result = {"action_id": action_id, "status": s.get("status"), "result": s, "message": s.get("message", ""), "accepted": s.get("status") in {"created", "accepted"}}
+        elif action_id == "user.load":
+            uid = str(payload.get("user_id") or self.get_app_state().get("current_user_id") or "")
+            if not uid:
+                result = {"action_id": action_id, "status": "missing_input", "result": "missing_user_id", "accepted": False}
+            else:
+                self.handle_gui_command("load_demo_user", {"user_id": uid})
+                result = {"action_id": action_id, "status": "user_loaded", "result": self.last_command_result, "accepted": True, "user_id": uid}
+        elif action_id in {"calibration.list", "calibration.latest", "calibration.show", "calibration.bind", "calibration.cancel"}:
+            result = {"action_id": action_id, "status": "not_implemented_in_this_task", "result": "not_implemented_in_this_task", "accepted": False}
+        elif action_id == "report.refresh":
+            result = {"action_id": action_id, "status": "accepted", "result": self.get_session_state(), "message": "report_refreshed", "accepted": True}
+        elif action_id in {"report.list", "report.show", "report.export"}:
+            result = {"action_id": action_id, "status": "unsupported_in_current_mode", "result": "unsupported_in_current_mode", "accepted": False}
+        elif action_id == "devlab.run":
+            result = {"action_id": action_id, "status": "not_implemented_in_this_task", "result": payload, "message": "manual_or_copy_only", "accepted": False}
         else:
             cmd = map_cmd.get(action_id)
             if not cmd:
