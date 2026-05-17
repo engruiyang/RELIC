@@ -337,3 +337,23 @@ python tools/inspect_task8c_live.py `
 - calibration.start 当前仍 `not_implemented`。
 - safe_stop 当前为 `noop/unsupported`，不代表真实平台急停。
 - MinimalGui 是 Developer Diagnostics Console，不是最终正式 GUI 页面。
+
+
+## TASK22 / Game Integration Bus 固化命令
+
+- 文档与契约测试：
+  - `python -m pytest tests/test_game_integration_guide.py tests/test_game_reference_contract.py`
+- game 核心测试：
+  - `python -m pytest tests/test_game_contracts.py tests/test_minimal_game_template.py tests/test_fake_click_game_client.py tests/test_game_view_render_contract.py tests/test_game_event_to_platform_mock.py tests/test_task8_game_flow.py`
+- TraceLock 测试：
+  - `python -m pytest tests/test_trace_lock_client.py tests/test_trace_lock_visual_contract.py tests/test_trace_lock_hud_observability.py tests/test_trace_lock_movement_visibility.py tests/test_gui_live_control_trace_lock.py`
+- game 全集：
+  - `python -m pytest tests -k "game"`
+- mock game pipeline 验收：
+  - `python -m ui_cli.run_game_debug --bridge mock --mode user --user-id TEST --db-path data/relic_local.db --game-id fake_game --duration-sec 5 --print-jsonl`
+- live game pipeline 验收：
+  - `python -m ui_cli.run_game_debug --bridge live --mode user --user-id TEST --host 127.0.0.1 --port 8000 --db-path data/relic_local.db --game-id fake_game --duration-sec 20 --print-jsonl`
+
+说明：
+- TASK22 不恢复 GameCanvas，不做页面切换。
+- 平台 mock/report/replay 只消费标准 GameEvent。
