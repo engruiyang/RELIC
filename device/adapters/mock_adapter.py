@@ -19,6 +19,11 @@ class MockAdapter:
 
         if self.mode == "stream_drop" and self.tick >= 20:
             events[1] = {"type": "stream_status", "alive": False, "active": False, "reason": "stream_drop"}
+        if self.mode == "reconnect_recovery":
+            if 30 <= self.tick <= 80:
+                events[1] = {"type": "stream_status", "alive": False, "active": False, "reason": "stream_inactive"}
+            elif self.tick > 80:
+                events[1] = {"type": "stream_status", "alive": True, "active": True, "reason": "stream_recovered"}
 
         if self._should_emit_attention():
             att = 70 + (self.tick % 15)
@@ -30,13 +35,13 @@ class MockAdapter:
         if self._should_emit_gyro():
             k = float(self.tick)
             gyro_event = {"type": "gyroscope", "x": 0.1 * k, "y": 0.2 * k, "z": -0.1 * k}
-            if self.mode == "focus_jump" and self.tick % 15 == 0:
+            if self.mode == "focus_jump" and self.tick % 5 == 0:
                 gyro_event["quality_reasons"] = ["focus_jump"]
-            if self.mode == "gyro_spike" and self.tick % 12 == 0:
+            if self.mode == "gyro_spike" and self.tick % 6 == 0:
                 gyro_event["quality_reasons"] = list(gyro_event.get("quality_reasons", [])) + ["gyro_spike"]
             events.append(gyro_event)
 
-        if self.mode == "partial_stale" and self.tick % 20 == 0:
+        if self.mode == "partial_stale" and self.tick % 8 == 0:
             events.append({"type": "diagnostic", "quality_reasons": ["gyro_stale"]})
 
         return events
@@ -60,6 +65,8 @@ class MockAdapter:
         return True
 
 
-    def poll(self, dt_ms: int | None = None) -> list[dict]:
+    def poll(self, dt_ms: int | None = None, mode: str | None = None) -> list[dict]:
         """Compatibility API for legacy callers/tests."""
+        if mode:
+            self.mode = mode
         return self.read()

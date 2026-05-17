@@ -46,8 +46,12 @@ class DataCenter:
         reasons = []
         if isinstance(event.get("quality_reasons"), list):
             reasons.extend(str(x) for x in event.get("quality_reasons", []))
+        if event.get("quality_reason") is not None:
+            reasons.append(str(event.get("quality_reason")))
         if isinstance(event.get("warning_flags"), list):
             reasons.extend(str(x) for x in event.get("warning_flags", []))
+        if isinstance(event.get("error_flags"), list):
+            reasons.extend(str(x) for x in event.get("error_flags", []))
         if event.get("reason") is not None:
             reasons.append(str(event.get("reason")))
         for r in reasons:
@@ -58,7 +62,16 @@ class DataCenter:
         self._append_event_reasons(event)
         event_type = event.get("type")
         if event_type == "device_status":
-            self._snapshot.device_connected = bool(event.get("connected", False))
+            connected_raw = event.get("connected", event.get("device_connected", False))
+            self._snapshot.device_connected = bool(connected_raw)
+            if "stream_alive" in event:
+                self._snapshot.stream_alive = bool(event.get("stream_alive"))
+            elif "bridge_alive" in event:
+                self._snapshot.stream_alive = bool(event.get("bridge_alive"))
+            if "sensor_stream_active" in event:
+                self._snapshot.sensor_stream_active = bool(event.get("sensor_stream_active"))
+            elif "bridge_alive" in event:
+                self._snapshot.sensor_stream_active = bool(event.get("bridge_alive"))
             if not self._snapshot.device_connected:
                 self._snapshot.stream_alive = False
                 self._snapshot.sensor_stream_active = False
