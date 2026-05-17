@@ -61,6 +61,7 @@ class DataCenter:
     def _apply_event(self, event: dict, now_ms: int) -> None:
         self._append_event_reasons(event)
         event_type = event.get("type")
+
         if event_type == "device_status":
             connected_raw = event.get("connected", event.get("device_connected", False))
             self._snapshot.device_connected = bool(connected_raw)
@@ -75,13 +76,16 @@ class DataCenter:
             if not self._snapshot.device_connected:
                 self._snapshot.stream_alive = False
                 self._snapshot.sensor_stream_active = False
+
         elif event_type == "stream_status":
             self._snapshot.stream_alive = bool(event.get("alive", False))
             self._snapshot.sensor_stream_active = bool(event.get("active", False))
+
         elif event_type == "attention":
             self._snapshot.attention = event.get("value")
             self._snapshot.attention_last_update_ms = now_ms
             self._snapshot.attention_seen_once = True
+
         elif event_type == "gyroscope":
             self._snapshot.gyro_x = event.get("x")
             self._snapshot.gyro_y = event.get("y")
@@ -161,7 +165,7 @@ class DataCenter:
         s.display_data_available = s.device_connected and (s.attention_seen_once or s.gyro_seen_once)
         s.focus_seen_once = bool(s.focus_seen_once or s.gyro_seen_once)
 
-        s.training_data_valid = (
+        raw_training_data_valid = (
             s.device_connected
             and s.stream_alive
             and s.sensor_stream_active
@@ -171,6 +175,20 @@ class DataCenter:
             and s.gyro_seen_once
             and s.gyro_fresh
             and not s.error_flags
+        )
+
+        frame_key = (s.attention_last_update_ms, s.gyro_last_update_ms)
+        if raw_training_data_valid:
+            if frame_key != self._last_valid_frame_key:
+                self._valid_signal_frames += 1
+                self._last_valid_frame_key = frame_key
+        else:
+            self._valid_signal_frames = 0
+            self._last_valid_frame_key = None
+
+        s.training_data_valid = (
+            raw_training_data_valid
+            and self._valid_signal_frames >= self._warmup_frames_required
         )
 
         s.quality = "ok"

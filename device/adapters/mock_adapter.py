@@ -51,12 +51,15 @@ class MockAdapter:
         if self.mode in {"attention_missing_start", "missing_start"}:
             if self.tick <= 40:
                 return False
+
         if self.mode == "attention_short_dropout":
             if 25 <= self.tick <= 65:
                 return False
+
         if self.mode == "attention_long_lost":
             if self.tick >= 25:
                 return False
+
         return self.tick % 20 == 0
 
     def _should_emit_gyro(self) -> bool:
