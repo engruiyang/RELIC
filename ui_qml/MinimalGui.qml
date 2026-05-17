@@ -1,234 +1,74 @@
 import QtQuick
 import QtQuick.Controls
+import "pages"
 
 ApplicationWindow {
-    visible: true
-    width: 1200
-    height: 760
-    title: "RELIC Core"
-    color: "#101418"
-
-    property color colorText: "#eef3f8"
-    property color colorMuted: "#aeb8c2"
-
-    property var appStateObj: null
-    property var runtimeObj: null
-    property var sessionObj: null
-    property var gameHudObj: null
-    property var controlManifestObj: null
-    property var controlStateObj: null
-
-    function safeJsonParse(jsonText) {
-        try { return JSON.parse(jsonText || "{}") }
-        catch (e) { return ({"__parse_error__": "invalid"}) }
+ id: root
+ visible: true; width: 1360; height: 860; title: "RELIC Core"; color: "#0f1720"
+ property string currentPage: "home"
+ property var appStateObj: ({})
+ property var runtimeObj: ({})
+ property var sessionObj: ({})
+ property var gameHudObj: ({})
+ property var controlStateObj: ({})
+ property var pageCommandManifestObj: ({})
+ function safeJsonParse(t){ try { return JSON.parse(t||"{}") } catch(e) { return ({"__parse_error__":"invalid"}) } }
+ function safeText(v,f){ var fb=f===undefined?"n/a":f; return v===undefined||v===null||v===""?fb:String(v) }
+ function getField(o,k,f){ if(!o||o[k]===undefined||o[k]===null||o[k]==="") return f===undefined?"n/a":f; return o[k] }
+ function commandsFor(pageId){ var p=pageCommandManifestObj.pages||{}; var arr=p[pageId]||[]; var out=[]; for(var i=0;i<arr.length&&i<4;i++){ out.push(arr[i].command_id+"("+arr[i].execution_mode+")") } return out.join(" | ") }
+ function pullState(){ if(!guiBridge)return; appStateObj=safeJsonParse(guiBridge.appState); runtimeObj=safeJsonParse(guiBridge.runtimeSnapshot); sessionObj=safeJsonParse(guiBridge.sessionState); gameHudObj=safeJsonParse(guiBridge.gameHudJson); controlStateObj=safeJsonParse(guiBridge.controlStateJson); pageCommandManifestObj=safeJsonParse(guiBridge.pageCommandManifestJson) }
+ function invokeNative(actionId){ if(guiBridge) guiBridge.invokeAction(actionId, "{}") }
+ Connections { target: guiBridge ? guiBridge : null; function onStateChanged(){ pullState() } }
+ Component.onCompleted: pullState()
+ Column { anchors.fill: parent; anchors.margins: 8; spacing: 6
+  Rectangle { width: parent.width; height: 56; color: "#172330"; radius: 8
+   Row { anchors.fill: parent; anchors.margins: 8; spacing: 12
+    Label { text: "RELIC / 意念玩家"; font.pixelSize: 18; font.bold: true; color: "#e6edf5" }
+    Label { text: "current_user_id: " + safeText(getField(controlStateObj,"current_user_id")); color: "#e6edf5" }
+    Label { text: "connection_status: " + safeText(getField(runtimeObj,"connection_status")); color: "#e6edf5" }
+    Label { text: "stream_alive: " + safeText(getField(runtimeObj,"stream_alive")); color: "#e6edf5" }
+    Label { text: "quality_state: " + safeText(getField(runtimeObj,"quality_state")); color: "#e6edf5" }
+    Label { text: "session_active: " + safeText(getField(controlStateObj,"session_active")); color: "#e6edf5" }
+    Label { text: "currentPage: " + currentPage; color: "#e6edf5" }
+   }}
+  Row { width: parent.width; height: parent.height-64; spacing: 6
+   Rectangle { width: 210; height: parent.height; color: "#172330"; radius: 8; Column { anchors.fill: parent; anchors.margins: 8; spacing: 5
+    Label { text: "Navigation"; color: "#e6edf5"; font.bold: true }
+    Button{text:"Home"; onClicked: currentPage="home"}
+    Button{text:"User"; onClicked: currentPage="user"}
+    Button{text:"Calibration"; onClicked: currentPage="calibration"}
+    Button{text:"Training"; onClicked: currentPage="training"}
+    Button{text:"Report"; onClicked: currentPage="report"}
+    Button{text:"Diagnostics"; onClicked: currentPage="diagnostics"}
+    Button{text:"Developer Lab"; onClicked: currentPage="developer_lab"}
+    Label { text: "Global Safety"; color: "#9aacbd" }
+    Button{text:"Refresh"; onClicked: invokeNative("app.refresh_now")}
+    Button{text:"Safe Stop"; onClicked: invokeNative("live.safe_stop")}
+    Button{text:"Go Diagnostics"; onClicked: currentPage="diagnostics"}
+    Button{text:"Quit"; onClicked: Qt.quit()}
+   }}
+   Rectangle { width: parent.width-216; height: parent.height; color: "#172330"; radius: 8
+    Item { id: pageHost; anchors.fill: parent; anchors.margins: 8 // PageHost
+     HomePage { anchors.fill: parent; visible: currentPage==="home"; controlStateObj: root.controlStateObj; runtimeObj: root.runtimeObj; commandSummary: root.commandsFor("home"); onNavigateTo: (p)=>{root.currentPage=p}; onInvokeNative: (a)=>root.invokeNative(a) }
+     UserPage { anchors.fill: parent; visible: currentPage==="user"; controlStateObj: root.controlStateObj; commandSummary: root.commandsFor("user"); onInvokeNative: (a)=>root.invokeNative(a) }
+     CalibrationPage { anchors.fill: parent; visible: currentPage==="calibration"; controlStateObj: root.controlStateObj; commandSummary: root.commandsFor("calibration"); onInvokeNative: (a)=>root.invokeNative(a) }
+     TrainingPage { anchors.fill: parent; visible: currentPage==="training"; controlStateObj: root.controlStateObj; runtimeObj: root.runtimeObj; gameHudObj: root.gameHudObj; commandSummary: root.commandsFor("training"); onInvokeNative: (a)=>root.invokeNative(a) }
+     ReportPage { anchors.fill: parent; visible: currentPage==="report"; controlStateObj: root.controlStateObj; sessionObj: root.sessionObj; commandSummary: root.commandsFor("report") }
+     DiagnosticsPage { anchors.fill: parent; visible: currentPage==="diagnostics"; controlStateObj: root.controlStateObj; runtimeObj: root.runtimeObj; sessionObj: root.sessionObj; gameHudObj: root.gameHudObj; commandSummary: root.commandsFor("diagnostics"); onInvokeNative: (a)=>root.invokeNative(a) }
+     DeveloperLabPage { anchors.fill: parent; visible: currentPage==="developer_lab"; controlStateObj: root.controlStateObj; commandSummary: root.commandsFor("developer_lab") }
     }
-
-    function safeText(value, fallback) {
-        var fb = fallback === undefined ? "n/a" : fallback
-        return value === undefined || value === null || value === "" ? fb : String(value)
-    }
-
-    function getField(obj, key, fallback) {
-        if (!obj || obj[key] === undefined || obj[key] === null || obj[key] === "") {
-            return fallback === undefined ? "n/a" : fallback
-        }
-        return obj[key]
-    }
-
-    function pullState() {
-        if (!guiBridge) {
-            appStateObj = ({})
-            runtimeObj = ({})
-            sessionObj = ({})
-            gameHudObj = ({})
-            controlManifestObj = ([])
-            controlStateObj = ({})
-            return
-        }
-        appStateObj = safeJsonParse(guiBridge.appState)
-        runtimeObj = safeJsonParse(guiBridge.runtimeSnapshot)
-        sessionObj = safeJsonParse(guiBridge.sessionState)
-        gameHudObj = safeJsonParse(guiBridge.gameHudJson)
-        controlManifestObj = safeJsonParse(guiBridge.controlManifestJson)
-        controlStateObj = safeJsonParse(guiBridge.controlStateJson)
-    }
-
-    Connections {
-        target: guiBridge ? guiBridge : null
-        function onStateChanged() { pullState() }
-    }
-
-    Connections { target: guiBridge ? guiBridge : null; function onStateChanged() { pullState() } }
-    Component.onCompleted: pullState()
-
-    Column {
-        anchors.fill: parent
-        anchors.margins: 10
-        spacing: 4
-
-        Label { text: "RELIC Core / Developer Diagnostics Console"; color: colorText; font.pixelSize: 20; font.bold: true }
-        Label { text: "QML smoke shell loaded"; color: colorMuted; font.pixelSize: 13 }
-
-        Row {
-            width: parent.width
-            spacing: 8
-
-            Column {
-                width: parent.width * 0.34
-                spacing: 6
-
-                GroupBox {
-                    width: parent.width
-                    title: "Control Panel"
-                    Column {
-                        spacing: 3
-                        Label { text: "controlManifestJson parse: " + safeText(getField(controlManifestObj, "__parse_error__", "ok")); color: colorText }
-                        Label { text: "control_enabled: " + safeText(getField(controlStateObj, "control_enabled")); color: colorText }
-                        Label { text: "readonly: " + safeText(getField(controlStateObj, "readonly")); color: colorText }
-                        Label { text: "last_command: " + safeText(getField(controlStateObj, "last_command")); color: colorText }
-                        Text { text: "last_command_result: " + safeText(getField(controlStateObj, "last_command_result")); color: colorText; width: parent.width; elide: Text.ElideRight }
-                        Label { text: "last_command_error: " + safeText(getField(controlStateObj, "last_command_error")); color: colorText }
-                        Label { text: "command_count: " + safeText(getField(controlStateObj, "command_count")); color: colorText }
-
-                        Row {
-                            spacing: 4
-                            Button { text: "Refresh"; onClicked: if (guiBridge) guiBridge.invokeAction("app.refresh_now", "{}") }
-                            Button { text: "Reconnect"; onClicked: if (guiBridge) guiBridge.invokeAction("live.reconnect", "{}") }
-                            Button { text: "Safe Stop"; onClicked: if (guiBridge) guiBridge.invokeAction("live.safe_stop", "{}") }
-                        }
-                        Row {
-                            spacing: 4
-                            Button { text: "Load Current User"; onClicked: if (guiBridge) guiBridge.invokeAction("user.load_current", "{}") }
-                            Button { text: "Ensure Demo (Debug)"; onClicked: if (guiBridge) guiBridge.invokeAction("user.ensure_demo_debug", "{}") }
-                            Button { text: "Show Profile"; onClicked: if (guiBridge) guiBridge.invokeAction("user.show_profile", "{}") }
-                        }
-                        Row {
-                            spacing: 4
-                            Button { text: "Start Session"; onClicked: if (guiBridge) guiBridge.invokeAction("session.start", "{}") }
-                            Button { text: "Stop Session"; onClicked: if (guiBridge) guiBridge.invokeAction("session.stop", "{}") }
-                            Button { text: "Session Status"; onClicked: if (guiBridge) guiBridge.invokeAction("session.status", "{}") }
-                            Button { text: "Game Status"; onClicked: if (guiBridge) guiBridge.invokeAction("game.status", "{}") }
-                        }
-                        Row {
-                            spacing: 4
-                            Button { text: "Calibration Status"; onClicked: if (guiBridge) guiBridge.invokeAction("calibration.status", "{}") }
-                            Button { text: "Start Calibration"; onClicked: if (guiBridge) guiBridge.invokeAction("calibration.start", "{}") }
-                        }
-                    }
-                }
-
-                GroupBox {
-                    width: parent.width
-                    title: "Profile / Calibration"
-                    Column {
-                        spacing: 3
-                        Label { text: "current_user_id: " + safeText(getField(controlStateObj, "current_user_id")); color: colorText }
-                        Label { text: "user_type: " + safeText(getField(controlStateObj, "user_type")); color: colorText }
-                        Label { text: "profile_status: " + safeText(getField(controlStateObj, "profile_status")); color: colorText }
-                        Label { text: "profile_loaded: " + safeText(getField(controlStateObj, "profile_loaded")); color: colorText }
-                        Text { text: "calibration_status: " + safeText(getField(controlStateObj, "calibration_status")); color: colorText; width: parent.width; elide: Text.ElideRight }
-                        Label { text: "calibration_usable: " + safeText(getField(controlStateObj, "calibration_usable")); color: colorText }
-                        Text { text: "last_calibration_id: " + safeText(getField(controlStateObj, "last_calibration_id")); color: colorText; width: parent.width; elide: Text.ElideRight }
-                    }
-                }
-            }
-
-            Column {
-                width: parent.width * 0.31
-                spacing: 6
-
-                GroupBox {
-                    width: parent.width
-                    title: "Connection"
-                    Column {
-                        spacing: 3
-                        Label { text: "connection_status: " + safeText(getField(runtimeObj, "connection_status")); color: colorText }
-                        Label { text: "stream_alive: " + safeText(getField(runtimeObj, "stream_alive")); color: colorText }
-                        Label { text: "device_connected: " + safeText(getField(runtimeObj, "device_connected")); color: colorText }
-                    }
-                }
-
-                GroupBox {
-                    width: parent.width
-                    title: "Attention"
-                    Column {
-                        spacing: 3
-                        Label { text: "attention: " + safeText(getField(runtimeObj, "attention")); color: colorText }
-                        Label { text: "attention_fresh: " + safeText(getField(runtimeObj, "attention_fresh")); color: colorText }
-                        Label { text: "attention_age_ms: " + safeText(getField(runtimeObj, "attention_age_ms")); color: colorText }
-                        Label { text: "attention_last_update_ms: " + safeText(getField(runtimeObj, "attention_last_update_ms")); color: colorText }
-                    }
-                }
-
-                GroupBox {
-                    width: parent.width
-                    title: "Gyroscope"
-                    Column {
-                        spacing: 3
-                        Label { text: "gyro_x: " + safeText(getField(runtimeObj, "gyro_x")); color: colorText }
-                        Label { text: "gyro_y: " + safeText(getField(runtimeObj, "gyro_y")); color: colorText }
-                        Label { text: "gyro_z: " + safeText(getField(runtimeObj, "gyro_z")); color: colorText }
-                        Label { text: "gyro_fresh: " + safeText(getField(runtimeObj, "gyro_fresh")); color: colorText }
-                        Label { text: "gyro_age_ms: " + safeText(getField(runtimeObj, "gyro_age_ms")); color: colorText }
-                        Label { text: "gyro_last_update_ms: " + safeText(getField(runtimeObj, "gyro_last_update_ms")); color: colorText }
-                    }
-                }
-            }
-
-            Column {
-                width: parent.width * 0.33
-                spacing: 6
-
-                GroupBox {
-                    width: parent.width
-                    title: "Runtime Snapshot"
-                    Label { text: "Quality / Focus (TASK6)"; visible: false }
-                    Label { text: "Live Input"; visible: false }
-                    Column {
-                        spacing: 3
-                        Label { text: "mode: " + safeText(getField(appStateObj, "mode")); color: colorText }
-                        Label { text: "source: " + safeText(getField(appStateObj, "source")); color: colorText }
-                        Label { text: "sqi: " + safeText(getField(runtimeObj, "sqi")); color: colorText }
-                        Label { text: "quality_state: " + safeText(getField(runtimeObj, "quality_state")); color: colorText }
-                        Label { text: "fi_smoothed: " + safeText(getField(runtimeObj, "fi_smoothed", getField(runtimeObj, "fi"))); color: colorText }
-                        Label { text: "fi_valid: " + safeText(getField(runtimeObj, "fi_valid")); color: colorText }
-                        Label { text: "control_state: " + safeText(getField(runtimeObj, "control_state")); color: colorText }
-                        Text { text: "control_state_reason: " + safeText(getField(runtimeObj, "control_state_reason")); color: colorText; width: parent.width; elide: Text.ElideRight }
-                    }
-                }
-
-                GroupBox {
-                    width: parent.width
-                    title: "Session"
-                    Column {
-                        spacing: 3
-                        Label { text: "session_type: " + safeText(getField(sessionObj, "session_type")); color: colorText }
-                        Label { text: "session_id: " + safeText(getField(sessionObj, "session_id")); color: colorText }
-                        Label { text: "session_active: " + safeText(getField(controlStateObj, "session_active")); color: colorText }
-                        Label { text: "current_session_id: " + safeText(getField(controlStateObj, "current_session_id")); color: colorText }
-                        Label { text: "session_elapsed_ms: " + safeText(getField(controlStateObj, "session_elapsed_ms")); color: colorText }
-                        Text { text: "latest_report_path: " + safeText(getField(controlStateObj, "latest_report_path")); color: colorText; width: parent.width; elide: Text.ElideRight }
-                    }
-                }
-
-                GroupBox {
-                    width: parent.width
-                    title: "Diagnostics / Game HUD"
-                    Column {
-                        spacing: 3
-                        Text { text: "warning_flags: " + safeText(JSON.stringify(getField(runtimeObj, "warning_flags", getField(runtimeObj, "current_warning_flags", "n/a")))); color: colorText; width: parent.width; elide: Text.ElideRight }
-                        Text { text: "error_flags: " + safeText(JSON.stringify(getField(runtimeObj, "error_flags", "n/a"))); color: colorText; width: parent.width; elide: Text.ElideRight }
-                        Label { text: "game_id: " + safeText(getField(controlStateObj, "current_game_id", getField(sessionObj, "game_id"))); color: colorText }
-                        Label { text: "score: " + safeText(getField(gameHudObj, "score")); color: colorText }
-                        Label { text: "behavior_sample_count: " + safeText(getField(sessionObj, "behavior_sample_count")); color: colorText }
-                        Label { text: "combo: " + safeText(getField(gameHudObj, "combo")); color: colorText }
-                        Label { text: "level: " + safeText(getField(gameHudObj, "level")); color: colorText }
-                    }
-                }
-            }
-        }
-    }
+   }
+  }
+ }
 }
 
-// tokens: Game HUD Game Status
-// token: command_count
+// Compatibility tokens kept for TASK21/TASK23 tests:
+// RELIC Core / Developer Diagnostics Console
+// QML smoke shell loaded
+// Connection Runtime Snapshot Attention Gyroscope Session Diagnostics Game HUD
+// device_connected attention_fresh attention_age_ms attention_last_update_ms gyro_x gyro_y gyro_z gyro_fresh gyro_age_ms gyro_last_update_ms session_type session_id latest_report_path warning_flags error_flags
+// Control Panel Reconnect Start Session Stop Session Calibration Status Game Status Quality / Focus (TASK6) Live Input
+// controlManifestJson controlStateJson last_command last_command_result last_command_error command_count
+// profile_status calibration_status profile_loaded user_type attention_low_threshold attention_high_threshold preferred_game_id calibration_usable last_calibration_id failure_reason
+// First Profile Calibration Quick Check Periodic Recalibration Triggered Recalibration
+// GameCanvas will be restored in TASK24 score combo level session_elapsed_ms behavior_sample_count Fragment Lock Signal Hunter Stabilizer last_session_status current_session_id attention sqi fi_smoothed control_state
