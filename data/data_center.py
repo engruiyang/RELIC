@@ -18,7 +18,7 @@ class DataCenter:
         self._attention_lost_ms = attention_lost_ms
         self._gyro_fresh_ms = gyro_fresh_ms
         self._gyro_lost_ms = gyro_lost_ms
-       self._event_quality_reasons: list[str] = []
+        self._event_quality_reasons: list[str] = []
         self._valid_signal_frames: int = 0
         self._last_valid_frame_key: tuple[int | None, int | None] | None = None
         self._warmup_frames_required: int = 5
@@ -165,30 +165,30 @@ class DataCenter:
         s.focus_seen_once = bool(s.focus_seen_once or s.gyro_seen_once)
 
         raw_training_data_valid = (
-    s.device_connected
-    and s.stream_alive
-    and s.sensor_stream_active
-    and s.attention_seen_once
-    and s.attention is not None
-    and s.attention_fresh
-    and s.gyro_seen_once
-    and s.gyro_fresh
-    and not s.error_flags
-)
+            s.device_connected
+            and s.stream_alive
+            and s.sensor_stream_active
+            and s.attention_seen_once
+            and s.attention is not None
+            and s.attention_fresh
+            and s.gyro_seen_once
+            and s.gyro_fresh
+            and not s.error_flags
+        )
 
-frame_key = (s.attention_last_update_ms, s.gyro_last_update_ms)
-if raw_training_data_valid:
-    if frame_key != self._last_valid_frame_key:
-        self._valid_signal_frames += 1
-        self._last_valid_frame_key = frame_key
-else:
-    self._valid_signal_frames = 0
-    self._last_valid_frame_key = None
+        frame_key = (s.attention_last_update_ms, s.gyro_last_update_ms)
+        if raw_training_data_valid:
+            if frame_key != self._last_valid_frame_key:
+                self._valid_signal_frames += 1
+             self._last_valid_frame_key = frame_key
+        else:
+             self._valid_signal_frames = 0
+             self._last_valid_frame_key = None
 
-s.training_data_valid = (
-    raw_training_data_valid
-    and self._valid_signal_frames >= self._warmup_frames_required
-)
+        s.training_data_valid = (
+             raw_training_data_valid
+             and self._valid_signal_frames >= self._warmup_frames_required
+        )
 
         s.quality = "ok"
         if s.error_flags:
