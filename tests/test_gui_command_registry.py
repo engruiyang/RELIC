@@ -43,7 +43,11 @@ def test_bridge_exposes_page_command_manifest_json() -> None:
 
 def test_qml_has_page_commands_summary_and_banned_tokens() -> None:
     qml = Path('ui_qml/MinimalGui.qml').read_text(encoding='utf-8')
-    assert 'Page Commands' in qml
     assert 'pageCommandManifestJson' in qml
+    for page_ref in ['HomePage', 'UserPage', 'CalibrationPage', 'TrainingPage', 'ReportPage', 'DiagnosticsPage', 'DeveloperLabPage']:
+        assert page_ref in qml
+    for page in ['HomePage.qml','UserPage.qml','CalibrationPage.qml','TrainingPage.qml','ReportPage.qml','DiagnosticsPage.qml','DeveloperLabPage.qml']:
+        text = Path('ui_qml/pages/' + page).read_text(encoding='utf-8')
+        assert 'Page Commands' in text
     for banned in ['subprocess', 'Popen', 'os.system', 'GameCanvas {', 'Loader', 'Repeater', 'interval: 100']:
         assert banned not in qml
