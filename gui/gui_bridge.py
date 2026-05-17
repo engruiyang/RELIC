@@ -18,6 +18,7 @@ class GuiBridge(QObject):
     gameHudJsonChanged = Signal()
     controlManifestJsonChanged = Signal()
     controlStateJsonChanged = Signal()
+    pageCommandManifestJsonChanged = Signal()
 
     def __init__(self, facade: GuiFacade) -> None:
         super().__init__()
@@ -53,6 +54,7 @@ class GuiBridge(QObject):
         self._last_platform_result = ""
         self._control_manifest_json = "[]"
         self._control_state_json = "{}"
+        self._page_command_manifest_json = "{}"
         self.update_state_from_facade()
 
     def update_state_from_facade(self) -> None:
@@ -62,6 +64,7 @@ class GuiBridge(QObject):
         next_game_hud_json = dumps(self._facade.get_game_hud(), ensure_ascii=False)
         next_control_manifest_json = dumps(self._facade.get_control_manifest(), ensure_ascii=False)
         next_control_state_json = dumps(self._facade.get_control_state(), ensure_ascii=False)
+        next_page_command_manifest_json = dumps(self._facade.get_page_command_manifest(), ensure_ascii=False)
 
         changed = False
         if next_app_state != self._app_state:
@@ -87,6 +90,10 @@ class GuiBridge(QObject):
         if next_control_state_json != self._control_state_json:
             self._control_state_json = next_control_state_json
             self.controlStateJsonChanged.emit()
+            changed = True
+        if next_page_command_manifest_json != self._page_command_manifest_json:
+            self._page_command_manifest_json = next_page_command_manifest_json
+            self.pageCommandManifestJsonChanged.emit()
             changed = True
 
         self._game_view_json = dumps(self._facade.get_game_view())
@@ -150,6 +157,10 @@ class GuiBridge(QObject):
     @Property(str, notify=controlStateJsonChanged)
     def controlStateJson(self) -> str:
         return self._control_state_json
+
+    @Property(str, notify=pageCommandManifestJsonChanged)
+    def pageCommandManifestJson(self) -> str:
+        return self._page_command_manifest_json
 
     @Property(int, notify=stateChanged)
     def commandCount(self) -> int:
