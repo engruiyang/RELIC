@@ -27,6 +27,7 @@ class RealtimeSnapshot:
     display_data_available: bool = False
     training_data_valid: bool = False
     control_data_valid: bool = False
+    recovering: bool = False
 
     quality: str = "warning"
     quality_reasons: list[str] = field(default_factory=list)
