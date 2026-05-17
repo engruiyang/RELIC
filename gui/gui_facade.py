@@ -9,6 +9,7 @@ from .gui_live_readonly_source import GuiLiveReadonlySource
 from .gui_live_control_source import GuiLiveControlSource
 from core.resource_managers import build_render_resource_bundle
 from storage.sqlite_store import SqliteStore
+from .command_registry import build_page_command_manifest
 
 
 class GuiFacade:
@@ -268,6 +269,10 @@ class GuiFacade:
 
     def get_render_resources(self) -> dict[str, Any]:
         return deepcopy(self._render_resources)
+
+
+    def get_page_command_manifest(self) -> dict[str, Any]:
+        return deepcopy(build_page_command_manifest())
 
     def close(self) -> None:
         if self._core_source:
