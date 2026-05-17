@@ -137,6 +137,7 @@ class DataCenter:
         )
 
 
-    def tick(self, now_ms: int, events: list[dict] | None = None) -> None:
+    def tick(self, now_ms: int, events: list[dict] | None = None) -> RealtimeSnapshot:
         """Compatibility API for legacy callers/tests."""
         self.ingest_events(events or [], now_ms=now_ms)
+        return self.get_snapshot()
