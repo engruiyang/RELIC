@@ -5,6 +5,7 @@ import "../components"
 Item {
     property var controlStateObj: ({})
     property string commandSummary: ""
+    property var actionResultObj: ({})
     property string selectedCommandId: ""
     property string selectedStatus: ""
     property string selectedExecutionMode: ""
@@ -39,13 +40,13 @@ Item {
             title: "Calibration Page Actions"
             Column {
                 Button { text: "Calibration Status"; onClicked: pick("calibration.status", "native_ready", "native", "calibration.status") }
-                Button { text: "List Calibrations"; onClicked: pick("calibration.list", "active", "copy_only", "") }
-                Button { text: "Latest Calibration"; onClicked: pick("calibration.latest", "active", "copy_only", "") }
-                Button { text: "Show Calibration"; onClicked: pick("calibration.show", "active", "copy_only", "") }
-                Button { text: "Bind Calibration"; onClicked: pick("calibration.bind", "active", "manual", "") }
-                Button { text: "Start First Profile Calibration"; enabled: false }
-                Button { text: "Start Quick Check"; enabled: false }
-                Button { text: "Cancel Calibration"; onClicked: pick("calibration.cancel", "active", "manual", "") }
+                Button { text: "List Calibrations"; onClicked: pick("calibration.list", "native_ready", "native", "calibration.list") }
+                Button { text: "Latest Calibration"; onClicked: pick("calibration.latest", "native_ready", "native", "calibration.latest") }
+                Button { text: "Show Calibration"; onClicked: pick("calibration.show", "native_ready", "native", "calibration.show") }
+                Button { text: "Bind Calibration"; onClicked: pick("calibration.bind", "native_ready", "native", "calibration.bind") }
+                Button { text: "Start First Profile Calibration"; onClicked: pick("calibration.start", "native_ready", "native", "calibration.start") }
+                Button { text: "Start Quick Check"; onClicked: pick("calibration.start", "native_ready", "native", "calibration.start") }
+                Button { text: "Cancel Calibration"; onClicked: pick("calibration.cancel", "native_ready", "native", "calibration.cancel") }
             }
         }
 
@@ -81,9 +82,9 @@ Item {
         GroupBox {
             title: "Dynamic Content"
             Column {
-                PageListPanel { width: parent.width; height: 80; items: (controlStateObj.items || []) }
-                PageDetailPanel { width: parent.width; height: 80; detailObj: (controlStateObj || {}) }
-                PageResultPanel { width: parent.width; actionResult: (controlStateObj.last_action_result || {"status":"n/a"}) }
+                PageListPanel { width: parent.width; height: 80; items: (actionResultObj.items || []) }
+                PageDetailPanel { width: parent.width; height: 80; detailObj: (actionResultObj.detail || {}) }
+                PageResultPanel { width: parent.width; actionResult: (actionResultObj || {"status":"n/a"}) }
             }
         }
 

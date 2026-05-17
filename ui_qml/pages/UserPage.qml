@@ -4,6 +4,7 @@ import "../components"
 Item {
  property var controlStateObj: ({})
  property string commandSummary: ""
+ property var actionResultObj: ({})
  property string selectedCommandId: ""
  property string selectedStatus: ""
  property string selectedExecutionMode: ""
@@ -14,13 +15,13 @@ Item {
  Column { anchors.fill: parent; spacing: 6
   PageHeader { titleText: "User Page"; subtitleText: "User/Profile actions" }
   GroupBox { title: "User Page Actions"; Column {
-   Button { text: "List Users"; onClicked: pick("user.list","active","copy_only","","python -m ui_cli.run_user_debug --list-users") }
-   Button { text: "Create User"; onClicked: pick("user.create","active","manual","","") }
-   Button { text: "Load User"; onClicked: pick("user.load","active","manual","","") }
+   Button { text: "List Users"; onClicked: pick("user.list","native_ready","native","user.list","") }
+   Button { text: "Create User"; onClicked: pick("user.create","native_ready","native","user.create","") }
+   Button { text: "Load User"; onClicked: pick("user.load","native_ready","native","user.load","") }
    Button { text: "Load Current User"; onClicked: pick("user.load_current","native_ready","native","user.load_current","") }
    Button { text: "Show Profile"; onClicked: pick("user.show_profile","native_ready","native","user.show_profile","") }
    Button { text: "Guest Mode"; onClicked: pick("user.guest","active","manual","","") }
-   Button { text: "Ensure Demo Debug"; onClicked: pick("user.load_demo_debug","active","manual","","") }
+   Button { text: "Ensure Demo Debug"; onClicked: pick("user.ensure_demo_debug","native_ready","native","user.ensure_demo_debug","") }
   }}
   GroupBox { title: "User Page Result"; Column {
     Label { text: "current_user_id: " + safeText(controlStateObj.current_user_id) }
@@ -37,9 +38,9 @@ Item {
         GroupBox {
             title: "Dynamic Content"
             Column {
-                PageListPanel { width: parent.width; height: 80; items: (controlStateObj.items || []) }
-                PageDetailPanel { width: parent.width; height: 80; detailObj: (controlStateObj || {}) }
-                PageResultPanel { width: parent.width; actionResult: (controlStateObj.last_action_result || {"status":"n/a"}) }
+                PageListPanel { width: parent.width; height: 80; items: (actionResultObj.items || []) }
+                PageDetailPanel { width: parent.width; height: 80; detailObj: (actionResultObj.detail || {}) }
+                PageResultPanel { width: parent.width; actionResult: (actionResultObj || {"status":"n/a"}) }
             }
         }
 

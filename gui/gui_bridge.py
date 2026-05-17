@@ -19,6 +19,8 @@ class GuiBridge(QObject):
     controlManifestJsonChanged = Signal()
     controlStateJsonChanged = Signal()
     pageCommandManifestJsonChanged = Signal()
+    lastActionResultJsonChanged = Signal()
+    pageActionResultJsonChanged = Signal()
 
     def __init__(self, facade: GuiFacade) -> None:
         super().__init__()
@@ -55,6 +57,8 @@ class GuiBridge(QObject):
         self._control_manifest_json = "[]"
         self._control_state_json = "{}"
         self._page_command_manifest_json = "{}"
+        self._last_action_result_json = "{}"
+        self._page_action_result_json = "{}"
         self.update_state_from_facade()
 
     def update_state_from_facade(self) -> None:
@@ -162,6 +166,14 @@ class GuiBridge(QObject):
     def pageCommandManifestJson(self) -> str:
         return self._page_command_manifest_json
 
+    @Property(str, notify=lastActionResultJsonChanged)
+    def lastActionResultJson(self) -> str:
+        return self._last_action_result_json
+
+    @Property(str, notify=pageActionResultJsonChanged)
+    def pageActionResultJson(self) -> str:
+        return self._page_action_result_json
+
     @Property(int, notify=stateChanged)
     def commandCount(self) -> int:
         return self._command_count
@@ -266,8 +278,15 @@ class GuiBridge(QObject):
         except JSONDecodeError:
             payload = {}
         result = self._facade.invoke_action(action_id, payload)
+        result_json = dumps(result, ensure_ascii=False)
+        self._last_action_result_json = result_json
+        self.lastActionResultJsonChanged.emit()
+        page_id = str(result.get("page_id") or "")
+        self._page_action_result_json = dumps({"page_id": page_id, "result": result}, ensure_ascii=False)
+        self.pageActionResultJsonChanged.emit()
+        print(f"[GUI ACTION] action_id={result.get('action_id')} page_id={page_id} status={result.get('status')} result={result.get('result')} message={result.get('message','')!r}", flush=True)
         self.update_state_from_facade()
-        return dumps(result, ensure_ascii=False)
+        return result_json
 
     @Slot(str, str)
     def sendCommand(self, command: str, args_json: str = "{}") -> None:

@@ -5,6 +5,8 @@ import "../components"
 Item {
     property var controlStateObj: ({})
     property string commandSummary: ""
+    property var actionResultObj: ({})
+    signal invokeNative(string actionId)
     property string selectedCommandId: ""
     property string selectedStatus: ""
     property string selectedExecutionMode: ""
@@ -35,16 +37,10 @@ Item {
         GroupBox {
             title: "Developer Lab Actions"
             Column {
-                Button { text: "runtime.core_debug_mock"; onClicked: pick("runtime.core_debug_mock", "active", "copy_only", "python -m ui_cli.run_core_debug --bridge mock") }
-                Button { text: "runtime.core_debug_live"; onClicked: pick("runtime.core_debug_live", "active", "copy_only", "python -m ui_cli.run_core_debug --bridge live --host 127.0.0.1 --port 8000") }
-                Button { text: "game.debug_mock"; onClicked: pick("game.debug_mock", "active", "copy_only", "python -m ui_cli.run_game_debug --bridge mock ...") }
-                Button { text: "game.debug_live"; onClicked: pick("game.debug_live", "active", "copy_only", "python -m ui_cli.run_game_debug --bridge live ...") }
-                Button { text: "game.debug_live_record_pipeline"; onClicked: pick("game.debug_live_record_pipeline", "active", "copy_only", "python -m ui_cli.run_game_debug --bridge live ... --record-pipeline-jsonl ...") }
-                Button { text: "developer.task6b_record_mock"; onClicked: pick("developer.task6b_record_mock", "active", "copy_only", "bash scripts/task6b_record.sh mock demo 180 baseline") }
-                Button { text: "developer.task6b_record_live"; onClicked: pick("developer.task6b_record_live", "active", "copy_only", "bash scripts/task6b_record.sh live TEST 180 real_trial") }
-                Button { text: "developer.task6b_evaluate"; onClicked: pick("developer.task6b_evaluate", "active", "copy_only", "python -m ui_cli.evaluate_task6b ...") }
-                Button { text: "developer.task6b_tune"; onClicked: pick("developer.task6b_tune", "active", "copy_only", "python -m ui_cli.tune_task6b ...") }
-                Button { text: "developer.task6b_calibrate"; onClicked: pick("developer.task6b_calibrate", "active", "copy_only", "python -m ui_cli.calibrate_task6b ...") }
+                Button { text: "Run devlab.run"; onClicked: { selectedCliReference = "manual_or_copy_only"; invokeNative("devlab.run") } }
+                Button { text: "Copy Command"; onClicked: invokeNative("devlab.copy_command") }
+                Button { text: "Copy Payload"; onClicked: invokeNative("devlab.copy_payload") }
+                
             }
         }
 
@@ -72,9 +68,9 @@ Item {
         GroupBox {
             title: "Dynamic Content"
             Column {
-                PageListPanel { width: parent.width; height: 80; items: (controlStateObj.items || []) }
-                PageDetailPanel { width: parent.width; height: 80; detailObj: (controlStateObj || {}) }
-                PageResultPanel { width: parent.width; actionResult: (controlStateObj.last_action_result || {"status":"n/a"}) }
+                PageListPanel { width: parent.width; height: 80; items: (actionResultObj.items || []) }
+                PageDetailPanel { width: parent.width; height: 80; detailObj: ({action_id: actionResultObj.action_id, page_id: actionResultObj.page_id, status: actionResultObj.status, payload: actionResultObj.payload}) }
+                PageResultPanel { width: parent.width; actionResult: (actionResultObj || {"status":"n/a"}) }
             }
         }
 
