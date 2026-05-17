@@ -1,7 +1,24 @@
 {
   "schema_version": "asset_manifest.v1",
   "default_theme": "default",
-  "default_layout": "minimal_gui",
+  "default_layout": "app_shell",
+  "task23_asset_contract": {
+    "app.logo": "placeholder://app.logo",
+    "app.background": "placeholder://app.background",
+    "nav.home_icon": "placeholder://nav.home_icon",
+    "nav.user_icon": "placeholder://nav.user_icon",
+    "nav.calibration_icon": "placeholder://nav.calibration_icon",
+    "nav.training_icon": "placeholder://nav.training_icon",
+    "nav.report_icon": "placeholder://nav.report_icon",
+    "nav.diagnostics_icon": "placeholder://nav.diagnostics_icon",
+    "training.game_placeholder": "placeholder://training.game_placeholder",
+    "training.fragment_lock_icon": "placeholder://training.fragment_lock_icon",
+    "training.signal_hunter_icon": "placeholder://training.signal_hunter_icon",
+    "training.stabilizer_icon": "placeholder://training.stabilizer_icon",
+    "status.success_icon": "placeholder://status.success_icon",
+    "status.warning_icon": "placeholder://status.warning_icon",
+    "status.error_icon": "placeholder://status.error_icon"
+  },
   "games": {
     "fake_game": {
       "visual_manifest": "games/fake_game/visual_manifest.json"

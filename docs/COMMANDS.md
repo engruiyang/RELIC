@@ -365,3 +365,5 @@ python tools/inspect_task8c_live.py `
 - TASK22 成功验收关注：RuntimeSnapshotView / attention/gyro/sqi/fi/control_state / GameViewState / score_update_count / behavior_sample_count / GameEvent 协议 / TraceLock 测试。
 - GUI 页面切换不在 TASK22（属于 TASK23）。
 - GameCanvas 恢复不在 TASK22（属于 TASK24）。
+
+- TASK23 AppShell commands: `docs/commands/gui_task23_app_shell_commands.md`
