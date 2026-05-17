@@ -26,11 +26,14 @@ class MockAdapter:
                 events[1] = {"type": "stream_status", "alive": True, "active": True, "reason": "stream_recovered"}
 
         if self._should_emit_attention():
-            att = 70 + (self.tick % 15)
-            if self.mode == "missing_start" and self.tick <= 30:
-                pass
-            else:
-                events.append({"type": "attention", "value": att})
+    att = 70 + (self.tick % 15)
+    if self.mode == "missing_start" and self.tick <= 30:
+        pass
+    else:
+        events.append({"type": "attention", "value": att})
+
+if self.mode == "reconnect_recovery" and self.tick == 90:
+    events.append({"type": "attention", "value": 0})
 
         if self._should_emit_gyro():
             k = float(self.tick)
