@@ -47,44 +47,57 @@ class DataCenter:
 
     def _append_event_reasons(self, event: dict) -> None:
         reasons = []
+
         if isinstance(event.get("quality_reasons"), list):
             reasons.extend(str(x) for x in event.get("quality_reasons", []))
+
         if event.get("quality_reason") is not None:
             reasons.append(str(event.get("quality_reason")))
+
         if isinstance(event.get("warning_flags"), list):
             reasons.extend(str(x) for x in event.get("warning_flags", []))
+
         if isinstance(event.get("error_flags"), list):
             reasons.extend(str(x) for x in event.get("error_flags", []))
+
         if event.get("reason") is not None:
             reasons.append(str(event.get("reason")))
-        for r in reasons:
-            if r and r not in self._event_quality_reasons:
-                self._event_quality_reasons.append(r)
+
+        for reason in reasons:
+            if reason and reason not in self._event_quality_reasons:
+                self._event_quality_reasons.append(reason)
 
     def _apply_event(self, event: dict, now_ms: int) -> None:
         self._append_event_reasons(event)
         event_type = event.get("type")
+
         if event_type == "device_status":
             connected_raw = event.get("connected", event.get("device_connected", False))
             self._snapshot.device_connected = bool(connected_raw)
+
             if "stream_alive" in event:
                 self._snapshot.stream_alive = bool(event.get("stream_alive"))
             elif "bridge_alive" in event:
                 self._snapshot.stream_alive = bool(event.get("bridge_alive"))
+
             if "sensor_stream_active" in event:
                 self._snapshot.sensor_stream_active = bool(event.get("sensor_stream_active"))
             elif "bridge_alive" in event:
                 self._snapshot.sensor_stream_active = bool(event.get("bridge_alive"))
+
             if not self._snapshot.device_connected:
                 self._snapshot.stream_alive = False
                 self._snapshot.sensor_stream_active = False
+
         elif event_type == "stream_status":
             self._snapshot.stream_alive = bool(event.get("alive", False))
             self._snapshot.sensor_stream_active = bool(event.get("active", False))
+
         elif event_type == "attention":
             self._snapshot.attention = event.get("value")
             self._snapshot.attention_last_update_ms = now_ms
             self._snapshot.attention_seen_once = True
+
         elif event_type == "gyroscope":
             self._snapshot.gyro_x = event.get("x")
             self._snapshot.gyro_y = event.get("y")
@@ -92,13 +105,16 @@ class DataCenter:
             self._snapshot.gyro_last_update_ms = now_ms
             self._snapshot.gyro_seen_once = True
             self._snapshot.focus_seen_once = True
+
         elif event_type == "algorithm_frame":
             algo = str(event.get("algorithm") or "")
             data = event.get("data") or {}
+
             if algo == "attention":
                 self._snapshot.attention = data.get("attention")
                 self._snapshot.attention_last_update_ms = now_ms
                 self._snapshot.attention_seen_once = True
+
             elif algo == "gyroscope":
                 self._snapshot.gyro_x = data.get("gyro_x", data.get("focus_x"))
                 self._snapshot.gyro_y = data.get("gyro_y", data.get("focus_y"))
@@ -180,14 +196,14 @@ class DataCenter:
         if raw_training_data_valid:
             if frame_key != self._last_valid_frame_key:
                 self._valid_signal_frames += 1
-             self._last_valid_frame_key = frame_key
+                self._last_valid_frame_key = frame_key
         else:
-             self._valid_signal_frames = 0
-             self._last_valid_frame_key = None
+            self._valid_signal_frames = 0
+            self._last_valid_frame_key = None
 
         s.training_data_valid = (
-             raw_training_data_valid
-             and self._valid_signal_frames >= self._warmup_frames_required
+            raw_training_data_valid
+            and self._valid_signal_frames >= self._warmup_frames_required
         )
 
         s.quality = "ok"
@@ -211,37 +227,37 @@ class DataCenter:
             and not s.training_data_valid
         )
 
-       if not s.device_connected or not s.stream_alive or not s.sensor_stream_active:
-           s.control_state = "NO_SIGNAL"
-           s.control_state_reason = "no_signal"
-       elif s.attention is None:
-           s.control_state = "RECOVERING"
-           s.control_state_reason = "attention_missing"
-       elif not s.training_data_valid:
-           if s.attention < 30:
-               s.control_state = "DISTRACTED"
-               s.control_state_reason = "low_attention_warmup"
-           elif s.attention < 45:
-               s.control_state = "LOW_FOCUS"
-               s.control_state_reason = "moderate_attention_warmup"
-           else:
-               s.control_state = "RECOVERING"
-               s.control_state_reason = "warmup"
-       elif s.attention < 30:
-           s.control_state = "DISTRACTED"
-           s.control_state_reason = "low_attention"
-       elif s.attention < 45:
-           s.control_state = "LOW_FOCUS"
-           s.control_state_reason = "moderate_attention"
-       else:
-           s.control_state = "FOCUSED"
-           s.control_state_reason = "attention_ok"
-       
-       def tick(self, now_ms: int, events: list[dict] | None = None) -> RealtimeSnapshot:
-           """Compatibility API for legacy callers/tests."""
-           if events is not None:
-               self.ingest_events(events, now_ms=now_ms)
-           else:
-               self._snapshot.now_ms = now_ms
-               self._refresh_derived_flags(now_ms)
-           return self.get_snapshot()
+        if not s.device_connected or not s.stream_alive or not s.sensor_stream_active:
+            s.control_state = "NO_SIGNAL"
+            s.control_state_reason = "no_signal"
+        elif s.attention is None:
+            s.control_state = "RECOVERING"
+            s.control_state_reason = "attention_missing"
+        elif not s.training_data_valid:
+            if s.attention < 30:
+                s.control_state = "DISTRACTED"
+                s.control_state_reason = "low_attention_warmup"
+            elif s.attention < 45:
+                s.control_state = "LOW_FOCUS"
+                s.control_state_reason = "moderate_attention_warmup"
+            else:
+                s.control_state = "RECOVERING"
+                s.control_state_reason = "warmup"
+        elif s.attention < 30:
+            s.control_state = "DISTRACTED"
+            s.control_state_reason = "low_attention"
+        elif s.attention < 45:
+            s.control_state = "LOW_FOCUS"
+            s.control_state_reason = "moderate_attention"
+        else:
+            s.control_state = "FOCUSED"
+            s.control_state_reason = "attention_ok"
+
+    def tick(self, now_ms: int, events: list[dict] | None = None) -> RealtimeSnapshot:
+        """Compatibility API for legacy callers/tests."""
+        if events is not None:
+            self.ingest_events(events, now_ms=now_ms)
+        else:
+            self._snapshot.now_ms = now_ms
+            self._refresh_derived_flags(now_ms)
+        return self.get_snapshot()
