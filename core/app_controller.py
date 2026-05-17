@@ -38,9 +38,9 @@ class AppController:
         self.user_manager = UserManager(self.storage.sqlite)
         self.profile_manager = ProfileManager(self.storage.sqlite)
         self.calibration_manager = CalibrationManager()
-        self.session_manager = SessionManager()
-        self.game_manager = GameManager()
+        self.session_manager = SessionManager(sqlite_store=self.storage.sqlite)
         self.runtime = LocalRuntime()
+        self.game_manager = GameManager(runtime=self.runtime, session_manager=self.session_manager)
         self.quality_gate = QualityGate()
         self.current_user = None
         self.focus_estimator = FocusEstimator()

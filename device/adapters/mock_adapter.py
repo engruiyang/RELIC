@@ -46,3 +46,8 @@ class MockAdapter:
         if self.mode == "gyro_short_dropout" and 15 <= self.tick <= 30:
             return False
         return True
+
+
+    def poll(self, dt_ms: int | None = None) -> list[dict]:
+        """Compatibility API for legacy callers/tests."""
+        return self.read()
