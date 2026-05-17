@@ -18,6 +18,7 @@ class RealtimeSnapshot:
     gyro_age_ms: int | None = None
     gyro_fresh: bool = False
     gyro_seen_once: bool = False
+    focus_seen_once: bool = False
 
     device_connected: bool = False
     stream_alive: bool = False
@@ -47,6 +48,7 @@ class RealtimeSnapshot:
     fi_raw: float | None = None
     fi_smoothed: float | None = None
     fi_valid: bool = False
+    fi_provisional: bool = True
     fi_confidence: str = "low"
     fi_reasons: list[str] = field(default_factory=list)
     control_state: str = "UNRELIABLE_SIGNAL"
