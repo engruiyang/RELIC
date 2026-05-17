@@ -372,3 +372,7 @@ python tools/inspect_task8c_live.py `
 - 新增 `gui/command_registry.py`，输出 `pageCommandManifestJson`（`schema_version=gui_commands.v1`）。
 - Developer Lab 命令首版仅 `manual/copy_only`，禁止 GUI subprocess。
 - 建议先运行：`python -m pytest tests/test_gui_command_registry.py`。
+
+## TASK23A2 / Real Page System（append-only）
+- `python -m pytest tests/test_gui_real_pages.py tests/test_gui_page_action_panels.py tests/test_gui_page_feedback.py`
+- `python -m pytest tests/test_gui_command_registry.py`

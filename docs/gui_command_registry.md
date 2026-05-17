@@ -20,3 +20,6 @@
   - Diagnostics: runtime.* + diagnostics.*
   - Developer Lab: game.debug_* + developer.task6b_*
 - 后续：TASK23B/C/D 复用 registry，将 native_ready 持续迁移为 native。
+
+## TASK23A2 UI usage update
+- TASK23A2: page-level Action Panel + Page Feedback wired to pageCommandManifestJson.
