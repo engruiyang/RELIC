@@ -135,3 +135,9 @@ class DataCenter:
             and not s.warning_flags
             and not s.error_flags
         )
+
+
+    def tick(self, now_ms: int, events: list[dict] | None = None) -> RealtimeSnapshot:
+        """Compatibility API for legacy callers/tests."""
+        self.ingest_events(events or [], now_ms=now_ms)
+        return self.get_snapshot()
