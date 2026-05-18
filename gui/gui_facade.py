@@ -1,6 +1,10 @@
 from __future__ import annotations
 
 from copy import deepcopy
+import sqlite3
+import subprocess
+import sys
+import threading
 import time
 from typing import Any
 
@@ -44,6 +48,13 @@ class GuiFacade:
         self._started_at_ms = int(time.time() * 1000)
         self._last_command_error = ""
         self._active_session_started_at_ms: int | None = None
+        self._calibration_process: subprocess.Popen[str] | None = None
+        self._calibration_output_lines: list[str] = []
+        self._calibration_exit_code: int | None = None
+        self._calibration_started_at_ms: int | None = None
+        self._calibration_command: list[str] = []
+        self._calibration_user_id = ""
+        self._calibration_current_phase = ""
 
         self._core_source: GuiCoreSnapshotSource | None = None
         self._live_source: GuiLiveReadonlySource | None = None
@@ -314,6 +325,381 @@ class GuiFacade:
         finally:
             store.close()
 
+    def _connect_readonly_db(self) -> sqlite3.Connection:
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        return conn
+
+    def _table_exists(self, conn: sqlite3.Connection, table_name: str) -> bool:
+        row = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table_name,)).fetchone()
+        return row is not None
+
+    def _table_columns(self, conn: sqlite3.Connection, table_name: str) -> set[str]:
+        if not self._table_exists(conn, table_name):
+            return set()
+        return {str(row[1]) for row in conn.execute(f"PRAGMA table_info({table_name})").fetchall()}
+
+    def _calibration_table_name(self, conn: sqlite3.Connection) -> str | None:
+        for table_name in ("calibration_profiles", "calibrations", "calibration_profile"):
+            if self._table_exists(conn, table_name):
+                return table_name
+        return None
+
+    def _normalize_calibration_record(self, row: dict[str, Any]) -> dict[str, Any]:
+        item = dict(row)
+        cal_id = item.get("calibration_id") or item.get("id") or item.get("profile_id") or ""
+        item["calibration_id"] = str(cal_id)
+        if "valid" in item:
+            item["valid"] = bool(item.get("valid"))
+        else:
+            item["valid"] = False
+        item.setdefault("calibration_type", item.get("type", "n/a") or "n/a")
+        item.setdefault("source", item.get("source", item.get("calibration_type", "n/a")) or "n/a")
+        item.setdefault("failure_reason", item.get("failure_reason", "") or "")
+        item.setdefault("created_at", item.get("created_at", "n/a") or "n/a")
+        for key in [
+            "attention_baseline",
+            "attention_std",
+            "gyro_noise_rms",
+            "gyro_stability_score",
+            "signal_quality_baseline",
+        ]:
+            item.setdefault(key, "n/a")
+        return item
+
+    def _fetch_calibration_detail(self, calibration_id: str) -> dict[str, Any]:
+        calibration_id = str(calibration_id or "").strip()
+        if not calibration_id:
+            return {"status": "missing_input", "message": "missing_calibration_id"}
+        store = SqliteStore(self.db_path)
+        store.connect()
+        try:
+            getter = getattr(store, "get_calibration_profile", None)
+            if callable(getter):
+                record = getter(calibration_id)
+                if record:
+                    detail = self._normalize_calibration_record(dict(record))
+                    detail["status"] = "accepted"
+                    detail["message"] = "calibration_loaded"
+                    return detail
+        finally:
+            store.close()
+        conn = self._connect_readonly_db()
+        try:
+            table_name = self._calibration_table_name(conn)
+            if not table_name:
+                return {"status": "no_calibration_table", "message": "no_calibration_table", "calibration_id": calibration_id}
+            columns = self._table_columns(conn, table_name)
+            id_col = "calibration_id" if "calibration_id" in columns else ("id" if "id" in columns else "profile_id")
+            row = conn.execute(f"SELECT * FROM {table_name} WHERE {id_col}=?", (calibration_id,)).fetchone()
+            if not row:
+                return {"status": "calibration_not_found", "message": "calibration_not_found", "calibration_id": calibration_id}
+            detail = self._normalize_calibration_record(dict(row))
+            detail["status"] = "accepted"
+            detail["message"] = "calibration_loaded"
+            return detail
+        finally:
+            conn.close()
+
+    def _fetch_calibration_list(self, user_id: str) -> dict[str, Any]:
+        user_id = str(user_id or "").strip()
+        if not user_id:
+            return {"status": "missing_user", "message": "missing_user", "items": [], "items_count": 0}
+        conn = self._connect_readonly_db()
+        try:
+            table_name = self._calibration_table_name(conn)
+            if not table_name:
+                return {"status": "accepted", "message": "no_calibration_table", "items": [], "items_count": 0, "calibrations": []}
+            columns = self._table_columns(conn, table_name)
+            order_sql = " ORDER BY created_at DESC" if "created_at" in columns else " ORDER BY rowid DESC"
+            if "user_id" in columns:
+                rows = conn.execute(f"SELECT * FROM {table_name} WHERE user_id=?" + order_sql, (user_id,)).fetchall()
+            else:
+                rows = conn.execute(f"SELECT * FROM {table_name}" + order_sql).fetchall()
+            items = [self._normalize_calibration_record(dict(row)) for row in rows]
+            if not items:
+                status = self._fetch_calibration_status(user_id)
+                bound_id = status.get("last_calibration_id")
+                if bound_id and bound_id != "n/a":
+                    detail = self._fetch_calibration_detail(str(bound_id))
+                    if detail.get("status") == "accepted":
+                        items.append(detail)
+            return {
+                "status": "accepted",
+                "message": "calibration_list",
+                "user_id": user_id,
+                "calibration_count": len(items),
+                "items_count": len(items),
+                "calibrations": items,
+                "items": items,
+            }
+        finally:
+            conn.close()
+
+    def _fetch_latest_calibration(self, user_id: str) -> dict[str, Any]:
+        listing = self._fetch_calibration_list(user_id)
+        items = listing.get("items") or []
+        if not items:
+            return {"status": "no_calibration", "message": "no_calibration", "user_id": user_id}
+        latest = dict(items[0])
+        latest.setdefault("status", "accepted")
+        latest.setdefault("message", "latest_calibration")
+        return latest
+
+    def _bind_calibration_summary(self, user_id: str, calibration_id: str) -> dict[str, Any]:
+        user_id = str(user_id or "").strip()
+        calibration_id = str(calibration_id or "").strip()
+        if not user_id:
+            return {"status": "missing_user", "message": "missing_user"}
+        if not calibration_id:
+            return {"status": "missing_input", "message": "missing_calibration_id", "user_id": user_id}
+        detail = self._fetch_calibration_detail(calibration_id)
+        if detail.get("status") != "accepted":
+            return {"status": detail.get("status", "calibration_not_found"), "message": detail.get("message", "calibration_not_found"), "user_id": user_id, "calibration_id": calibration_id}
+        if not bool(detail.get("valid")):
+            return {"status": "invalid_calibration", "message": "invalid_calibration", "user_id": user_id, "calibration_id": calibration_id, "detail": detail}
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        try:
+            if not self._table_exists(conn, "user_profiles"):
+                return {"status": "profile_not_found", "message": "profile_not_found", "user_id": user_id, "calibration_id": calibration_id}
+            columns = self._table_columns(conn, "user_profiles")
+            if "last_calibration_id" not in columns or "user_id" not in columns:
+                return {"status": "profile_schema_unsupported", "message": "profile_schema_unsupported", "user_id": user_id, "calibration_id": calibration_id}
+            old_row = conn.execute("SELECT last_calibration_id FROM user_profiles WHERE user_id=?", (user_id,)).fetchone()
+            if not old_row:
+                return {"status": "profile_not_found", "message": "profile_not_found", "user_id": user_id, "calibration_id": calibration_id}
+            old_id = old_row["last_calibration_id"]
+            conn.execute("UPDATE user_profiles SET last_calibration_id=? WHERE user_id=?", (calibration_id, user_id))
+            conn.commit()
+            status = self._fetch_calibration_status(user_id)
+            return {
+                "status": "accepted",
+                "message": "calibration_bound",
+                "user_id": user_id,
+                "calibration_id": calibration_id,
+                "old_last_calibration_id": old_id or "n/a",
+                "new_last_calibration_id": calibration_id,
+                "calibration": status,
+                "detail": detail,
+            }
+        finally:
+            conn.close()
+
+    def _cancel_calibration_summary(self, user_id: str) -> dict[str, Any]:
+        if not user_id:
+            return {"status": "missing_user", "message": "missing_user"}
+        return {"status": "cancelled", "message": "cancelled_by_user", "user_id": user_id, "valid": False, "failure_reason": "cancelled_by_user"}
+
+
+
+    def _calibration_phase_prompts(self) -> list[dict[str, Any]]:
+        return [
+            {
+                "phase": "phase 1/4",
+                "title": "佩戴检查",
+                "user_instruction": "请确认头环贴合额头，头部坐正，眼睛自然看向屏幕。",
+                "avoid_instruction": "避免头发夹在电极和皮肤之间，不要移动头环。",
+                "duration_hint": "约 2 秒",
+            },
+            {
+                "phase": "phase 2/4",
+                "title": "静止姿态校准",
+                "user_instruction": "请保持头部静止，眼睛自然平视屏幕中央。",
+                "avoid_instruction": "不要转头、低头、抬头或晃动身体。",
+                "duration_hint": "约 3 秒",
+            },
+            {
+                "phase": "phase 3/4",
+                "title": "注意力基线检查",
+                "user_instruction": "请自然平视屏幕中央，保持清醒和安静。",
+                "avoid_instruction": "不要说话、不要刻意用力集中、不要大幅移动头部。",
+                "duration_hint": "约 8 到 12 秒",
+            },
+            {
+                "phase": "phase 4/4",
+                "title": "结果计算",
+                "user_instruction": "正在生成校准结果，请稍候。",
+                "avoid_instruction": "无需操作。",
+                "duration_hint": "约 1 秒",
+            },
+        ]
+
+    def _format_calibration_phase_prompts(self) -> str:
+        lines: list[str] = []
+        for item in self._calibration_phase_prompts():
+            lines.append(f"[{item.get('phase', '')}] {item.get('title', '')}".strip())
+            user_instruction = str(item.get("user_instruction") or "").strip()
+            avoid_instruction = str(item.get("avoid_instruction") or "").strip()
+            duration_hint = str(item.get("duration_hint") or "").strip()
+            if user_instruction:
+                lines.append(f"  {user_instruction}")
+            if avoid_instruction:
+                lines.append(f"  {avoid_instruction}")
+            if duration_hint:
+                lines.append(f"  {duration_hint}")
+        return "\n".join(lines)
+
+    def _current_calibration_phase_detail(self) -> dict[str, Any]:
+        current = self._calibration_current_phase or ""
+        for item in self._calibration_phase_prompts():
+            phase = str(item.get("phase") or "")
+            title = str(item.get("title") or "")
+            if current and (current in phase or phase in current or title in current):
+                return dict(item)
+        return {}
+
+    def _calibration_progress_summary(self) -> dict[str, Any]:
+        process = self._calibration_process
+        if process is not None:
+            polled = process.poll()
+            if polled is not None:
+                self._calibration_exit_code = int(polled)
+
+        running = process is not None and process.poll() is None
+        if running:
+            status = "running"
+        elif self._calibration_exit_code is None and self._calibration_started_at_ms is None:
+            status = "idle"
+        elif self._calibration_exit_code == 0:
+            status = "completed"
+        else:
+            status = "failed"
+
+        output_tail = self._calibration_output_lines[-120:]
+        phase_lines = [line for line in output_tail if line.startswith("[phase")]
+        if phase_lines:
+            self._calibration_current_phase = phase_lines[-1].split("]", 1)[0].strip("[") if "]" in phase_lines[-1] else phase_lines[-1]
+
+        phase_prompt_text = self._format_calibration_phase_prompts()
+        output_text = "\n".join(output_tail) if output_tail else "No calibration CLI output yet."
+        current_phase = self._calibration_current_phase or ("phase 1/4" if running else "n/a")
+        current_phase_detail = self._current_calibration_phase_detail()
+        return {
+            "status": status,
+            "running": running,
+            "user_id": self._calibration_user_id,
+            "started_at_ms": self._calibration_started_at_ms,
+            "exit_code": self._calibration_exit_code,
+            "current_phase": current_phase,
+            "current_phase_detail": current_phase_detail,
+            "phase_prompts": self._calibration_phase_prompts(),
+            "phase_prompt_text": phase_prompt_text,
+            "output_count": len(self._calibration_output_lines),
+            "output_tail": output_tail,
+            "output_text": output_text,
+            "operator_guidance": phase_prompt_text,
+            "command": " ".join(self._calibration_command) if self._calibration_command else "n/a",
+        }
+
+    def _calibration_output_reader(self, process: subprocess.Popen[str]) -> None:
+        assert process.stdout is not None
+        for line in process.stdout:
+            cleaned = line.rstrip()
+            if cleaned:
+                self._calibration_output_lines.append(cleaned)
+                if cleaned.startswith("[phase"):
+                    self._calibration_current_phase = cleaned.split("]", 1)[0].strip("[") if "]" in cleaned else cleaned
+                if len(self._calibration_output_lines) > 300:
+                    self._calibration_output_lines = self._calibration_output_lines[-300:]
+        process.wait()
+        self._calibration_exit_code = int(process.returncode or 0)
+
+    def _start_calibration_summary(self, user_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+        if not user_id:
+            return {
+                "status": "missing_user",
+                "message": "missing_user",
+                "progress": self._calibration_progress_summary(),
+            }
+
+        calibration_type = str(payload.get("calibration_type") or "auto").strip() or "auto"
+        source = str(payload.get("source") or ("ipc if self.mode == live-control else mock")).strip()
+        if source == "ipc if self.mode == live-control else mock":
+            source = "ipc" if self.mode == "live-control" else "mock"
+
+        # In mock/read-only tests, do not spawn the real CLI. Return the same phase prompts so
+        # the GUI can show a deterministic progress/confirmation panel.
+        if self.mode == "mock":
+            self._calibration_user_id = user_id
+            self._calibration_started_at_ms = int(time.time() * 1000)
+            self._calibration_exit_code = 0
+            self._calibration_current_phase = "phase guide"
+            self._calibration_output_lines = ["[calibration] mock start guidance"] + self._format_calibration_phase_prompts().splitlines() + ["mock_gui_progress_completed"]
+            return {
+                "status": "start_guidance",
+                "message": "calibration_progress_guidance_ready",
+                "progress": self._calibration_progress_summary(),
+            }
+
+        if self._calibration_process is not None and self._calibration_process.poll() is None:
+            return {
+                "status": "already_running",
+                "message": "calibration_already_running",
+                "progress": self._calibration_progress_summary(),
+            }
+
+        cmd = [
+            sys.executable,
+            "-m",
+            "ui_cli.run_calibration_debug",
+            "--action",
+            "start",
+            "--mode",
+            "user",
+            "--user-id",
+            user_id,
+            "--db-path",
+            self.db_path,
+            "--calibration-type",
+            calibration_type,
+            "--source",
+            source,
+        ]
+        host = str(payload.get("host") or "").strip()
+        port = str(payload.get("port") or "").strip()
+        if host:
+            cmd.extend(["--host", host])
+        if port:
+            cmd.extend(["--port", port])
+
+        self._calibration_command = cmd
+        self._calibration_user_id = user_id
+        self._calibration_output_lines = [
+            "[gui] Calibration start requested.",
+            "[gui] Waiting for CLI phase prompts...",
+        ] + self._format_calibration_phase_prompts().splitlines()
+        self._calibration_exit_code = None
+        self._calibration_started_at_ms = int(time.time() * 1000)
+        self._calibration_current_phase = "phase 1/4"
+        try:
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                bufsize=1,
+            )
+        except Exception as exc:
+            self._calibration_process = None
+            self._calibration_exit_code = -1
+            self._calibration_output_lines.append(f"[gui] failed_to_start: {exc}")
+            return {
+                "status": "start_failed",
+                "message": "failed_to_start_calibration",
+                "progress": self._calibration_progress_summary(),
+            }
+
+        self._calibration_process = process
+        threading.Thread(target=self._calibration_output_reader, args=(process,), daemon=True).start()
+        return {
+            "status": "started",
+            "message": "calibration_process_started",
+            "progress": self._calibration_progress_summary(),
+        }
+
     def get_control_manifest(self) -> list[dict[str, Any]]:
         readonly = self.mode in {"core", "live-readonly"}
         mode = self.mode
@@ -516,12 +902,12 @@ class GuiFacade:
                 result = {"action_id": action_id, "status": ps.get("status", "profile_not_available"), "result": "profile", "message": ps.get("message", ""), "accepted": ps.get("status") == "accepted", "user_id": user_id, "detail": ps, "profile": ps}
         elif action_id == "calibration.status":
             app = self.get_app_state()
-            user_id = str(app.get("current_user_id") or "")
+            user_id = str(payload.get("user_id") or app.get("current_user_id") or "").strip()
             if not user_id:
-                result = {"action_id": action_id, "status": "missing_user", "result": "missing_user", "accepted": False, "calibration": {"calibration_status": "missing_user"}}
+                result = {"action_id": action_id, "status": "missing_user", "result": "missing_user", "message": "missing_user", "accepted": False, "calibration": {"calibration_status": "missing_user"}}
             else:
                 cs = self._fetch_calibration_status(user_id)
-                result = {"action_id": action_id, "status": cs.get("status", "no_calibration"), "result": "calibration_status", "accepted": cs.get("status") == "accepted", "calibration": cs, "user_id": user_id}
+                result = {"action_id": action_id, "status": cs.get("status", "no_calibration"), "result": "calibration_status", "message": cs.get("message", cs.get("status", "")), "accepted": cs.get("status") == "accepted", "calibration": cs, "detail": cs, "user_id": user_id}
         elif action_id == "session.status":
             result = {"action_id": action_id, "status": "accepted", "result": "session_status", "accepted": True, "session": self.get_session_state()}
         elif action_id == "game.status":
@@ -545,7 +931,47 @@ class GuiFacade:
             self._last_command_error = ""
             result = {"action_id": action_id, "status": "accepted", "result": "cleared", "accepted": True}
         elif action_id == "calibration.start":
-            result = {"action_id": action_id, "status": "not_implemented", "result": "not_implemented", "accepted": False, "reason": "requires calibration workflow/progress UI"}
+            # Keep the TASK23A/TASK23B contract boundary: only live-control may start
+            # the real calibration process. Readonly/core modes still report the
+            # workflow as not implemented, while mock keeps deterministic progress
+            # guidance for GUI tests and page preview.
+            if self.mode in {"core", "core-control", "live-readonly"}:
+                result = {
+                    "action_id": action_id,
+                    "status": "not_implemented",
+                    "result": "not_implemented",
+                    "message": "calibration_start_requires_live_control",
+                    "accepted": False,
+                    "progress": self._calibration_progress_summary(),
+                }
+            else:
+                app = self.get_app_state()
+                raw_user_id = payload.get("user_id") if "user_id" in payload else app.get("current_user_id")
+                user_id = str(raw_user_id or "").strip()
+                summary = self._start_calibration_summary(user_id, payload)
+                status = summary.get("status", "started")
+                result = {
+                    "action_id": action_id,
+                    "status": status,
+                    "result": "calibration_progress",
+                    "message": summary.get("message", status),
+                    "accepted": status in {"started", "already_running", "start_guidance"},
+                    "user_id": user_id,
+                    "progress": summary.get("progress", {}),
+                    "detail": summary,
+                }
+        elif action_id == "calibration.poll":
+            progress = self._calibration_progress_summary()
+            result = {
+                "action_id": action_id,
+                "status": progress.get("status", "idle"),
+                "result": "calibration_progress",
+                "message": "calibration_progress",
+                "accepted": True,
+                "user_id": progress.get("user_id", ""),
+                "progress": progress,
+                "detail": progress,
+            }
         elif action_id == "user.list":
             s = self._list_users_summary()
             result = {
@@ -589,7 +1015,33 @@ class GuiFacade:
                     "detail": s.get("profile", s),
                 }
         elif action_id in {"calibration.list", "calibration.latest", "calibration.show", "calibration.bind", "calibration.cancel"}:
-            result = {"action_id": action_id, "status": "not_implemented_in_this_task", "result": "not_implemented_in_this_task", "accepted": False}
+            app = self.get_app_state()
+            # A payload that explicitly provides user_id must be respected even when it is blank.
+            # This keeps validation predictable: {"user_id": ""} means missing_user instead of
+            # silently falling back to the current mock/live user.
+            raw_user_id = payload.get("user_id") if "user_id" in payload else app.get("current_user_id")
+            user_id = str(raw_user_id or "").strip()
+            calibration_id = str(payload.get("calibration_id") or "").strip()
+            if not user_id and action_id != "calibration.show":
+                result = {"action_id": action_id, "status": "missing_user", "result": "missing_user", "message": "missing_user", "accepted": False, "items": [], "items_count": 0}
+            elif action_id == "calibration.list":
+                summary = self._fetch_calibration_list(user_id)
+                result = {"action_id": action_id, "status": summary.get("status", "accepted"), "result": summary, "message": summary.get("message", "calibration_list"), "accepted": summary.get("status") == "accepted", "items": summary.get("items", []), "items_count": summary.get("items_count", summary.get("calibration_count", 0)), "calibrations": summary.get("calibrations", []), "user_id": user_id}
+            elif action_id == "calibration.latest":
+                summary = self._fetch_latest_calibration(user_id)
+                result = {"action_id": action_id, "status": summary.get("status", "no_calibration"), "result": summary, "message": summary.get("message", "latest_calibration"), "accepted": summary.get("status") == "accepted", "detail": summary, "calibration": summary, "user_id": user_id}
+            elif action_id == "calibration.show":
+                if not calibration_id:
+                    result = {"action_id": action_id, "status": "missing_input", "result": "missing_calibration_id", "message": "missing_calibration_id", "accepted": False, "user_id": user_id}
+                else:
+                    summary = self._fetch_calibration_detail(calibration_id)
+                    result = {"action_id": action_id, "status": summary.get("status", "calibration_not_found"), "result": summary, "message": summary.get("message", "calibration_detail"), "accepted": summary.get("status") == "accepted", "detail": summary, "calibration": summary, "user_id": user_id, "calibration_id": calibration_id}
+            elif action_id == "calibration.bind":
+                summary = self._bind_calibration_summary(user_id, calibration_id)
+                result = {"action_id": action_id, "status": summary.get("status", "unknown"), "result": summary, "message": summary.get("message", ""), "accepted": summary.get("status") == "accepted", "detail": summary.get("detail", summary), "calibration": summary.get("calibration", {}), "user_id": user_id, "calibration_id": calibration_id}
+            else:
+                summary = self._cancel_calibration_summary(user_id)
+                result = {"action_id": action_id, "status": summary.get("status", "cancelled"), "result": summary, "message": summary.get("message", "cancelled_by_user"), "accepted": summary.get("status") == "cancelled", "detail": summary, "user_id": user_id}
         elif action_id == "report.refresh":
             result = {"action_id": action_id, "status": "accepted", "result": self.get_session_state(), "message": "report_refreshed", "accepted": True}
         elif action_id in {"report.list", "report.show", "report.export"}:
