@@ -11,10 +11,20 @@ Rectangle {
     property var designThemeObj: ({})
     property var gameStyleObj: ({})
     property var effectStyleObj: ({})
+    property var renderResourcesObj: ({})
 
-    color: styleValue(gameStyleObj.canvas || ({}), "background", "#1a1a1a")
+    color: styleValue(gameStyleObj.canvas || ({}), "background_color", "#1a1a1a")
+    radius: Number(styleValue(gameStyleObj.canvas || ({}), "radius", 0))
     border.width: 1
     border.color: styleValue(gameStyleObj.canvas || ({}), "border", styleValue((designThemeObj.colors || ({})), "panel_border", "#888"))
+
+    DesignBackground {
+        anchors.fill: parent
+        themeObj: root.designThemeObj
+        styleObj: ({"background": (root.gameStyleObj.canvas || ({})).background || (root.gameStyleObj.canvas || ({})).background_color || "#1a1a1a"})
+        renderResourcesObj: root.renderResourcesObj
+        fallbackColor: root.styleValue(root.gameStyleObj.canvas || ({}), "background_color", "#1a1a1a")
+    }
 
     function styleValue(obj, key, fallbackValue) {
         if (obj === undefined || obj === null) {
@@ -111,7 +121,7 @@ Rectangle {
         anchors.top: timerBack.bottom
         anchors.margins: 8
         color: styleValue(gameStyleObj.hud || ({}), "text_color", "#ddd")
-        text: "GameCanvas | entities=" + root.entities.length + " | design_pack=active"
+        text: "GameCanvas | entities=" + root.entities.length + " | design_pack=active | background image asset_key supported"
     }
 
     Repeater {
@@ -181,6 +191,8 @@ Rectangle {
             border.color: "#ffffff"
         }
     }
+
+    // TASK25B GameCanvas consumes canvas.background layered color/image/gradient/overlay and TraceLock game style tokens.
 
     MouseArea {
         anchors.fill: parent
