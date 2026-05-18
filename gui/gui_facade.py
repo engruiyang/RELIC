@@ -398,34 +398,6 @@ class GuiFacade:
         finally:
             store.close()
 
-
-    def _normalize_action_result(self, action_id: str, raw: dict[str, Any], payload: dict[str, Any]) -> dict[str, Any]:
-        page_id = action_id.split('.')[0] if '.' in action_id else 'app'
-        status = str(raw.get('status') or 'error')
-        msg = str(raw.get('message') or status)
-        detail = raw.get('result') if isinstance(raw.get('result'), dict) else {}
-        items = []
-        if isinstance(detail.get('users'), list):
-            items = detail.get('users', [])
-        elif isinstance(raw.get('items'), list):
-            items = raw.get('items', [])
-        elif isinstance(detail.get('items'), list):
-            items = detail.get('items', [])
-        summary = str(raw.get('summary') or msg)
-        out = {
-            'action_id': action_id,
-            'page_id': page_id,
-            'result': bool(raw.get('accepted', False)),
-            'status': status,
-            'message': msg,
-            'summary': summary,
-            'items': items,
-            'detail': detail if isinstance(detail, dict) else {},
-            'error': None if bool(raw.get('accepted', False)) else (raw.get('reason') or (None if status in {'missing_input','unsupported_in_current_mode','not_implemented_in_this_task','readonly_not_allowed'} else status)),
-            'updated_at_ms': int(time.time() * 1000),
-            'payload': payload,
-        }
-        return out
     def invoke_action(self, action_id: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
         payload = payload or {}
         self.last_command = {"command": action_id, "args": deepcopy(payload), "type": "action_id"}
@@ -475,7 +447,7 @@ class GuiFacade:
             self._last_command_error = ""
             result = {"action_id": action_id, "status": "accepted", "result": "cleared", "accepted": True}
         elif action_id == "calibration.start":
-            result = {"action_id": action_id, "status": "not_implemented", "result": "not_implemented", "accepted": False, "reason": "requires calibration workflow/progress UI", "message": "not_implemented"}
+            result = {"action_id": action_id, "status": "not_implemented", "result": "not_implemented", "accepted": False, "reason": "requires calibration workflow/progress UI"}
         elif action_id == "user.list":
             s = self._list_users_summary()
             result = {"action_id": action_id, "status": s.get("status"), "result": s, "message": "user_list", "accepted": True}
@@ -495,12 +467,8 @@ class GuiFacade:
             result = {"action_id": action_id, "status": "not_implemented_in_this_task", "result": "not_implemented_in_this_task", "accepted": False}
         elif action_id == "report.refresh":
             result = {"action_id": action_id, "status": "accepted", "result": self.get_session_state(), "message": "report_refreshed", "accepted": True}
-        elif action_id == "report.list":
-            result = {"action_id": action_id, "status": "no_report_available", "result": {"items": []}, "items": [], "message": "no_report_available", "accepted": False}
-        elif action_id == "report.show":
-            result = {"action_id": action_id, "status": "missing_input", "result": {}, "message": "missing_input", "accepted": False}
-        elif action_id == "report.export":
-            result = {"action_id": action_id, "status": "not_implemented_in_this_task", "result": {}, "message": "not_implemented", "accepted": False}
+        elif action_id in {"report.list", "report.show", "report.export"}:
+            result = {"action_id": action_id, "status": "unsupported_in_current_mode", "result": "unsupported_in_current_mode", "accepted": False}
         elif action_id == "devlab.run":
             result = {"action_id": action_id, "status": "not_implemented_in_this_task", "result": payload, "message": "manual_or_copy_only", "accepted": False}
         else:
@@ -525,7 +493,6 @@ class GuiFacade:
         if action_id in {"session.stop", "live.safe_stop"} and str(result.get("status")) in {"training_completed", "training_stopped", "live_debug_stopped", "noop"}:
             self._active_session_started_at_ms = None
 
-        result = self._normalize_action_result(action_id, result, payload)
         self.last_command_result = deepcopy(result)
         status = str(result.get("status") or "")
         self._last_command_error = "" if status in {"accepted", "completed", "training_started", "training_completed", "live_debug_started", "live_debug_stopped", "noop"} else status

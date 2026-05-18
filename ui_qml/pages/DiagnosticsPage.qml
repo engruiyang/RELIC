@@ -155,15 +155,6 @@ Item {
             }
         }
 
-        GroupBox {
-            title: "Dynamic Content"
-            Column {
-                PageListPanel { width: parent.width; height: 80; items: (controlStateObj.items || []) }
-                PageDetailPanel { width: parent.width; height: 80; detailObj: (controlStateObj || {}) }
-                PageResultPanel { width: parent.width; actionResult: (controlStateObj.last_action_result || {"status":"n/a"}) }
-            }
-        }
-
         PageFeedbackPanel {
             pageId: "diagnostics"
             selectedCommandId: parent.selectedCommandId
