@@ -18,8 +18,21 @@ def test_training_page_readiness_tokens() -> None:
         "Difficulty Control",
         "Apply Difficulty",
         "Reset Auto Difficulty",
+        "difficultyStartPayload",
+        "session.start will sync difficulty",
+        "Button feedback is text-based",
+        "difficulty_button_state",
+        "last difficulty button",
+        "Apply Difficulty pressed visually",
+        "Reset Auto Difficulty pressed visually",
+        "sent_via_legacy_command",
         "difficulty_mode",
         "debug_difficulty",
+        "dynamic_difficulty_enabled",
+        "effective_level",
+        "game_duration_ms",
+        "time_left_ms",
+        "game_completed",
         "target_pressure_level",
         "game.difficulty",
         "Training Action Result",
@@ -38,5 +51,6 @@ def test_training_page_readiness_tokens() -> None:
 
 def test_training_page_uses_existing_native_actions_without_forbidden_patterns() -> None:
     text = Path("ui_qml/pages/TrainingPage.qml").read_text(encoding="utf-8")
-    for forbidden in ["GameCanvas {", "Loader", "Repeater", "interval: 100", "subprocess", "Popen", "os.system"]:
+    assert "GameCanvas {" in text
+    for forbidden in ["Loader", "Repeater", "interval: 100", "subprocess", "Popen", "os.system", "background: Rectangle"]:
         assert forbidden not in text
