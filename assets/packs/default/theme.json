@@ -1,0 +1,18 @@
+{
+  "colors": {
+    "background": "#111827",
+    "panel": "#1F2937",
+    "panel_border": "#374151",
+    "text": "#F9FAFB",
+    "accent": "#22D3EE"
+  },
+  "typography": {
+    "font_family": "Sans Serif",
+    "title_size": 24,
+    "body_size": 14
+  },
+  "spacing": {
+    "page_margin": 16,
+    "section_gap": 12
+  }
+}

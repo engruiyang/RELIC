@@ -27,6 +27,13 @@ class RenderResourceBundle:
     missing_assets: list[str] = field(default_factory=list)
     missing_styles: list[str] = field(default_factory=list)
     missing_regions: list[str] = field(default_factory=list)
+    design_pack: dict[str, Any] = field(default_factory=dict)
+    theme: dict[str, Any] = field(default_factory=dict)
+    page_styles: dict[str, dict[str, Any]] = field(default_factory=dict)
+    component_styles: dict[str, dict[str, Any]] = field(default_factory=dict)
+    game_styles: dict[str, dict[str, Any]] = field(default_factory=dict)
+    effect_styles: dict[str, dict[str, Any]] = field(default_factory=dict)
+    missing_design_pack_fields: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -184,6 +191,34 @@ def build_render_resource_bundle(game_id: str, theme_id: str = "default", layout
         if not reg.get("exists"):
             missing_regions.append(rk)
 
+    def _safe_read_json(path: Path) -> dict[str, Any]:
+        try:
+            with path.open("r", encoding="utf-8") as f:
+                raw = json.load(f)
+            return raw if isinstance(raw, dict) else {}
+        except (FileNotFoundError, json.JSONDecodeError, OSError):
+            return {}
+
+    pack_root = Path(assets_root) / "packs" / "default"
+    pack = _safe_read_json(pack_root / "pack.json")
+    required_pack_fields = ["pack_id", "display_name", "version", "theme", "pages", "components", "games", "effects", "fallback_pack"]
+    missing_design_pack_fields = [f"pack.{k}" for k in required_pack_fields if k not in pack]
+
+    theme = _safe_read_json(pack_root / str(pack.get("theme") or "theme.json"))
+    pages_map = dict(pack.get("pages") or {})
+    components_map = dict(pack.get("components") or {})
+    games_map = dict(pack.get("games") or {})
+    effects_map = dict(pack.get("effects") or {})
+
+    page_styles = {k: _safe_read_json(pack_root / str(v)) for k, v in pages_map.items()}
+    component_styles = {k: _safe_read_json(pack_root / str(v)) for k, v in components_map.items()}
+    game_styles = {k: _safe_read_json(pack_root / str(v)) for k, v in games_map.items()}
+    effect_styles = {k: _safe_read_json(pack_root / str(v)) for k, v in effects_map.items()}
+
+    for key, val in [("pages", page_styles), ("components", component_styles), ("games", game_styles), ("effects", effect_styles)]:
+        if not val:
+            missing_design_pack_fields.append(f"pack.{key}")
+
     bundle = RenderResourceBundle(
         theme_id=tm.theme_id,
         layout_id=lm.layout_id,
@@ -194,5 +229,12 @@ def build_render_resource_bundle(game_id: str, theme_id: str = "default", layout
         missing_assets=missing_assets,
         missing_styles=missing_styles,
         missing_regions=missing_regions,
+        design_pack=pack,
+        theme=theme,
+        page_styles=page_styles,
+        component_styles=component_styles,
+        game_styles=game_styles,
+        effect_styles=effect_styles,
+        missing_design_pack_fields=missing_design_pack_fields,
     )
     return bundle.to_dict()

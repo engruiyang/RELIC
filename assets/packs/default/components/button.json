@@ -1,0 +1,20 @@
+{
+  "normal": {
+    "background": "#2563EB",
+    "border": "#1D4ED8",
+    "text": "#FFFFFF"
+  },
+  "pressed": {
+    "background": "#1D4ED8",
+    "border": "#1E40AF",
+    "text": "#FFFFFF"
+  },
+  "disabled": {
+    "background": "#6B7280",
+    "border": "#4B5563",
+    "text": "#D1D5DB"
+  },
+  "radius": 8,
+  "padding_x": 14,
+  "padding_y": 10
+}

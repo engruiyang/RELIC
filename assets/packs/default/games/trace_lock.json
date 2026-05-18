@@ -1,0 +1,28 @@
+{
+  "game_id": "trace_lock",
+  "canvas": {
+    "background": "#020617"
+  },
+  "target": {
+    "marked_trace": {
+      "fill": "#22D3EE",
+      "stroke": "#0891B2",
+      "glow": "#67E8F9"
+    },
+    "noise_trace": {
+      "fill": "#334155"
+    }
+  },
+  "progress_ring": {
+    "stroke": "#10B981",
+    "background": "#1F2937"
+  },
+  "timer_bar": {
+    "fill": "#F59E0B",
+    "background": "#374151"
+  },
+  "hud": {
+    "position": "top_right",
+    "text_color": "#F8FAFC"
+  }
+}
