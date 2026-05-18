@@ -1,28 +1,82 @@
 {
   "game_id": "trace_lock",
   "canvas": {
-    "background": "#020617"
+    "background": {
+      "type": "layered",
+      "layers": [
+        {
+          "type": "color",
+          "value": "#020617"
+        },
+        {
+          "type": "image",
+          "asset_key": "tracelock.background.grid",
+          "fit": "cover",
+          "position": "center",
+          "opacity": 0.0
+        },
+        {
+          "type": "gradient",
+          "from": "#020617",
+          "to": "#082F49",
+          "direction": "vertical",
+          "opacity": 0.45
+        },
+        {
+          "type": "overlay",
+          "value": "#000000",
+          "opacity": 0.1
+        }
+      ]
+    },
+    "background_color": "#020617",
+    "border": "#22D3EE",
+    "height": 460,
+    "radius": 16,
+    "grid_enabled": true,
+    "scanline_enabled": false,
+    "asset_key": "tracelock.background.grid"
   },
   "target": {
     "marked_trace": {
+      "asset_key": "tracelock.target.marked_trace",
+      "fallback_shape": "circle",
       "fill": "#22D3EE",
       "stroke": "#0891B2",
       "glow": "#67E8F9"
     },
     "noise_trace": {
-      "fill": "#334155"
+      "asset_key": "tracelock.target.noise_trace",
+      "fallback_shape": "diamond",
+      "fill": "#334155",
+      "stroke": "#64748B",
+      "glow": "#94A3B8"
     }
   },
   "progress_ring": {
+    "asset_key": "tracelock.progress_ring.default",
+    "fallback_shape": "ring",
     "stroke": "#10B981",
-    "background": "#1F2937"
+    "background": "#1F2937",
+    "width": 4
   },
   "timer_bar": {
+    "asset_key": "tracelock.timer_bar.default",
+    "fallback_shape": "rect",
     "fill": "#F59E0B",
-    "background": "#374151"
+    "background": "#374151",
+    "height": 8
   },
   "hud": {
     "position": "top_right",
-    "text_color": "#F8FAFC"
+    "text_color": "#F8FAFC",
+    "metric_card_background": "#0F172A",
+    "metric_card_border": "#334155"
+  },
+  "focus_zone": {
+    "asset_key": "tracelock.focus_zone.default",
+    "fallback_shape": "circle",
+    "fill": "#44AAFF33",
+    "stroke": "#60A5FA"
   }
 }

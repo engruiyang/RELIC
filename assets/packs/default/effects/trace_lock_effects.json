@@ -10,7 +10,10 @@
     "scale_to": 1.55,
     "opacity_from": 0.88,
     "opacity_to": 0.0,
-    "easing": "out_cubic"
+    "easing": "out_cubic",
+    "asset_key": "tracelock.effect.trace_seal",
+    "fallback_shape": "circle",
+    "audio_key": "audio.tracelock.hit"
   },
   "lock_failed": {
     "type": "flash",
@@ -23,7 +26,10 @@
     "scale_to": 1.25,
     "opacity_from": 0.78,
     "opacity_to": 0.0,
-    "easing": "out_cubic"
+    "easing": "out_cubic",
+    "asset_key": "tracelock.effect.lock_failed",
+    "fallback_shape": "circle",
+    "audio_key": "audio.tracelock.miss"
   },
   "trace_drop": {
     "type": "fade",
@@ -36,7 +42,9 @@
     "scale_to": 0.55,
     "opacity_from": 0.62,
     "opacity_to": 0.0,
-    "easing": "out_cubic"
+    "easing": "out_cubic",
+    "asset_key": "tracelock.effect.trace_drop",
+    "fallback_shape": "circle"
   },
   "combo_popup": {
     "type": "popup",
@@ -49,6 +57,8 @@
     "scale_to": 1.35,
     "opacity_from": 0.9,
     "opacity_to": 0.0,
-    "easing": "out_cubic"
+    "easing": "out_cubic",
+    "asset_key": "tracelock.effect.combo_popup",
+    "fallback_shape": "rect"
   }
 }

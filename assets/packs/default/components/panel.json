@@ -1,8 +1,9 @@
 {
-  "background": "#1F2937",
-  "border": "#374151",
+  "background": "#FFFFFF",
+  "border": "#CBD5E1",
+  "border_width": 1,
   "radius": 12,
   "padding": 12,
-  "shadow_enabled": true,
+  "shadow_enabled": false,
   "opacity": 0.96
 }
