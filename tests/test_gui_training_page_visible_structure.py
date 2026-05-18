@@ -14,23 +14,16 @@ def test_training_page_readiness_tokens() -> None:
         "Game Status",
         "Runtime Signal Summary",
         "Game HUD Summary",
-        "Game Selection",
-        "Select Existing Game",
-        "selected_game_id",
-        "Use TraceLock",
-        "TraceLock",
-        "game.select",
-        "movement_type",
-        "target_time_left_ms",
-        "accuracy",
+        "TraceLock Difficulty",
+        "Difficulty Control",
+        "Apply Difficulty",
+        "Reset Auto Difficulty",
+        "difficulty_mode",
+        "debug_difficulty",
+        "target_pressure_level",
+        "game.difficulty",
         "Training Action Result",
         "GameCanvas will be restored in TASK24",
-        "GameCanvas restored in TASK24",
-        "GameCanvas / Game View",
-        "No active game view.",
-        "entity_count",
-        "visual_event_count",
-        "pointer_click",
         "Page Commands",
         "Page Feedback",
         "user.show_profile",
@@ -39,12 +32,11 @@ def test_training_page_readiness_tokens() -> None:
         "session.stop",
         "session.status",
         "game.status",
-        "game.select",
     ]:
         assert token in text
 
 
 def test_training_page_uses_existing_native_actions_without_forbidden_patterns() -> None:
     text = Path("ui_qml/pages/TrainingPage.qml").read_text(encoding="utf-8")
-    for forbidden in ["Loader", "Repeater", "interval: 100", "subprocess", "Popen", "os.system"]:
+    for forbidden in ["GameCanvas {", "Loader", "Repeater", "interval: 100", "subprocess", "Popen", "os.system"]:
         assert forbidden not in text
