@@ -6,6 +6,7 @@ import subprocess
 import sys
 import threading
 import time
+from pathlib import Path
 from typing import Any
 
 from .gui_core_source import GuiCoreSnapshotSource
@@ -700,6 +701,163 @@ class GuiFacade:
             "progress": self._calibration_progress_summary(),
         }
 
+
+    def _session_table_name(self, conn: sqlite3.Connection) -> str | None:
+        for table_name in (
+            "session_summaries",
+            "training_sessions",
+            "sessions",
+            "session_summary",
+            "session_records",
+        ):
+            if self._table_exists(conn, table_name):
+                return table_name
+        return None
+
+    def _normalize_session_record(self, row: dict[str, Any]) -> dict[str, Any]:
+        item = dict(row)
+        session_id = item.get("session_id") or item.get("id") or item.get("session_uuid") or ""
+        item["session_id"] = str(session_id)
+        item.setdefault("user_id", item.get("current_user_id", item.get("owner_user_id", "")) or "")
+        item.setdefault("game_id", item.get("game", item.get("current_game_id", "")) or "")
+        item.setdefault("status", item.get("training_status", item.get("state", "")) or "")
+        item.setdefault("score", item.get("score_last", item.get("score", item.get("score_total", "n/a"))) or "n/a")
+        item.setdefault("report_path", item.get("latest_report_path", item.get("report_file", "")) or "")
+        item.setdefault("log_path", item.get("session_log_path", item.get("log_path", "")) or "")
+        item.setdefault("created_at", item.get("started_at", item.get("start_time", item.get("ended_at", "n/a"))) or "n/a")
+        item.setdefault("duration_sec", item.get("duration_sec", item.get("elapsed_sec", "n/a")) or "n/a")
+        item.setdefault("behavior_sample_count", item.get("behavior_count", item.get("behavior_sample_count", 0)) or 0)
+        item.setdefault("game_event_count", item.get("game_event_count", item.get("event_count", 0)) or 0)
+        item.setdefault("warning_count", item.get("warning_count", 0) or 0)
+        item.setdefault("error_count", item.get("error_count", 0) or 0)
+        return item
+
+    def _session_item_from_state(self) -> dict[str, Any] | None:
+        session = self.get_session_state() or {}
+        report_path = session.get("latest_report_path") or session.get("report_path") or ""
+        session_id = session.get("session_id") or session.get("current_session_id") or ""
+        if not session_id and not report_path:
+            return None
+        item = {
+            "session_id": str(session_id or "latest_session"),
+            "user_id": str(session.get("user_id") or self.get_app_state().get("current_user_id") or ""),
+            "game_id": str(session.get("game_id") or self.get_app_state().get("current_game_id") or ""),
+            "status": str(session.get("training_status") or session.get("status") or ("active" if session.get("session_active") else "completed")),
+            "score": session.get("score", session.get("score_last", "n/a")),
+            "report_path": str(report_path or ""),
+            "log_path": str(session.get("log_path") or ""),
+            "created_at": str(session.get("started_at") or session.get("created_at") or "n/a"),
+            "duration_sec": session.get("duration_sec", session.get("session_elapsed_ms", "n/a")),
+            "behavior_sample_count": session.get("behavior_sample_count", 0) or 0,
+            "game_event_count": session.get("game_event_count", 0) or 0,
+            "warning_count": session.get("warning_count", 0) or 0,
+            "error_count": session.get("error_count", 0) or 0,
+        }
+        return self._normalize_session_record(item)
+
+    def _read_report_preview(self, report_path: str, max_chars: int = 8000) -> str:
+        raw_path = str(report_path or "").strip()
+        if not raw_path:
+            return ""
+        path = Path(raw_path)
+        if not path.is_absolute():
+            path = Path.cwd() / path
+        try:
+            if path.exists() and path.is_file():
+                return path.read_text(encoding="utf-8", errors="replace")[:max_chars]
+        except OSError:
+            return ""
+        return ""
+
+    def _fetch_report_session_list(self, user_id: str = "") -> dict[str, Any]:
+        user_id = str(user_id or "").strip()
+        items: list[dict[str, Any]] = []
+        conn = self._connect_readonly_db()
+        try:
+            table_name = self._session_table_name(conn)
+            if table_name:
+                columns = self._table_columns(conn, table_name)
+                order_col = ""
+                for candidate in ("ended_at", "created_at", "started_at", "start_time"):
+                    if candidate in columns:
+                        order_col = candidate
+                        break
+                order_sql = f" ORDER BY {order_col} DESC" if order_col else " ORDER BY rowid DESC"
+                if user_id and "user_id" in columns:
+                    rows = conn.execute(f"SELECT * FROM {table_name} WHERE user_id=?" + order_sql, (user_id,)).fetchall()
+                else:
+                    rows = conn.execute(f"SELECT * FROM {table_name}" + order_sql).fetchall()
+                items = [self._normalize_session_record(dict(row)) for row in rows]
+        finally:
+            conn.close()
+
+        state_item = self._session_item_from_state()
+        if state_item and (not user_id or state_item.get("user_id") in {"", user_id}):
+            existing_ids = {str(item.get("session_id") or "") for item in items}
+            if state_item.get("session_id") not in existing_ids:
+                items.insert(0, state_item)
+
+        return {
+            "status": "accepted",
+            "message": "session_list",
+            "user_id": user_id,
+            "items": items,
+            "sessions": items,
+            "items_count": len(items),
+            "session_count": len(items),
+        }
+
+    def _fetch_report_session_detail(self, session_id: str, user_id: str = "") -> dict[str, Any]:
+        session_id = str(session_id or "").strip()
+        user_id = str(user_id or "").strip()
+        if not session_id:
+            return {"status": "missing_input", "message": "missing_session_id", "session_id": ""}
+        listing = self._fetch_report_session_list(user_id)
+        for item in listing.get("items", []):
+            if str(item.get("session_id") or "") == session_id:
+                detail = dict(item)
+                detail["status"] = "accepted"
+                detail["message"] = "session_loaded"
+                detail["report_preview"] = self._read_report_preview(str(detail.get("report_path") or ""))
+                return detail
+
+        conn = self._connect_readonly_db()
+        try:
+            table_name = self._session_table_name(conn)
+            if table_name:
+                columns = self._table_columns(conn, table_name)
+                id_col = "session_id" if "session_id" in columns else ("id" if "id" in columns else "")
+                if id_col:
+                    row = conn.execute(f"SELECT * FROM {table_name} WHERE {id_col}=?", (session_id,)).fetchone()
+                    if row:
+                        detail = self._normalize_session_record(dict(row))
+                        detail["status"] = "accepted"
+                        detail["message"] = "session_loaded"
+                        detail["report_preview"] = self._read_report_preview(str(detail.get("report_path") or ""))
+                        return detail
+        finally:
+            conn.close()
+
+        return {"status": "session_not_found", "message": "session_not_found", "session_id": session_id, "user_id": user_id}
+
+    def _refresh_report_summary(self, user_id: str = "") -> dict[str, Any]:
+        session = self.get_session_state() or {}
+        latest_report_path = str(session.get("latest_report_path") or session.get("report_path") or "")
+        latest_session_id = str(session.get("session_id") or session.get("current_session_id") or "")
+        report_available = bool(latest_report_path)
+        return {
+            "status": "accepted",
+            "message": "report_refreshed",
+            "user_id": str(user_id or self.get_app_state().get("current_user_id") or ""),
+            "latest_report_path": latest_report_path,
+            "latest_session_id": latest_session_id,
+            "report_available": report_available,
+            "reason": "report_available" if report_available else "no_report_available",
+            "session": session,
+            "report_preview": self._read_report_preview(latest_report_path),
+        }
+
+
     def get_control_manifest(self) -> list[dict[str, Any]]:
         readonly = self.mode in {"core", "live-readonly"}
         mode = self.mode
@@ -1042,10 +1200,58 @@ class GuiFacade:
             else:
                 summary = self._cancel_calibration_summary(user_id)
                 result = {"action_id": action_id, "status": summary.get("status", "cancelled"), "result": summary, "message": summary.get("message", "cancelled_by_user"), "accepted": summary.get("status") == "cancelled", "detail": summary, "user_id": user_id}
-        elif action_id == "report.refresh":
-            result = {"action_id": action_id, "status": "accepted", "result": self.get_session_state(), "message": "report_refreshed", "accepted": True}
-        elif action_id in {"report.list", "report.show", "report.export"}:
-            result = {"action_id": action_id, "status": "unsupported_in_current_mode", "result": "unsupported_in_current_mode", "accepted": False}
+        elif action_id in {"report.refresh", "report.list", "report.show", "report.export"}:
+            app = self.get_app_state()
+            raw_user_id = payload.get("user_id") if "user_id" in payload else app.get("current_user_id")
+            user_id = str(raw_user_id or "").strip()
+            if action_id == "report.refresh":
+                summary = self._refresh_report_summary(user_id)
+                result = {
+                    "action_id": action_id,
+                    "status": summary.get("status", "accepted"),
+                    "result": summary,
+                    "message": summary.get("message", "report_refreshed"),
+                    "accepted": True,
+                    "detail": summary,
+                    "report": summary,
+                    "user_id": user_id,
+                }
+            elif action_id == "report.list":
+                summary = self._fetch_report_session_list(user_id)
+                result = {
+                    "action_id": action_id,
+                    "status": summary.get("status", "accepted"),
+                    "result": summary,
+                    "message": summary.get("message", "session_list"),
+                    "accepted": True,
+                    "items": summary.get("items", []),
+                    "items_count": summary.get("items_count", summary.get("session_count", 0)),
+                    "sessions": summary.get("sessions", []),
+                    "user_id": user_id,
+                }
+            elif action_id == "report.show":
+                session_id = str(payload.get("session_id") or "").strip()
+                detail = self._fetch_report_session_detail(session_id, user_id)
+                result = {
+                    "action_id": action_id,
+                    "status": detail.get("status", "session_not_found"),
+                    "result": detail,
+                    "message": detail.get("message", ""),
+                    "accepted": detail.get("status") == "accepted",
+                    "detail": detail,
+                    "report": detail,
+                    "user_id": user_id,
+                    "session_id": session_id,
+                }
+            else:
+                result = {
+                    "action_id": action_id,
+                    "status": "not_implemented",
+                    "result": "not_implemented",
+                    "message": "report_export_deferred",
+                    "accepted": False,
+                    "user_id": user_id,
+                }
         elif action_id == "devlab.run":
             result = {"action_id": action_id, "status": "not_implemented_in_this_task", "result": payload, "message": "manual_or_copy_only", "accepted": False}
         else:
