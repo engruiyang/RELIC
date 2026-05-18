@@ -5,7 +5,6 @@ Item {
     property var controlStateObj: ({})
     property var runtimeObj: ({})
     property string commandSummary: ""
-    property var actionResultObj: ({})
     signal navigateTo(string pageId)
     signal invokeNative(string actionId)
     width: parent ? parent.width : 900
