@@ -1,6 +1,25 @@
 {
   "page_id": "app_shell",
-  "background": "theme.colors.background",
-  "panel": "component.panel",
-  "button": "component.button"
+  "background": {
+    "type": "layered",
+    "layers": [
+      {"type": "color", "value": "#020617"},
+      {"type": "image", "asset_key": "background.app.main", "fit": "cover", "position": "center", "opacity": 0.0},
+      {"type": "gradient", "from": "#020617", "to": "#111827", "direction": "vertical", "opacity": 0.72},
+      {"type": "overlay", "value": "#000000", "opacity": 0.10}
+    ]
+  },
+  "layout": {
+    "window_width": 1360,
+    "window_height": 860,
+    "content_margin": 16,
+    "section_gap": 12,
+    "nav_width": 230,
+    "top_bar_height": 64,
+    "page_host_padding": 12
+  },
+  "decorations": {
+    "corner_marks": true,
+    "divider_style": "thin_glow"
+  }
 }
