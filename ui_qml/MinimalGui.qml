@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import "pages"
+import "components"
 
 ApplicationWindow {
  id: root
@@ -62,9 +63,123 @@ ApplicationWindow {
      DiagnosticsPage { anchors.fill: parent; designThemeObj: root.designThemeObj; pageStyleObj: root.pageStylesObj.diagnostics_page||({}); componentStyleObj: root.componentStylesObj; renderResourcesObj: root.renderResourcesObj; visible: currentPage==="diagnostics"; controlStateObj: root.controlStateObj; runtimeObj: root.runtimeObj; sessionObj: root.sessionObj; gameHudObj: root.gameHudObj; commandSummary: root.commandsFor("diagnostics"); onInvokeNative: (a)=>root.invokeNative(a) }
      DeveloperLabPage { anchors.fill: parent; designThemeObj: root.designThemeObj; pageStyleObj: root.pageStylesObj.developer_lab_page||({}); componentStyleObj: root.componentStylesObj; renderResourcesObj: root.renderResourcesObj; visible: currentPage==="developer_lab"; controlStateObj: root.controlStateObj; commandSummary: root.commandsFor("developer_lab") }
     }
-   }
-  }
- }
+
+    function invokeNative(actionId) {
+        if (guiBridge) {
+            guiBridge.invokeAction(actionId, "{}")
+        }
+    }
+
+    Connections {
+        target: guiBridge ? guiBridge : null
+        function onStateChanged() {
+            pullState()
+        }
+    }
+
+    Component.onCompleted: pullState()
+
+    DesignBackground {
+        anchors.fill: parent
+        themeObj: root.designThemeObj
+        styleObj: root.pageStyle("app_shell")
+        renderResourcesObj: root.renderResourcesObj
+        fallbackColor: "#0f1720"
+    }
+
+    Column {
+        anchors.fill: parent
+        anchors.margins: Number(root.appShellLayoutValue("content_margin", root.designSpacing("page_margin", 8)))
+        spacing: Number(root.appShellLayoutValue("section_gap", root.designSpacing("section_gap", 6)))
+
+        DesignPanel {
+            width: parent.width
+            height: Number(root.appShellLayoutValue("top_bar_height", 64))
+            panelStyleObj: root.componentStyle("header")
+            themeObj: root.designThemeObj
+
+            Row {
+                anchors.fill: parent
+                spacing: 12
+
+                Label {
+                    text: "RELIC / 意念玩家"
+                    font.pixelSize: Number((root.designThemeObj.typography || ({})).title_size || 18)
+                    font.bold: true
+                    color: root.designColor("text", "#e6edf5")
+                }
+                Label { text: "current_user_id: " + safeText(getField(controlStateObj, "current_user_id")); color: root.designColor("text", "#e6edf5") }
+                Label { text: "connection_status: " + safeText(getField(runtimeObj, "connection_status")); color: root.designColor("text", "#e6edf5") }
+                Label { text: "stream_alive: " + safeText(getField(runtimeObj, "stream_alive")); color: root.designColor("text", "#e6edf5") }
+                Label { text: "quality_state: " + safeText(getField(runtimeObj, "quality_state")); color: root.designColor("text", "#e6edf5") }
+                Label { text: "session_active: " + safeText(getField(controlStateObj, "session_active")); color: root.designColor("text", "#e6edf5") }
+                Label { text: "currentPage: " + currentPage; color: root.designColor("text", "#e6edf5") }
+            }
+        }
+
+        Row {
+            width: parent.width
+            height: parent.height - Number(root.appShellLayoutValue("top_bar_height", 64)) - parent.spacing
+            spacing: Number(root.designSpacing("section_gap", 6))
+
+            DesignPanel {
+                width: Number(root.appShellLayoutValue("nav_width", 230))
+                height: parent.height
+                panelStyleObj: root.componentStyle("panel")
+                themeObj: root.designThemeObj
+
+                Column {
+                    anchors.fill: parent
+                    spacing: Number(root.designSpacing("nav_gap", 7))
+
+                    Label { text: "Navigation"; color: root.designColor("text", "#e6edf5"); font.bold: true }
+                    DesignButton { text: "Home"; buttonStyleObj: root.componentStyle("button"); themeObj: root.designThemeObj; onClicked: currentPage = "home" }
+                    DesignButton { text: "User"; buttonStyleObj: root.componentStyle("button"); themeObj: root.designThemeObj; onClicked: currentPage = "user" }
+                    DesignButton { text: "Calibration"; buttonStyleObj: root.componentStyle("button"); themeObj: root.designThemeObj; onClicked: currentPage = "calibration" }
+                    DesignButton { text: "Training"; buttonStyleObj: root.componentStyle("button"); themeObj: root.designThemeObj; onClicked: currentPage = "training" }
+                    DesignButton { text: "Report"; buttonStyleObj: root.componentStyle("button"); themeObj: root.designThemeObj; onClicked: currentPage = "report" }
+                    DesignButton { text: "Diagnostics"; buttonStyleObj: root.componentStyle("button"); themeObj: root.designThemeObj; onClicked: currentPage = "diagnostics" }
+                    DesignButton { text: "Developer Lab"; buttonStyleObj: root.componentStyle("button"); themeObj: root.designThemeObj; onClicked: currentPage = "developer_lab" }
+                    Label { text: "Global Safety"; color: root.designColor("text_muted", "#9aacbd") }
+                    DesignButton { text: "Refresh"; buttonStyleObj: root.componentStyle("button"); themeObj: root.designThemeObj; onClicked: invokeNative("app.refresh_now") }
+                    DesignButton { text: "Safe Stop"; buttonStyleObj: root.componentStyle("button"); themeObj: root.designThemeObj; onClicked: invokeNative("live.safe_stop") }
+                    DesignButton { text: "Go Diagnostics"; buttonStyleObj: root.componentStyle("button"); themeObj: root.designThemeObj; onClicked: currentPage = "diagnostics" }
+                    DesignButton { text: "Quit"; buttonStyleObj: root.componentStyle("button"); themeObj: root.designThemeObj; onClicked: Qt.quit() }
+                }
+            }
+
+            DesignPanel {
+                width: parent.width - Number(root.appShellLayoutValue("nav_width", 230)) - parent.spacing
+                height: parent.height
+                panelStyleObj: root.componentStyle("panel")
+                themeObj: root.designThemeObj
+
+                Item {
+                    id: pageHost
+                    objectName: "PageHost"
+                    anchors.fill: parent
+
+                    DesignBackground {
+                        anchors.fill: parent
+                        themeObj: root.designThemeObj
+                        styleObj: root.pageStyle(currentPage === "training" ? "training_page" : (currentPage + "_page"))
+                        renderResourcesObj: root.renderResourcesObj
+                        fallbackColor: root.designColor("background", "#0f1720")
+                    }
+
+                    HomePage { anchors.fill: parent; visible: currentPage === "home"; controlStateObj: root.controlStateObj; runtimeObj: root.runtimeObj; commandSummary: root.commandsFor("home"); onNavigateTo: (p)=>{root.currentPage=p}; onInvokeNative: (a)=>root.invokeNative(a) }
+                    UserPage { anchors.fill: parent; visible: currentPage === "user"; appStateObj: root.appStateObj; controlStateObj: root.controlStateObj; commandSummary: root.commandsFor("user"); onInvokeNative: (a)=>root.invokeNative(a) }
+                    CalibrationPage { anchors.fill: parent; visible: currentPage === "calibration"; controlStateObj: root.controlStateObj; commandSummary: root.commandsFor("calibration"); onInvokeNative: (a)=>root.invokeNative(a) }
+                    TrainingPage { anchors.fill: parent; visible: currentPage === "training"; appStateObj: root.appStateObj; controlStateObj: root.controlStateObj; runtimeObj: root.runtimeObj; gameHudObj: root.gameHudObj; gameViewObj: root.gameViewObj; designThemeObj: root.designThemeObj; pageStyleObj: root.pageStylesObj.training_page || ({}); componentStyleObj: root.componentStylesObj; gameStyleObj: root.gameStylesObj.trace_lock || ({}); effectStyleObj: root.effectStylesObj.trace_lock || ({}); renderResourcesObj: root.renderResourcesObj; commandSummary: root.commandsFor("training"); onInvokeNative: (a)=>root.invokeNative(a) }
+                    ReportPage { anchors.fill: parent; visible: currentPage === "report"; appStateObj: root.appStateObj; controlStateObj: root.controlStateObj; sessionObj: root.sessionObj; commandSummary: root.commandsFor("report") }
+                    DiagnosticsPage { anchors.fill: parent; visible: currentPage === "diagnostics"; controlStateObj: root.controlStateObj; runtimeObj: root.runtimeObj; sessionObj: root.sessionObj; gameHudObj: root.gameHudObj; commandSummary: root.commandsFor("diagnostics"); onInvokeNative: (a)=>root.invokeNative(a) }
+                    DeveloperLabPage { anchors.fill: parent; visible: currentPage === "developer_lab"; controlStateObj: root.controlStateObj; commandSummary: root.commandsFor("developer_lab") }
+                }
+            }
+        }
+    }
+
+    // TASK25B global GUI skin layer: DesignBackground / DesignPanel / DesignButton consume design pack tokens. background.app.main
 }
 
 // Compatibility tokens kept for TASK21/TASK23 tests:

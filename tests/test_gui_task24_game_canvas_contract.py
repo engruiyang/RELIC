@@ -21,6 +21,10 @@ def test_task24_training_game_canvas_tokens_present() -> None:
         "movement_type",
         "target_time_left_ms",
         "accuracy",
+        "TASK25 design_pack game_styles active",
+        "gameStyleObj",
+        "effectStyleObj",
+        "DesignMetricCard",
     ]:
         assert token in text
 
@@ -35,6 +39,18 @@ def test_task24_game_canvas_component_contract() -> None:
         "pointer_click",
         "sendEvent",
         "entities",
+        "property var gameStyleObj",
+        "property var effectStyleObj",
+        "property var designThemeObj",
+        "property var renderResourcesObj",
+        "targetGlow",
+        "timer_bar",
+        "effectColor",
+        "DesignBackground",
+        "targetAssetKey",
+        "targetImageSource",
+        "targetFallbackShape",
+        "fallback_shape",
     ]:
         assert token in text
 
