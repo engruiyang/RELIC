@@ -23,6 +23,12 @@ def test_gui_facade_modes_have_render_resources(mode: str, tmp_path) -> None:
     assert "assets" in bundle
     assert "styles" in bundle
     assert "layout_regions" in bundle
+    assert "design_pack" in bundle
+    assert "theme" in bundle
+    assert "page_styles" in bundle
+    assert "component_styles" in bundle
+    assert "game_styles" in bundle
+    assert "effect_styles" in bundle
     json.dumps(bundle)
     facade.close()
 
@@ -34,6 +40,12 @@ def test_gui_bridge_render_resources_json_fields() -> None:
     assert "fake_game.target.primary" in payload["assets"]
     assert "target.primary" in payload["styles"]
     assert "game_canvas" in payload["layout_regions"]
+    assert "design_pack" in payload
+    assert "theme" in payload
+    assert "training_page" in payload["page_styles"]
+    assert "button" in payload["component_styles"]
+    assert "trace_lock" in payload["game_styles"]
+    assert "trace_lock" in payload["effect_styles"]
 
 
 def test_game_client_sources_do_not_import_resource_managers() -> None:
@@ -50,3 +62,6 @@ def test_qml_does_not_directly_read_assets_json_or_platform_paths() -> None:
     assert ".json" not in text or "renderResourcesJson" in text
     assert "PlatformReporter" not in text
     assert "ipc_mouse_data" not in text
+    assert "renderResourcesObj" in text
+    assert "designThemeObj" in text
+    assert "gameStylesObj" in text
