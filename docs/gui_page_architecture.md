@@ -9,3 +9,10 @@
 - UI 表现：native=可触发 invokeAction；manual/copy_only=仅反馈+CLI reference，不执行。
 - Developer Lab 不执行危险命令：避免在 GUI 内触发高风险脚本/写文件/连接链路。
 - 后续：TASK23B 接 User/Calibration 真实后端；TASK23C 对齐 RuntimeSnapshot；TASK23D 优化专业页面壳。
+
+
+## TASK23B 当前状态（收束）
+
+- TASK23B 主流程（User/Calibration/Training/Report）已完成并进入验收/回归阶段。
+- 本阶段重点是验收文档、命令清单与轻量 contract 测试，不新增 GUI 功能。
+- GameCanvas 恢复与 UI polish 不在 TASK23B 范围内，分别归属后续任务。
