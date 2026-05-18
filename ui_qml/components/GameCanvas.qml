@@ -35,15 +35,15 @@ Rectangle {
     }
 
     function pxX(xNorm) {
-        return Math.max(0, Math.min(width, xNorm * width))
+        return Math.max(0, Math.min(width, Number(xNorm || 0) * width))
     }
 
     function pxY(yNorm) {
-        return Math.max(0, Math.min(height, yNorm * height))
+        return Math.max(0, Math.min(height, Number(yNorm || 0) * height))
     }
 
     function pxRadius(rNorm) {
-        return Math.max(4, rNorm * Math.min(width, height))
+        return Math.max(4, Number(rNorm || 0) * Math.min(width, height))
     }
 
     function targetType(entity) {
@@ -119,10 +119,10 @@ Rectangle {
     }
 
     function targetAssetKey(entity) {
-        var s = targetStyle(entity)
+        var style = targetStyle(entity)
         var key = entity && entity.asset_key ? entity.asset_key : ""
         if (key === "") {
-            key = styleValue(s, "asset_key", "")
+            key = styleValue(style, "asset_key", "")
         }
         return key
     }
@@ -200,7 +200,7 @@ Rectangle {
             Image {
                 anchors.fill: parent
                 source: root.targetImageSource(entity)
-                visible: entity.kind === "target" && root.isTargetImageAvailable(entity)
+                visible: entity.kind === "target" && source !== ""
                 fillMode: Image.PreserveAspectFit
                 smooth: true
                 mipmap: true
@@ -211,8 +211,8 @@ Rectangle {
                 radius: root.targetFallbackShape(entity) === "circle" ? width / 2 : Math.max(2, width * 0.12)
                 rotation: root.targetFallbackShape(entity) === "diamond" ? 45 : 0
                 color: entity.kind === "target" ? root.targetFill(entity) : (entity.kind === "focus_zone" ? "#44aaff33" : "transparent")
-                border.width: entity.kind === "progress_ring" ? Number(styleValue(gameStyleObj.progress_ring || ({}), "width", 3)) : (entity.state === "active" ? 2 : 1)
-                border.color: entity.kind === "progress_ring" ? styleValue(gameStyleObj.progress_ring || ({}), "stroke", "#ffdd55") : root.targetStroke(entity)
+                border.width: entity.kind === "progress_ring" ? Number(root.styleValue(root.gameStyleObj.progress_ring || ({}), "width", 3)) : (entity.state === "active" ? 2 : 1)
+                border.color: entity.kind === "progress_ring" ? root.styleValue(root.gameStyleObj.progress_ring || ({}), "stroke", "#ffdd55") : root.targetStroke(entity)
                 visible: (entity.kind === "target" && !root.isTargetImageAvailable(entity)) || entity.kind === "focus_zone" || entity.kind === "progress_ring"
                 opacity: entity.kind === "focus_zone" ? 0.45 : 1.0
             }
@@ -222,13 +222,13 @@ Rectangle {
                 width: parent.width * root.progressValue(entity)
                 height: Math.max(3, parent.height * 0.08)
                 radius: height / 2
-                color: styleValue(gameStyleObj.progress_ring || ({}), "background", "#1F2937")
+                color: root.styleValue(root.gameStyleObj.progress_ring || ({}), "background", "#1F2937")
                 visible: entity.kind === "progress_ring"
             }
 
             Text {
                 anchors.centerIn: parent
-                color: styleValue(gameStyleObj.hud || ({}), "text_color", "#ddd")
+                color: root.styleValue(root.gameStyleObj.hud || ({}), "text_color", "#ddd")
                 text: entity.kind === "progress_ring" ? ("P " + Math.round(root.progressValue(entity) * 100) + "%") : ""
                 visible: entity.kind === "progress_ring"
                 font.pixelSize: 11
