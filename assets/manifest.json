@@ -34,6 +34,27 @@
       "fallback_shape": "circle",
       "style_key": "target.background",
       "description": "shared fallback circle"
+    },
+    "background.app.main": {
+      "type": "image",
+      "url": null,
+      "fallback_shape": "rect",
+      "style_key": "background.app",
+      "description": "TASK25B app background image slot; null url falls back to layered color/gradient"
+    },
+    "background.training.main": {
+      "type": "image",
+      "url": null,
+      "fallback_shape": "rect",
+      "style_key": "background.training",
+      "description": "TASK25B training page background image slot"
+    },
+    "tracelock.background.grid": {
+      "type": "image",
+      "url": null,
+      "fallback_shape": "rect",
+      "style_key": "tracelock.canvas.background",
+      "description": "TASK25B TraceLock canvas background image slot"
     }
   },
   "default_design_pack": "default",
