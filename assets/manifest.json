@@ -39,57 +39,57 @@
       "type": "image",
       "url": null,
       "fallback_shape": "rect",
-      "style_key": "background.app",
-      "description": "TASK25B app background image slot; null url falls back to layered color/gradient"
+      "style_key": "panel.debug",
+      "description": "design-pack background slot: background.app.main"
+    },
+    "background.home.main": {
+      "type": "image",
+      "url": null,
+      "fallback_shape": "rect",
+      "style_key": "panel.debug",
+      "description": "design-pack background slot: background.home.main"
+    },
+    "background.user.main": {
+      "type": "image",
+      "url": null,
+      "fallback_shape": "rect",
+      "style_key": "panel.debug",
+      "description": "design-pack background slot: background.user.main"
+    },
+    "background.calibration.main": {
+      "type": "image",
+      "url": null,
+      "fallback_shape": "rect",
+      "style_key": "panel.debug",
+      "description": "design-pack background slot: background.calibration.main"
     },
     "background.training.main": {
       "type": "image",
       "url": null,
       "fallback_shape": "rect",
-      "style_key": "background.training",
-      "description": "TASK25B training page background image slot"
+      "style_key": "panel.debug",
+      "description": "design-pack background slot: background.training.main"
     },
-    "tracelock.background.grid": {
+    "background.report.main": {
       "type": "image",
       "url": null,
       "fallback_shape": "rect",
-      "style_key": "tracelock.canvas.background",
-      "description": "TASK25B TraceLock canvas background image slot"
+      "style_key": "panel.debug",
+      "description": "design-pack background slot: background.report.main"
     },
-    "tracelock.target.marked_trace": {
+    "background.diagnostics.main": {
       "type": "image",
       "url": null,
-      "fallback_shape": "circle",
-      "style_key": "tracelock.target.marked_trace",
-      "description": "TASK25C TraceLock marked target image slot; null url falls back to styled circle"
+      "fallback_shape": "rect",
+      "style_key": "panel.debug",
+      "description": "design-pack background slot: background.diagnostics.main"
     },
-    "tracelock.target.noise_trace": {
+    "background.developer_lab.main": {
       "type": "image",
       "url": null,
-      "fallback_shape": "diamond",
-      "style_key": "tracelock.target.noise_trace",
-      "description": "TASK25C TraceLock noise target image slot; null url falls back to styled diamond"
-    },
-    "tracelock.focus_zone.default": {
-      "type": "image",
-      "url": null,
-      "fallback_shape": "circle",
-      "style_key": "tracelock.focus_zone",
-      "description": "TASK25C TraceLock focus-zone image slot"
-    },
-    "tracelock.progress_ring.default": {
-      "type": "image",
-      "url": null,
-      "fallback_shape": "ring",
-      "style_key": "tracelock.progress_ring",
-      "description": "TASK25C TraceLock progress-ring image slot"
-    },
-    "tracelock.timer_bar.default": {
-      "type": "image",
-      "url": null,
-      "fallback_shape": "bar",
-      "style_key": "tracelock.timer_bar",
-      "description": "TASK25C TraceLock timer-bar image slot"
+      "fallback_shape": "rect",
+      "style_key": "panel.debug",
+      "description": "design-pack background slot: background.developer_lab.main"
     }
   },
   "default_design_pack": "default",

@@ -1,25 +1,25 @@
 {
   "page_id": "app_shell",
-  "background": {
-    "type": "layered",
-    "layers": [
-      {"type": "color", "value": "#020617"},
-      {"type": "image", "asset_key": "background.app.main", "fit": "cover", "position": "center", "opacity": 0.0},
-      {"type": "gradient", "from": "#020617", "to": "#111827", "direction": "vertical", "opacity": 0.72},
-      {"type": "overlay", "value": "#000000", "opacity": 0.10}
-    ]
+  "layered": {
+    "color": "#F8FAFC",
+    "image": {
+      "asset_key": "background.app.main",
+      "fit": "cover",
+      "position": "center"
+    },
+    "gradient": {
+      "enabled": true,
+      "from": "#F8FAFC",
+      "to": "#E2E8F0",
+      "angle": 180
+    },
+    "overlay": {
+      "color": "#FFFFFF",
+      "opacity": 0.08
+    },
+    "opacity": 1.0,
+    "fallback": "theme.colors.background"
   },
-  "layout": {
-    "window_width": 1360,
-    "window_height": 860,
-    "content_margin": 16,
-    "section_gap": 12,
-    "nav_width": 230,
-    "top_bar_height": 64,
-    "page_host_padding": 12
-  },
-  "decorations": {
-    "corner_marks": true,
-    "divider_style": "thin_glow"
-  }
+  "panel": "component.panel",
+  "text": "theme.colors.text"
 }

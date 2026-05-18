@@ -1,27 +1,25 @@
 {
   "page_id": "training_page",
-  "background": {
-    "type": "layered",
-    "layers": [
-      {"type": "color", "value": "#020617"},
-      {"type": "image", "asset_key": "background.training.main", "fit": "cover", "position": "center", "opacity": 0.0},
-      {"type": "gradient", "from": "#020617", "to": "#0F172A", "direction": "vertical", "opacity": 0.60},
-      {"type": "overlay", "value": "#000000", "opacity": 0.16}
-    ]
+  "layered": {
+    "color": "#F8FAFC",
+    "image": {
+      "asset_key": "background.training.main",
+      "fit": "cover",
+      "position": "center"
+    },
+    "gradient": {
+      "enabled": true,
+      "from": "#F8FAFC",
+      "to": "#E2E8F0",
+      "angle": 180
+    },
+    "overlay": {
+      "color": "#FFFFFF",
+      "opacity": 0.08
+    },
+    "opacity": 1.0,
+    "fallback": "theme.colors.background"
   },
   "panel": "component.panel",
-  "button": "component.button",
-  "layout": {
-    "content_margin": 16,
-    "section_spacing": 12,
-    "game_canvas_height": 460,
-    "hud_card_min_height": 96,
-    "hud_metric_columns": 4,
-    "hud_metric_width": 170,
-    "hud_metric_height": 92
-  },
-  "decorations": {
-    "divider_style": "thin_glow",
-    "corner_marks": true
-  }
+  "text": "theme.colors.text"
 }

@@ -4,6 +4,10 @@ import "../components"
 
 Item {
     id: root
+    property var designThemeObj: ({})
+    property var pageStyleObj: ({})
+    property var componentStyleObj: ({})
+    property var renderResourcesObj: ({})
 
     property var appStateObj: ({})
     property var controlStateObj: ({})
@@ -293,11 +297,22 @@ Item {
         }
     }
 
+    DesignBackground {
+        anchors.fill: parent
+        themeObj: root.designThemeObj
+        styleObj: root.pageStyleObj
+        renderResourcesObj: root.renderResourcesObj
+        fallbackColor: (root.designThemeObj.colors && root.designThemeObj.colors.background) ? root.designThemeObj.colors.background : "#F8FAFC"
+    }
+
     Column {
         anchors.fill: parent
         spacing: 6
 
         PageHeader {
+            designThemeObj: root.designThemeObj
+            componentStyleObj: root.componentStyleObj
+            headerStyleObj: root.componentStyleObj.header || ({})
             titleText: "User / Profile"
             subtitleText: "Select or create a local user before calibration and training"
         }
@@ -464,6 +479,9 @@ Item {
         }
 
         PageFeedbackPanel {
+            designThemeObj: root.designThemeObj
+            componentStyleObj: root.componentStyleObj
+            feedbackStyleObj: root.componentStyleObj.feedback_panel || ({})
             pageId: "user"
             selectedCommandId: root.selectedCommandId
             selectedStatus: root.selectedStatus

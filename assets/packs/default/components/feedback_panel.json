@@ -1,8 +1,7 @@
 {
-  "background": "#0B1120",
-  "border": "#334155",
-  "text_color": "#E5E7EB",
-  "muted_color": "#94A3B8",
-  "radius": 10,
-  "padding": 10
+  "background": "#FFFFFF",
+  "border": "#CBD5E1",
+  "radius": 8,
+  "opacity": 0.96,
+  "text_color": "#0F172A"
 }

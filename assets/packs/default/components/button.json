@@ -1,10 +1,20 @@
 {
-  "normal": {"background": "#2563EB", "border": "#1D4ED8", "text": "#FFFFFF"},
-  "hover": {"background": "#1D4ED8", "border": "#38BDF8", "text": "#FFFFFF"},
-  "pressed": {"background": "#1E40AF", "border": "#67E8F9", "text": "#FFFFFF"},
-  "disabled": {"background": "#334155", "border": "#475569", "text": "#CBD5E1"},
+  "normal": {
+    "background": "#2563EB",
+    "border": "#1D4ED8",
+    "text": "#FFFFFF"
+  },
+  "pressed": {
+    "background": "#1D4ED8",
+    "border": "#1E40AF",
+    "text": "#FFFFFF"
+  },
+  "disabled": {
+    "background": "#6B7280",
+    "border": "#4B5563",
+    "text": "#D1D5DB"
+  },
   "radius": 8,
   "padding_x": 14,
-  "padding_y": 10,
-  "border_width": 1
+  "padding_y": 10
 }

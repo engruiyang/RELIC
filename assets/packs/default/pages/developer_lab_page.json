@@ -1,9 +1,9 @@
 {
-  "page_id": "calibration_page",
+  "page_id": "developer_lab_page",
   "layered": {
     "color": "#F8FAFC",
     "image": {
-      "asset_key": "background.calibration.main",
+      "asset_key": "background.developer_lab.main",
       "fit": "cover",
       "position": "center"
     },

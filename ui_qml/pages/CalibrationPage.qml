@@ -4,6 +4,10 @@ import "../components"
 
 Item {
     id: root
+    property var designThemeObj: ({})
+    property var pageStyleObj: ({})
+    property var componentStyleObj: ({})
+    property var renderResourcesObj: ({})
 
     property var controlStateObj: ({})
     property string commandSummary: ""
@@ -304,6 +308,14 @@ Item {
         onTriggered: root.doPollProgress()
     }
 
+    DesignBackground {
+        anchors.fill: parent
+        themeObj: root.designThemeObj
+        styleObj: root.pageStyleObj
+        renderResourcesObj: root.renderResourcesObj
+        fallbackColor: (root.designThemeObj.colors && root.designThemeObj.colors.background) ? root.designThemeObj.colors.background : "#F8FAFC"
+    }
+
     ScrollView {
         id: calibrationScroller
         anchors.fill: parent
@@ -315,6 +327,9 @@ Item {
             spacing: 6
 
         PageHeader {
+            designThemeObj: root.designThemeObj
+            componentStyleObj: root.componentStyleObj
+            headerStyleObj: root.componentStyleObj.header || ({})
             titleText: "Calibration Page"
             subtitleText: "Calibration requires a current user."
         }
@@ -480,6 +495,9 @@ Item {
         }
 
         PageFeedbackPanel {
+            designThemeObj: root.designThemeObj
+            componentStyleObj: root.componentStyleObj
+            feedbackStyleObj: root.componentStyleObj.feedback_panel || ({})
             pageId: "calibration"
             selectedCommandId: root.selectedCommandId
             selectedStatus: root.selectedStatus

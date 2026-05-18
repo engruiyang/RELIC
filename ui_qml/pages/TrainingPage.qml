@@ -3,6 +3,11 @@ import QtQuick.Controls
 import "../components"
 
 Item {
+    id: root
+    property var designThemeObj: ({})
+    property var pageStyleObj: ({})
+    property var componentStyleObj: ({})
+    property var renderResourcesObj: ({})
     id: trainingPage
 
     property var appStateObj: ({})
@@ -431,10 +436,10 @@ Item {
 
     DesignBackground {
         anchors.fill: parent
-        themeObj: trainingPage.designThemeObj
-        styleObj: trainingPage.pageStyleObj
-        renderResourcesObj: trainingPage.renderResourcesObj
-        fallbackColor: themeColor("background", "#0f1720")
+        themeObj: root.designThemeObj
+        styleObj: root.pageStyleObj
+        renderResourcesObj: root.renderResourcesObj
+        fallbackColor: (root.designThemeObj.colors && root.designThemeObj.colors.background) ? root.designThemeObj.colors.background : "#F8FAFC"
     }
 
     ScrollView {
@@ -447,6 +452,9 @@ Item {
             spacing: Number((pageStyleObj.layout || ({})).section_spacing || themeSpacing("section_gap", 8))
 
             PageHeader {
+            designThemeObj: root.designThemeObj
+            componentStyleObj: root.componentStyleObj
+            headerStyleObj: root.componentStyleObj.header || ({})
                 titleText: "Training Page"
                 subtitleText: "Training readiness gate + existing session/game commands"
             }
@@ -795,6 +803,9 @@ Item {
             }
 
             PageFeedbackPanel {
+            designThemeObj: root.designThemeObj
+            componentStyleObj: root.componentStyleObj
+            feedbackStyleObj: root.componentStyleObj.feedback_panel || ({})
                 pageId: "training"
                 selectedCommandId: selectedCommandId
                 selectedStatus: selectedStatus

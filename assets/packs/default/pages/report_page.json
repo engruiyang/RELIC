@@ -1,20 +1,25 @@
 {
   "page_id": "report_page",
-  "background": {
-    "type": "layered",
-    "layers": [
-      {"type": "color", "value": "theme.colors.background"},
-      {"type": "gradient", "from": "#020617", "to": "#111827", "direction": "vertical", "opacity": 0.45},
-      {"type": "overlay", "value": "#000000", "opacity": 0.08}
-    ]
+  "layered": {
+    "color": "#F8FAFC",
+    "image": {
+      "asset_key": "background.report.main",
+      "fit": "cover",
+      "position": "center"
+    },
+    "gradient": {
+      "enabled": true,
+      "from": "#F8FAFC",
+      "to": "#E2E8F0",
+      "angle": 180
+    },
+    "overlay": {
+      "color": "#FFFFFF",
+      "opacity": 0.08
+    },
+    "opacity": 1.0,
+    "fallback": "theme.colors.background"
   },
-  "layout": {
-    "content_margin": 16,
-    "section_spacing": 12,
-    "panel_radius": 12
-  },
-  "decorations": {
-    "divider_style": "thin_glow",
-    "corner_marks": false
-  }
+  "panel": "component.panel",
+  "text": "theme.colors.text"
 }

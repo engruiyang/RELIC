@@ -1,57 +1,19 @@
 {
   "colors": {
     "background": "#F8FAFC",
-    "background_alt": "#E2E8F0",
     "panel": "#FFFFFF",
     "panel_border": "#CBD5E1",
     "text": "#0F172A",
     "text_muted": "#475569",
-    "accent": "#2563EB",
-    "accent_alt": "#059669",
-    "danger": "#DC2626",
-    "warning": "#B45309"
+    "accent": "#2563EB"
   },
   "typography": {
-    "font_family": "Microsoft YaHei UI",
-    "mono_family": "Consolas",
+    "font_family": "Sans Serif",
     "title_size": 24,
-    "subtitle_size": 14,
-    "body_size": 14,
-    "hud_label_size": 12,
-    "hud_value_size": 24
+    "body_size": 14
   },
   "spacing": {
     "page_margin": 16,
-    "section_gap": 12,
-    "panel_gap": 10,
-    "nav_gap": 7
-  },
-  "background": {
-    "type": "layered",
-    "layers": [
-      {
-        "type": "color",
-        "value": "#F8FAFC"
-      },
-      {
-        "type": "image",
-        "asset_key": "background.app.main",
-        "fit": "cover",
-        "position": "center",
-        "opacity": 0.0
-      },
-      {
-        "type": "gradient",
-        "from": "#F8FAFC",
-        "to": "#E2E8F0",
-        "direction": "vertical",
-        "opacity": 0.7
-      },
-      {
-        "type": "overlay",
-        "value": "#FFFFFF",
-        "opacity": 0.05
-      }
-    ]
+    "section_gap": 12
   }
 }

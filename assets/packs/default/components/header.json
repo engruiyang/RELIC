@@ -1,11 +1,7 @@
 {
-  "background": "#0F172A",
-  "border": "#334155",
-  "title_color": "#F8FAFC",
-  "subtitle_color": "#94A3B8",
-  "title_size": 22,
-  "subtitle_size": 13,
-  "height": 60,
-  "radius": 12,
-  "padding": 12
+  "background": "#FFFFFF",
+  "border": "#CBD5E1",
+  "radius": 10,
+  "text_color": "#0F172A",
+  "muted_text_color": "#475569"
 }

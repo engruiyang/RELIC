@@ -1,206 +1,21 @@
 import QtQuick
+import QtQuick.Controls
 
 Item {
     id: root
-
-    property var styleObj: ({})
     property var themeObj: ({})
+    property var styleObj: ({})
     property var renderResourcesObj: ({})
-    property color fallbackColor: "#0f1720"
+    property color fallbackColor: "#F8FAFC"
 
-    function value(obj, key, fallbackValue) {
-        if (obj === undefined || obj === null) {
-            return fallbackValue
-        }
-        var v = obj[key]
-        return (v === undefined || v === null || v === "") ? fallbackValue : v
-    }
+    readonly property var layered: (styleObj && styleObj.layered) ? styleObj.layered : ({})
+    readonly property color bgColor: layered.color || fallbackColor
+    readonly property real bgOpacity: layered.opacity !== undefined ? Number(layered.opacity) : 1.0
 
-    function colors() {
-        return themeObj.colors || ({})
-    }
-
-    function resolveThemePath(path, fallbackValue) {
-        if (path === undefined || path === null || path === "") {
-            return fallbackValue
-        }
-        var text = String(path)
-        if (text.indexOf("theme.colors.") === 0) {
-            return value(colors(), text.substring("theme.colors.".length), fallbackValue)
-        }
-        return text
-    }
-
-    function backgroundSpec() {
-        var bg = styleObj.background
-        if (bg === undefined || bg === null || bg === "") {
-            bg = value(colors(), "background", fallbackColor)
-        }
-        if (typeof bg === "string") {
-            return ({"type": "color", "value": resolveThemePath(bg, fallbackColor)})
-        }
-        return bg
-    }
-
-    function layers() {
-        var bg = backgroundSpec()
-        if (bg.layers && Array.isArray(bg.layers)) {
-            return bg.layers
-        }
-        return [bg]
-    }
-
-    function layerAt(index) {
-        var arr = layers()
-        if (index >= 0 && index < arr.length) {
-            return arr[index] || ({})
-        }
-        return ({})
-    }
-
-    function firstLayer(typeName) {
-        var arr = layers()
-        for (var i = 0; i < arr.length; i++) {
-            if (String(arr[i].type || "") === typeName) {
-                return arr[i]
-            }
-        }
-        return ({})
-    }
-
-    function colorValue(fallbackValue) {
-        var colorLayer = firstLayer("color")
-        if (colorLayer.value !== undefined) {
-            return resolveThemePath(colorLayer.value, fallbackValue)
-        }
-        var bg = backgroundSpec()
-        if (bg.type === "color") {
-            return resolveThemePath(bg.value, fallbackValue)
-        }
-        return fallbackValue
-    }
-
-    function gradientLayer() {
-        return firstLayer("gradient")
-    }
-
-    function overlayLayer() {
-        return firstLayer("overlay")
-    }
-
-    function imageLayer() {
-        return firstLayer("image")
-    }
-
-    function normalizedImageUrl(rawUrl) {
-        if (rawUrl === undefined || rawUrl === null || rawUrl === "") {
-            return ""
-        }
-        var u = String(rawUrl)
-        if (u.indexOf("placeholder://") === 0) {
-            return ""
-        }
-        if (u.indexOf("file:") === 0 || u.indexOf("qrc:") === 0 || u.indexOf("http:") === 0 || u.indexOf("https:") === 0 || u.indexOf("/") === 0) {
-            return u
-        }
-        return "../../assets/" + u
-    }
-
-    function assetUrl(assetKey) {
-        if (assetKey === undefined || assetKey === null || assetKey === "") {
-            return ""
-        }
-        var assets = renderResourcesObj.assets || ({})
-        var item = assets[String(assetKey)] || ({})
-        return normalizedImageUrl(item.url || "")
-    }
-
-    function imageSource() {
-        var layer = imageLayer()
-        if (layer.url !== undefined && layer.url !== null && layer.url !== "") {
-            return normalizedImageUrl(layer.url)
-        }
-        return assetUrl(layer.asset_key)
-    }
-
-    function imagePosition() {
-        return String(value(imageLayer(), "position", "center"))
-    }
-
-    function imageHorizontalAlignment() {
-        var p = imagePosition()
-        if (p.indexOf("left") >= 0) {
-            return Image.AlignLeft
-        }
-        if (p.indexOf("right") >= 0) {
-            return Image.AlignRight
-        }
-        return Image.AlignHCenter
-    }
-
-    function imageVerticalAlignment() {
-        var p = imagePosition()
-        if (p.indexOf("top") >= 0) {
-            return Image.AlignTop
-        }
-        if (p.indexOf("bottom") >= 0) {
-            return Image.AlignBottom
-        }
-        return Image.AlignVCenter
-    }
-
-    function imageOpacity() {
-        var layer = imageLayer()
-        return Number(value(layer, "opacity", 0.0))
-    }
-
-    function imageFillMode() {
-        var fit = String(value(imageLayer(), "fit", "cover"))
-        if (fit === "contain") {
-            return Image.PreserveAspectFit
-        }
-        if (fit === "stretch") {
-            return Image.Stretch
-        }
-        if (fit === "tile") {
-            return Image.Tile
-        }
-        return Image.PreserveAspectCrop
-    }
-
+    Rectangle { anchors.fill: parent; color: bgColor; opacity: bgOpacity }
     Rectangle {
         anchors.fill: parent
-        color: root.colorValue(root.fallbackColor)
+        color: (layered.overlay && layered.overlay.color) ? layered.overlay.color : "transparent"
+        opacity: (layered.overlay && layered.overlay.opacity !== undefined) ? Number(layered.overlay.opacity) : 0
     }
-
-    Image {
-        anchors.fill: parent
-        source: root.imageSource()
-        visible: source !== ""
-        fillMode: root.imageFillMode()
-        horizontalAlignment: root.imageHorizontalAlignment()
-        verticalAlignment: root.imageVerticalAlignment()
-        opacity: root.imageOpacity()
-        smooth: true
-        clip: true
-    }
-
-    Rectangle {
-        anchors.fill: parent
-        visible: root.gradientLayer().from !== undefined || root.gradientLayer().to !== undefined
-        opacity: Number(root.value(root.gradientLayer(), "opacity", 0.45))
-        gradient: Gradient {
-            GradientStop { position: 0.0; color: root.value(root.gradientLayer(), "from", "#00000000") }
-            GradientStop { position: 1.0; color: root.value(root.gradientLayer(), "to", "#00000000") }
-        }
-    }
-
-    Rectangle {
-        anchors.fill: parent
-        visible: root.overlayLayer().value !== undefined
-        color: root.value(root.overlayLayer(), "value", "#000000")
-        opacity: Number(root.value(root.overlayLayer(), "opacity", 0.0))
-    }
-
-    // TASK25C background supports color / image asset_key/url / gradient / overlay / opacity / fit / position / relative asset fallback.
 }
