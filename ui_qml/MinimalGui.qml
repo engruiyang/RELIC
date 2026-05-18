@@ -10,13 +10,14 @@ ApplicationWindow {
  property var runtimeObj: ({})
  property var sessionObj: ({})
  property var gameHudObj: ({})
+ property var gameViewObj: ({})
  property var controlStateObj: ({})
  property var pageCommandManifestObj: ({})
  function safeJsonParse(t){ try { return JSON.parse(t||"{}") } catch(e) { return ({"__parse_error__":"invalid"}) } }
  function safeText(v,f){ var fb=f===undefined?"n/a":f; return v===undefined||v===null||v===""?fb:String(v) }
  function getField(o,k,f){ if(!o||o[k]===undefined||o[k]===null||o[k]==="") return f===undefined?"n/a":f; return o[k] }
  function commandsFor(pageId){ var p=pageCommandManifestObj.pages||{}; var arr=p[pageId]||[]; var out=[]; for(var i=0;i<arr.length&&i<4;i++){ out.push(arr[i].command_id+"("+arr[i].execution_mode+")") } return out.join(" | ") }
- function pullState(){ if(!guiBridge)return; appStateObj=safeJsonParse(guiBridge.appState); runtimeObj=safeJsonParse(guiBridge.runtimeSnapshot); sessionObj=safeJsonParse(guiBridge.sessionState); gameHudObj=safeJsonParse(guiBridge.gameHudJson); controlStateObj=safeJsonParse(guiBridge.controlStateJson); pageCommandManifestObj=safeJsonParse(guiBridge.pageCommandManifestJson) }
+ function pullState(){ if(!guiBridge)return; appStateObj=safeJsonParse(guiBridge.appState); runtimeObj=safeJsonParse(guiBridge.runtimeSnapshot); sessionObj=safeJsonParse(guiBridge.sessionState); gameHudObj=safeJsonParse(guiBridge.gameHudJson); gameViewObj=safeJsonParse(guiBridge.gameViewJson); controlStateObj=safeJsonParse(guiBridge.controlStateJson); pageCommandManifestObj=safeJsonParse(guiBridge.pageCommandManifestJson) }
  function invokeNative(actionId){ if(guiBridge) guiBridge.invokeAction(actionId, "{}") }
  Connections { target: guiBridge ? guiBridge : null; function onStateChanged(){ pullState() } }
  Component.onCompleted: pullState()
@@ -52,7 +53,7 @@ ApplicationWindow {
      HomePage { anchors.fill: parent; visible: currentPage==="home"; controlStateObj: root.controlStateObj; runtimeObj: root.runtimeObj; commandSummary: root.commandsFor("home"); onNavigateTo: (p)=>{root.currentPage=p}; onInvokeNative: (a)=>root.invokeNative(a) }
      UserPage { anchors.fill: parent; visible: currentPage==="user"; appStateObj: root.appStateObj; controlStateObj: root.controlStateObj; commandSummary: root.commandsFor("user"); onInvokeNative: (a)=>root.invokeNative(a) }
      CalibrationPage { anchors.fill: parent; visible: currentPage==="calibration"; controlStateObj: root.controlStateObj; commandSummary: root.commandsFor("calibration"); onInvokeNative: (a)=>root.invokeNative(a) }
-     TrainingPage { anchors.fill: parent; visible: currentPage==="training"; appStateObj: root.appStateObj; controlStateObj: root.controlStateObj; runtimeObj: root.runtimeObj; gameHudObj: root.gameHudObj; commandSummary: root.commandsFor("training"); onInvokeNative: (a)=>root.invokeNative(a) }
+     TrainingPage { anchors.fill: parent; visible: currentPage==="training"; appStateObj: root.appStateObj; controlStateObj: root.controlStateObj; runtimeObj: root.runtimeObj; gameHudObj: root.gameHudObj; gameViewObj: root.gameViewObj; commandSummary: root.commandsFor("training"); onInvokeNative: (a)=>root.invokeNative(a) }
      ReportPage { anchors.fill: parent; visible: currentPage==="report"; appStateObj: root.appStateObj; controlStateObj: root.controlStateObj; sessionObj: root.sessionObj; commandSummary: root.commandsFor("report") }
      DiagnosticsPage { anchors.fill: parent; visible: currentPage==="diagnostics"; controlStateObj: root.controlStateObj; runtimeObj: root.runtimeObj; sessionObj: root.sessionObj; gameHudObj: root.gameHudObj; commandSummary: root.commandsFor("diagnostics"); onInvokeNative: (a)=>root.invokeNative(a) }
      DeveloperLabPage { anchors.fill: parent; visible: currentPage==="developer_lab"; controlStateObj: root.controlStateObj; commandSummary: root.commandsFor("developer_lab") }
@@ -68,7 +69,7 @@ ApplicationWindow {
 // Connection Runtime Snapshot Attention Gyroscope Session Diagnostics Game HUD
 // device_connected attention_fresh attention_age_ms attention_last_update_ms gyro_x gyro_y gyro_z gyro_fresh gyro_age_ms gyro_last_update_ms session_type session_id latest_report_path warning_flags error_flags
 // Control Panel Reconnect Start Session Stop Session Calibration Status Game Status Quality / Focus (TASK6) Live Input
-// controlManifestJson controlStateJson last_command last_command_result last_command_error command_count
+// gameViewJson controlManifestJson controlStateJson last_command last_command_result last_command_error command_count
 // profile_status calibration_status profile_loaded user_type attention_low_threshold attention_high_threshold preferred_game_id calibration_usable last_calibration_id failure_reason
 // First Profile Calibration Quick Check Periodic Recalibration Triggered Recalibration
 // GameCanvas will be restored in TASK24 score combo level session_elapsed_ms behavior_sample_count Fragment Lock Signal Hunter Stabilizer last_session_status current_session_id attention sqi fi_smoothed control_state
