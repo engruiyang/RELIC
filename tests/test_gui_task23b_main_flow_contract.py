@@ -28,6 +28,7 @@ PAGES = {
         "Start Session",
         "Stop Session",
         "GameCanvas will be restored in TASK24",
+        "GameCanvas restored in TASK24",
     ],
     "ui_qml/pages/ReportPage.qml": [
         "Report Readiness",
@@ -89,6 +90,8 @@ def test_qml_banned_tokens_absent() -> None:
             continue
         text = qml.read_text(encoding="utf-8")
         for token in BANNED_TOKENS:
+            if token == "GameCanvas {" and qml.name == "TrainingPage.qml":
+                continue
             assert token not in text, f"banned token {token!r} found in {qml}"
 
 

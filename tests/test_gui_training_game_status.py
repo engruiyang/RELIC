@@ -17,3 +17,15 @@ def test_training_uses_existing_session_and_calibration_actions() -> None:
         assert isinstance(r, dict)
         assert 'status' in r
         assert 'result' in r
+
+
+def test_training_game_view_contract_fields() -> None:
+    f = GuiFacade(mode='core-control', duration_sec=1)
+    f.handle_gui_command('start_mock_session', {})
+    f.handle_gui_event('pointer_click', {'game_id': 'fake_game', 'x_norm': 0.5, 'y_norm': 0.5, 'button': 'left', 'source': 'test'})
+    view = f.get_game_view()
+    assert isinstance(view, dict)
+    assert 'entities' in view
+    hud = f.get_game_hud()
+    assert 'game_id' in hud
+    f.close()

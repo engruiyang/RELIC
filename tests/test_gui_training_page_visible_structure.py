@@ -16,6 +16,12 @@ def test_training_page_readiness_tokens() -> None:
         "Game HUD Summary",
         "Training Action Result",
         "GameCanvas will be restored in TASK24",
+        "GameCanvas restored in TASK24",
+        "GameCanvas / Game View",
+        "No active game view.",
+        "entity_count",
+        "visual_event_count",
+        "pointer_click",
         "Page Commands",
         "Page Feedback",
         "user.show_profile",
@@ -30,5 +36,5 @@ def test_training_page_readiness_tokens() -> None:
 
 def test_training_page_uses_existing_native_actions_without_forbidden_patterns() -> None:
     text = Path("ui_qml/pages/TrainingPage.qml").read_text(encoding="utf-8")
-    for forbidden in ["GameCanvas {", "Loader", "Repeater", "interval: 100", "subprocess", "Popen", "os.system"]:
+    for forbidden in ["Loader", "Repeater", "interval: 100", "subprocess", "Popen", "os.system"]:
         assert forbidden not in text
