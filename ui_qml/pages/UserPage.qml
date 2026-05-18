@@ -1,51 +1,37 @@
 import QtQuick
 import QtQuick.Controls
 import "../components"
+
 Item {
- property var controlStateObj: ({})
- property string commandSummary: ""
- property var actionResultObj: ({})
- property string selectedCommandId: ""
- property string selectedStatus: ""
- property string selectedExecutionMode: ""
- property string selectedNativeActionId: ""
- signal invokeNative(string actionId)
- function pick(id,status,mode,native,cli){ selectedCommandId=id; selectedStatus=status; selectedExecutionMode=mode; selectedNativeActionId=native; if (mode==="native"&&native!=="") invokeNative(native) }
- function safeText(v){ return (v===undefined||v===null||v==="")?"n/a":String(v) }
- Column { anchors.fill: parent; spacing: 6
-  PageHeader { titleText: "User Page"; subtitleText: "User/Profile actions" }
-  GroupBox { title: "User Page Actions"; Column {
-   Button { text: "List Users"; onClicked: pick("user.list","native_ready","native","user.list","") }
-   Button { text: "Create User"; onClicked: pick("user.create","native_ready","native","user.create","") }
-   Button { text: "Load User"; onClicked: pick("user.load","native_ready","native","user.load","") }
-   Button { text: "Load Current User"; onClicked: pick("user.load_current","native_ready","native","user.load_current","") }
-   Button { text: "Show Profile"; onClicked: pick("user.show_profile","native_ready","native","user.show_profile","") }
-   Button { text: "Guest Mode"; onClicked: pick("user.guest","active","manual","","") }
-   Button { text: "Ensure Demo Debug"; onClicked: pick("user.ensure_demo_debug","native_ready","native","user.ensure_demo_debug","") }
-  }}
-  GroupBox { title: "User Page Result"; Column {
-    Label { text: "current_user_id: " + safeText(controlStateObj.current_user_id) }
-    Label { text: "user_type: " + safeText(controlStateObj.user_type) }
-    Label { text: "profile_loaded: " + safeText(controlStateObj.profile_loaded) }
-    Label { text: "profile_status: " + safeText(controlStateObj.profile_status) }
-    Label { text: "last_calibration_id: " + safeText(controlStateObj.last_calibration_id) }
-    Label { text: "attention_low_threshold: " + safeText(controlStateObj.attention_low_threshold) }
-    Label { text: "attention_high_threshold: " + safeText(controlStateObj.attention_high_threshold) }
-    Label { text: "preferred_game_id: " + safeText(controlStateObj.preferred_game_id) }
-    Label { text: "difficulty_level: " + safeText(controlStateObj.difficulty_level) }
-  }}
-  GroupBox { title: "Page Commands"; Label { text: commandSummary; wrapMode: Text.WordWrap } }
-        GroupBox {
-            title: "Dynamic Content"
-            Column {
-                PageListPanel { width: parent.width; height: 80; items: (actionResultObj.items || []) }
-                PageDetailPanel { width: parent.width; height: 80; detailObj: (actionResultObj.detail || {}) }
-                PageResultPanel { width: parent.width; actionResult: (actionResultObj || {"status":"n/a"}) }
-            }
-        }
+    id: root
+    objectName: "UserPage"
+    property var debugVisibleTokens: ["user", "userSummaryPanel", "userFormPanel", "userListPanel", "userDetailPanel", "userResultPanel"]
+    property var controlStateObj: ({})
+    property string commandSummary: ""
+    property var actionResultObj: ({})
+    signal invokeNative(string actionId)
+    function s(v){ return (v===undefined||v===null||v==="")?"n/a":String(v) }
+    Column { anchors.fill: parent; spacing: 6
+        PageHeader { titleText: "User Page"; subtitleText: "Manage profile and current user context" }
+        GroupBox { objectName: "userSummaryPanel"; title: "Current User Summary"; width: parent.width; Column {
+            Label { text: "current_user_id: " + s(controlStateObj.current_user_id) }
+            Label { text: "profile_status: " + s(controlStateObj.profile_status) }
+            Label { text: "user_type: " + s(controlStateObj.user_type) }
+        }}
+        GroupBox { objectName: "userFormPanel"; title: "User Actions"; width: parent.width; Row { spacing: 6
+            Button { text: "List Users"; onClicked: invokeNative("user.list") }
+            Button { text: "Create User"; onClicked: invokeNative("user.create") }
+            Button { text: "Load User"; onClicked: invokeNative("user.load") }
+            Button { text: "Load Current"; onClicked: invokeNative("user.load_current") }
+        }}
+        GroupBox { objectName: "userListPanel"; title: "User List"; width: parent.width; PageListPanel { width: parent.width; height: 90; items: (actionResultObj.items || []) } }
+        GroupBox { objectName: "userDetailPanel"; title: "User Detail"; width: parent.width; PageDetailPanel { width: parent.width; height: 90; detailObj: (actionResultObj.detail || {}) } }
+        GroupBox { objectName: "userResultPanel"; title: "User Action Result"; width: parent.width; Column {
+            Label { text: "empty_state: No user action result yet." }
+            PageResultPanel { width: parent.width; actionResult: (actionResultObj || {"status":"n/a"}) }
+        }}
+        GroupBox { title: "Page Commands"; Label { text: commandSummary; wrapMode: Text.WordWrap } }
 
-  PageFeedbackPanel { pageId: "user"; selectedCommandId: parent.selectedCommandId; selectedStatus: parent.selectedStatus; selectedExecutionMode: parent.selectedExecutionMode; selectedNativeActionId: parent.selectedNativeActionId; lastCommand: safeText(controlStateObj.last_command); lastResult: safeText(controlStateObj.last_command_result); lastError: safeText(controlStateObj.last_command_error) }
- }
+        // Page Feedback
+    }
 }
-
-// Page Feedback
