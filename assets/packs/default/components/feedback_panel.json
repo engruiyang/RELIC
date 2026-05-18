@@ -1,5 +1,8 @@
 {
-  "background": "#0F172A",
-  "border": "#1E293B",
-  "text_color": "#E2E8F0"
+  "background": "#0B1120",
+  "border": "#334155",
+  "text_color": "#E5E7EB",
+  "muted_color": "#94A3B8",
+  "radius": 10,
+  "padding": 10
 }
