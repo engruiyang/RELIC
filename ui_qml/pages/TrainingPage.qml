@@ -3,6 +3,8 @@ import QtQuick.Controls
 import "../components"
 
 Item {
+    id: trainingPage
+
     property var appStateObj: ({})
     property var controlStateObj: ({})
     property var runtimeObj: ({})
@@ -15,6 +17,9 @@ Item {
     property string selectedNativeActionId: ""
 
     property string activePanel: "readiness"
+    property var availableGameIds: ["trace_lock"]
+    property string selectedGameId: "trace_lock"
+    property var gameSelectResult: ({})
     property var profileResult: ({})
     property var calibrationResult: ({})
     property var sessionResult: ({})
@@ -133,7 +138,7 @@ Item {
         return lines.join("\n")
     }
 
-    function gameView() {
+    function currentGameView() {
         if (gameViewObj !== undefined && gameViewObj !== null) {
             return gameViewObj
         }
@@ -141,17 +146,17 @@ Item {
     }
 
     function gameEntities() {
-        var gv = gameView()
+        var gv = currentGameView()
         return (gv.entities && Array.isArray(gv.entities)) ? gv.entities : []
     }
 
     function gameVisualEvents() {
-        var gv = gameView()
+        var gv = currentGameView()
         return (gv.visual_events && Array.isArray(gv.visual_events)) ? gv.visual_events : []
     }
 
     function gameViewField(key) {
-        var gv = gameView()
+        var gv = currentGameView()
         if (gv[key] !== undefined && gv[key] !== null && gv[key] !== "") {
             return gv[key]
         }
@@ -162,7 +167,7 @@ Item {
     }
 
     function hasActiveGameView() {
-        var gv = gameView()
+        var gv = currentGameView()
         return gameEntities().length > 0 || gameVisualEvents().length > 0 || s(gv.game_id) !== "n/a"
     }
 
@@ -230,7 +235,20 @@ Item {
             }, "result")
             return
         }
-        sessionResult = callAction("session.start", {"user_id": currentUserId()})
+        if (selectedGameId !== "") {
+            gameSelectResult = callAction("game.select", {"game_id": selectedGameId})
+            if (!(gameSelectResult.accepted === true || gameSelectResult.status === "accepted")) {
+                setActionResult({
+                    "action_id": "session.start",
+                    "status": "game_select_failed",
+                    "message": "Start blocked: game.select failed for " + selectedGameId,
+                    "result": gameSelectResult,
+                    "accepted": false
+                }, "game")
+                return
+            }
+        }
+        sessionResult = callAction("session.start", {"user_id": currentUserId(), "game_id": selectedGameId})
         setActionResult(sessionResult, "session")
     }
 
@@ -247,6 +265,12 @@ Item {
     function queryGameStatus() {
         gameResult = callAction("game.status", {})
         setActionResult(gameResult, "game")
+    }
+
+    function selectExistingGame() {
+        gameSelectResult = callAction("game.select", {"game_id": selectedGameId})
+        gameResult = gameSelectResult
+        setActionResult(gameSelectResult, "game")
     }
 
     function safeStop() {
@@ -320,6 +344,53 @@ Item {
             }
 
             GroupBox {
+                title: "Game Selection"
+                width: parent.width
+
+                Column {
+                    width: parent.width
+                    spacing: 6
+
+                    Label { text: "Select Existing Game" }
+                    Label { text: "selected_game_id: " + s(selectedGameId) }
+                    Label { text: "current_game_id: " + s(gameViewField("game_id")) }
+                    Label {
+                        width: parent.width
+                        text: "Only existing TraceLock is exposed here; GUI does not create a new game pipeline."
+                        wrapMode: Text.WordWrap
+                    }
+
+                    Row {
+                        width: parent.width
+                        spacing: 8
+
+                        ComboBox {
+                            id: trainingGameSelector
+                            width: Math.min(parent.width - 180, 360)
+                            model: trainingPage.availableGameIds
+                            currentIndex: Math.max(0, trainingPage.availableGameIds.indexOf(trainingPage.selectedGameId))
+                            onActivated: function(index) {
+                                if (index >= 0 && index < trainingPage.availableGameIds.length) {
+                                    trainingPage.selectedGameId = trainingPage.availableGameIds[index]
+                                }
+                            }
+                        }
+
+                        Button {
+                            text: "Use TraceLock"
+                            onClicked: {
+                                trainingPage.selectedGameId = "trace_lock"
+                                trainingPage.selectExistingGame()
+                            }
+                        }
+                    }
+
+                    Label { text: "game.select status: " + s(gameSelectResult.status) }
+                    Label { text: "game.select message: " + s(gameSelectResult.message); wrapMode: Text.WordWrap }
+                }
+            }
+
+            GroupBox {
                 title: "Session Status"
                 width: parent.width
                 visible: activePanel === "session" || activePanel === "readiness" || activePanel === "result"
@@ -367,6 +438,14 @@ Item {
                     Label { text: "score: " + s(gameHudObj.score) }
                     Label { text: "combo: " + s(gameHudObj.combo) }
                     Label { text: "level: " + s(gameHudObj.level) }
+                    Label { text: "max_combo: " + s(gameHudObj.max_combo) }
+                    Label { text: "movement_type: " + s(gameHudObj.movement_type) }
+                    Label { text: "target_time_left_ms: " + s(gameHudObj.target_time_left_ms) }
+                    Label { text: "target_lifetime_ms: " + s(gameHudObj.target_lifetime_ms) }
+                    Label { text: "accuracy: " + s(gameHudObj.accuracy) }
+                    Label { text: "omission: " + s(gameHudObj.omission) }
+                    Label { text: "false_action: " + s(gameHudObj.false_action) }
+                    Label { text: "rt_stability: " + s(gameHudObj.rt_stability) }
                     Label { text: "behavior_sample_count: " + s(controlStateObj.behavior_sample_count) }
                     Label { text: "score_update_count: " + s(gameHudObj.score_update_count) }
                     Label { text: "feedback_hint: " + s(gameHudObj.feedback_hint) }
@@ -401,7 +480,7 @@ Item {
                         id: trainingGameCanvas
                         width: parent.width
                         height: 360
-                        gameView: gameView()
+                        gameView: trainingPage.currentGameView()
                         guiBridgeRef: (typeof guiBridge !== "undefined") ? guiBridge : null
                         fallbackGameId: s(gameViewField("game_id"))
                     }
@@ -412,7 +491,7 @@ Item {
                         wrapMode: Text.WordWrap
                     }
 
-                    Label { text: "Fragment Lock / 碎片锁定: reference ready" }
+                    Label { text: "TraceLock / Fragment Lock / 碎片锁定: existing game client active" }
                     Label { text: "Signal Hunter / 信号猎手: planned" }
                     Label { text: "Stabilizer / 稳定协议: planned" }
                 }
