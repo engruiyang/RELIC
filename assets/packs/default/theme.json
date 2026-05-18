@@ -1,18 +1,38 @@
 {
   "colors": {
-    "background": "#111827",
-    "panel": "#1F2937",
-    "panel_border": "#374151",
+    "background": "#020617",
+    "background_alt": "#0F172A",
+    "panel": "#111827",
+    "panel_border": "#334155",
     "text": "#F9FAFB",
-    "accent": "#22D3EE"
+    "text_muted": "#94A3B8",
+    "accent": "#22D3EE",
+    "accent_alt": "#10B981",
+    "danger": "#EF4444",
+    "warning": "#F59E0B"
   },
   "typography": {
-    "font_family": "Sans Serif",
+    "font_family": "Microsoft YaHei UI",
+    "mono_family": "Consolas",
     "title_size": 24,
-    "body_size": 14
+    "subtitle_size": 14,
+    "body_size": 14,
+    "hud_label_size": 12,
+    "hud_value_size": 24
   },
   "spacing": {
     "page_margin": 16,
-    "section_gap": 12
+    "section_gap": 12,
+    "panel_gap": 10,
+    "nav_gap": 7
+  },
+  "background": {
+    "type": "layered",
+    "layers": [
+      {"type": "color", "value": "#020617"},
+      {"type": "image", "asset_key": "background.app.main", "fit": "cover", "position": "center", "opacity": 0.0},
+      {"type": "gradient", "from": "#020617", "to": "#111827", "direction": "vertical", "opacity": 0.65},
+      {"type": "overlay", "value": "#000000", "opacity": 0.12}
+    ]
   }
 }
