@@ -33,6 +33,8 @@ class RenderResourceBundle:
     component_styles: dict[str, dict[str, Any]] = field(default_factory=dict)
     game_styles: dict[str, dict[str, Any]] = field(default_factory=dict)
     effect_styles: dict[str, dict[str, Any]] = field(default_factory=dict)
+    asset_handoff: dict[str, Any] = field(default_factory=dict)
+    asset_handoff_validation: dict[str, Any] = field(default_factory=dict)
     missing_design_pack_fields: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
@@ -161,6 +163,77 @@ class LayoutManager:
         }
 
 
+
+def _safe_read_json_file(path: Path) -> dict[str, Any]:
+    try:
+        with path.open("r", encoding="utf-8") as f:
+            raw = json.load(f)
+        return raw if isinstance(raw, dict) else {}
+    except (FileNotFoundError, json.JSONDecodeError, OSError):
+        return {}
+
+
+def validate_design_pack_asset_handoff(assets_root: str = "assets", pack_id: str = "default") -> dict[str, Any]:
+    """Validate TASK25E-0 artist handoff slots without requiring real binary assets.
+
+    A null URL is valid at this stage because renderers must use color/shape fallbacks.
+    Non-null URLs must stay inside the pack's relative asset directories and use allowed extensions.
+    """
+    root = Path(assets_root)
+    manifest = _safe_read_json_file(root / "manifest.json")
+    pack_root = root / "packs" / pack_id
+    pack = _safe_read_json_file(pack_root / "pack.json")
+    handoff_rel = str(pack.get("asset_handoff") or "asset_handoff.json")
+    handoff = _safe_read_json_file(pack_root / handoff_rel)
+
+    common_assets = dict(manifest.get("common_assets") or {})
+    slot_groups = dict(pack.get("asset_slot_groups") or {})
+    expected_slots: list[str] = []
+    for group_slots in slot_groups.values():
+        expected_slots.extend([str(s) for s in group_slots])
+
+    missing_slots = sorted([slot for slot in expected_slots if slot not in common_assets])
+
+    allowed_extensions_raw = handoff.get("allowed_extensions") or {}
+    allowed_extensions: set[str] = set()
+    for value in allowed_extensions_raw.values():
+        if isinstance(value, list):
+            allowed_extensions.update(str(v).lower() for v in value)
+
+    directories = dict(handoff.get("directories") or pack.get("asset_directories") or {})
+    allowed_prefixes = ["packs/default/"]
+    allowed_prefixes.extend(str(v) for v in directories.values())
+
+    invalid_url_assets: list[str] = []
+    real_asset_urls: list[str] = []
+    null_url_assets: list[str] = []
+
+    for key, desc in common_assets.items():
+        url = desc.get("url")
+        if url in (None, ""):
+            null_url_assets.append(str(key))
+            continue
+        url_s = str(url)
+        real_asset_urls.append(url_s)
+        suffix = Path(url_s).suffix.lower()
+        prefix_ok = any(url_s.startswith(prefix) for prefix in allowed_prefixes)
+        ext_ok = suffix in allowed_extensions if allowed_extensions else True
+        if not prefix_ok or not ext_ok:
+            invalid_url_assets.append(str(key))
+
+    return {
+        "pack_id": pack_id,
+        "slot_count": len(common_assets),
+        "expected_slot_count": len(set(expected_slots)),
+        "missing_slots": missing_slots,
+        "invalid_url_assets": sorted(invalid_url_assets),
+        "real_asset_urls": sorted(real_asset_urls),
+        "null_url_asset_count": len(null_url_assets),
+        "allowed_extensions": sorted(allowed_extensions),
+        "directories": directories,
+        "asset_handoff": handoff,
+    }
+
 def build_render_resource_bundle(game_id: str, theme_id: str = "default", layout_id: str = "minimal_gui", assets_root: str = "assets") -> dict[str, Any]:
     am = AssetManager(assets_root=assets_root)
     tm = ThemeManager(assets_root=assets_root, theme_id=theme_id)
@@ -220,6 +293,8 @@ def build_render_resource_bundle(game_id: str, theme_id: str = "default", layout
     missing_design_pack_fields = [f"pack.{k}" for k in required_pack_fields if k not in pack]
 
     theme = _safe_read_json(pack_root / str(pack.get("theme") or "theme.json"))
+    asset_handoff = _safe_read_json(pack_root / str(pack.get("asset_handoff") or "asset_handoff.json"))
+    asset_handoff_validation = validate_design_pack_asset_handoff(assets_root=assets_root, pack_id=str(pack.get("pack_id") or "default"))
     pages_map = dict(pack.get("pages") or {})
     components_map = dict(pack.get("components") or {})
     games_map = dict(pack.get("games") or {})
@@ -250,6 +325,8 @@ def build_render_resource_bundle(game_id: str, theme_id: str = "default", layout
         component_styles=component_styles,
         game_styles=game_styles,
         effect_styles=effect_styles,
+        asset_handoff=asset_handoff,
+        asset_handoff_validation=asset_handoff_validation,
         missing_design_pack_fields=missing_design_pack_fields,
     )
     return bundle.to_dict()
