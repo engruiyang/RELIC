@@ -10,6 +10,7 @@ Item {
     property var runtimeObj: ({})
     property var sessionObj: ({})
     property string commandSummary: ""
+    property var actionResultObj: ({})
     signal invokeNative(string actionId)
 
     function s(v) { return (v === undefined || v === null || v === "") ? "n/a" : String(v) }
