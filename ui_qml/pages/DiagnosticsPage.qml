@@ -3,6 +3,11 @@ import QtQuick.Controls
 import "../components"
 
 Item {
+    id: root
+    property var designThemeObj: ({})
+    property var pageStyleObj: ({})
+    property var componentStyleObj: ({})
+    property var renderResourcesObj: ({})
     property var controlStateObj: ({})
     property var runtimeObj: ({})
     property var sessionObj: ({})
@@ -29,11 +34,22 @@ Item {
         return (v === undefined || v === null || v === "") ? "n/a" : String(v)
     }
 
+    DesignBackground {
+        anchors.fill: parent
+        themeObj: root.designThemeObj
+        styleObj: root.pageStyleObj
+        renderResourcesObj: root.renderResourcesObj
+        fallbackColor: (root.designThemeObj.colors && root.designThemeObj.colors.background) ? root.designThemeObj.colors.background : "#F8FAFC"
+    }
+
     Column {
         anchors.fill: parent
         spacing: 4
 
         PageHeader {
+            designThemeObj: root.designThemeObj
+            componentStyleObj: root.componentStyleObj
+            headerStyleObj: root.componentStyleObj.header || ({})
             titleText: "Developer Diagnostics Console"
             subtitleText: "QML smoke shell loaded"
         }
@@ -156,6 +172,9 @@ Item {
         }
 
         PageFeedbackPanel {
+            designThemeObj: root.designThemeObj
+            componentStyleObj: root.componentStyleObj
+            feedbackStyleObj: root.componentStyleObj.feedback_panel || ({})
             pageId: "diagnostics"
             selectedCommandId: parent.selectedCommandId
             selectedStatus: parent.selectedStatus

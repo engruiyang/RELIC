@@ -34,6 +34,66 @@
       "fallback_shape": "circle",
       "style_key": "target.background",
       "description": "shared fallback circle"
+    },
+    "background.app.main": {
+      "type": "image",
+      "url": null,
+      "fallback_shape": "rect",
+      "style_key": "panel.debug",
+      "description": "design-pack background slot: background.app.main"
+    },
+    "background.home.main": {
+      "type": "image",
+      "url": null,
+      "fallback_shape": "rect",
+      "style_key": "panel.debug",
+      "description": "design-pack background slot: background.home.main"
+    },
+    "background.user.main": {
+      "type": "image",
+      "url": null,
+      "fallback_shape": "rect",
+      "style_key": "panel.debug",
+      "description": "design-pack background slot: background.user.main"
+    },
+    "background.calibration.main": {
+      "type": "image",
+      "url": null,
+      "fallback_shape": "rect",
+      "style_key": "panel.debug",
+      "description": "design-pack background slot: background.calibration.main"
+    },
+    "background.training.main": {
+      "type": "image",
+      "url": null,
+      "fallback_shape": "rect",
+      "style_key": "panel.debug",
+      "description": "design-pack background slot: background.training.main"
+    },
+    "background.report.main": {
+      "type": "image",
+      "url": null,
+      "fallback_shape": "rect",
+      "style_key": "panel.debug",
+      "description": "design-pack background slot: background.report.main"
+    },
+    "background.diagnostics.main": {
+      "type": "image",
+      "url": null,
+      "fallback_shape": "rect",
+      "style_key": "panel.debug",
+      "description": "design-pack background slot: background.diagnostics.main"
+    },
+    "background.developer_lab.main": {
+      "type": "image",
+      "url": null,
+      "fallback_shape": "rect",
+      "style_key": "panel.debug",
+      "description": "design-pack background slot: background.developer_lab.main"
     }
+  },
+  "default_design_pack": "default",
+  "design_packs": {
+    "default": "packs/default/pack.json"
   }
 }

@@ -1,0 +1,25 @@
+{
+  "page_id": "user_page",
+  "layered": {
+    "color": "#F8FAFC",
+    "image": {
+      "asset_key": "background.user.main",
+      "fit": "cover",
+      "position": "center"
+    },
+    "gradient": {
+      "enabled": true,
+      "from": "#F8FAFC",
+      "to": "#E2E8F0",
+      "angle": 180
+    },
+    "overlay": {
+      "color": "#FFFFFF",
+      "opacity": 0.08
+    },
+    "opacity": 1.0,
+    "fallback": "theme.colors.background"
+  },
+  "panel": "component.panel",
+  "text": "theme.colors.text"
+}

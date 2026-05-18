@@ -2,6 +2,11 @@ import QtQuick
 import QtQuick.Controls
 import "../components"
 Item {
+    id: root
+    property var designThemeObj: ({})
+    property var pageStyleObj: ({})
+    property var componentStyleObj: ({})
+    property var renderResourcesObj: ({})
     property var controlStateObj: ({})
     property var runtimeObj: ({})
     property string commandSummary: ""
@@ -11,8 +16,19 @@ Item {
     height: parent ? parent.height : 600
     function safeText(v){ return (v===undefined||v===null||v==="")?"n/a":String(v) }
     function nextAction(){ if (safeText(controlStateObj.current_user_id)==="n/a") return "Next Action: Go User"; if (safeText(controlStateObj.calibration_usable)!=="true") return "Next Action: Go Calibration"; return "Next Action: Go Training" }
+    DesignBackground {
+        anchors.fill: parent
+        themeObj: root.designThemeObj
+        styleObj: root.pageStyleObj
+        renderResourcesObj: root.renderResourcesObj
+        fallbackColor: (root.designThemeObj.colors && root.designThemeObj.colors.background) ? root.designThemeObj.colors.background : "#F8FAFC"
+    }
+
     Column { anchors.fill: parent; spacing: 6
-        PageHeader { titleText: "Home"; subtitleText: "Professional overview page" }
+        PageHeader {
+            designThemeObj: root.designThemeObj
+            componentStyleObj: root.componentStyleObj
+            headerStyleObj: root.componentStyleObj.header || ({}) titleText: "Home"; subtitleText: "Professional overview page" }
         GroupBox { title: "State Summary"; Column {
             Label { text: "current_user_id: " + safeText(controlStateObj.current_user_id) }
             Label { text: "profile_status: " + safeText(controlStateObj.profile_status) }
@@ -34,7 +50,10 @@ Item {
             Button { text: "Refresh"; onClicked: invokeNative("app.refresh_now") }
         }}
         GroupBox { title: "Page Commands"; Label { text: commandSummary; wrapMode: Text.WordWrap } }
-        PageFeedbackPanel { pageId: "home"; lastCommand: safeText(controlStateObj.last_command); lastResult: safeText(controlStateObj.last_command_result); lastError: safeText(controlStateObj.last_command_error) }
+        PageFeedbackPanel {
+            designThemeObj: root.designThemeObj
+            componentStyleObj: root.componentStyleObj
+            feedbackStyleObj: root.componentStyleObj.feedback_panel || ({}) pageId: "home"; lastCommand: safeText(controlStateObj.last_command); lastResult: safeText(controlStateObj.last_command_result); lastError: safeText(controlStateObj.last_command_error) }
     }
 }
 

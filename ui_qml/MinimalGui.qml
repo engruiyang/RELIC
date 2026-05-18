@@ -13,11 +13,15 @@ ApplicationWindow {
  property var gameViewObj: ({})
  property var controlStateObj: ({})
  property var pageCommandManifestObj: ({})
+ property var renderResourcesObj: ({})
+ property var designThemeObj: ({})
+ property var pageStylesObj: ({})
+ property var componentStylesObj: ({})
  function safeJsonParse(t){ try { return JSON.parse(t||"{}") } catch(e) { return ({"__parse_error__":"invalid"}) } }
  function safeText(v,f){ var fb=f===undefined?"n/a":f; return v===undefined||v===null||v===""?fb:String(v) }
  function getField(o,k,f){ if(!o||o[k]===undefined||o[k]===null||o[k]==="") return f===undefined?"n/a":f; return o[k] }
  function commandsFor(pageId){ var p=pageCommandManifestObj.pages||{}; var arr=p[pageId]||[]; var out=[]; for(var i=0;i<arr.length&&i<4;i++){ out.push(arr[i].command_id+"("+arr[i].execution_mode+")") } return out.join(" | ") }
- function pullState(){ if(!guiBridge)return; appStateObj=safeJsonParse(guiBridge.appState); runtimeObj=safeJsonParse(guiBridge.runtimeSnapshot); sessionObj=safeJsonParse(guiBridge.sessionState); gameHudObj=safeJsonParse(guiBridge.gameHudJson); gameViewObj=safeJsonParse(guiBridge.gameViewJson); controlStateObj=safeJsonParse(guiBridge.controlStateJson); pageCommandManifestObj=safeJsonParse(guiBridge.pageCommandManifestJson) }
+ function pullState(){ if(!guiBridge)return; appStateObj=safeJsonParse(guiBridge.appState); runtimeObj=safeJsonParse(guiBridge.runtimeSnapshot); sessionObj=safeJsonParse(guiBridge.sessionState); gameHudObj=safeJsonParse(guiBridge.gameHudJson); gameViewObj=safeJsonParse(guiBridge.gameViewJson); controlStateObj=safeJsonParse(guiBridge.controlStateJson); pageCommandManifestObj=safeJsonParse(guiBridge.pageCommandManifestJson); renderResourcesObj=safeJsonParse(guiBridge.renderResourcesJson); designThemeObj=renderResourcesObj.theme||({}); pageStylesObj=renderResourcesObj.page_styles||({}); componentStylesObj=renderResourcesObj.component_styles||({}) }
  function invokeNative(actionId){ if(guiBridge) guiBridge.invokeAction(actionId, "{}") }
  Connections { target: guiBridge ? guiBridge : null; function onStateChanged(){ pullState() } }
  Component.onCompleted: pullState()
@@ -49,14 +53,14 @@ ApplicationWindow {
     Button{text:"Quit"; onClicked: Qt.quit()}
    }}
    Rectangle { width: parent.width-216; height: parent.height; color: "#172330"; radius: 8
-    Item { id: pageHost; anchors.fill: parent; anchors.margins: 8 // PageHost
-     HomePage { anchors.fill: parent; visible: currentPage==="home"; controlStateObj: root.controlStateObj; runtimeObj: root.runtimeObj; commandSummary: root.commandsFor("home"); onNavigateTo: (p)=>{root.currentPage=p}; onInvokeNative: (a)=>root.invokeNative(a) }
-     UserPage { anchors.fill: parent; visible: currentPage==="user"; appStateObj: root.appStateObj; controlStateObj: root.controlStateObj; commandSummary: root.commandsFor("user"); onInvokeNative: (a)=>root.invokeNative(a) }
-     CalibrationPage { anchors.fill: parent; visible: currentPage==="calibration"; controlStateObj: root.controlStateObj; commandSummary: root.commandsFor("calibration"); onInvokeNative: (a)=>root.invokeNative(a) }
-     TrainingPage { anchors.fill: parent; visible: currentPage==="training"; appStateObj: root.appStateObj; controlStateObj: root.controlStateObj; runtimeObj: root.runtimeObj; gameHudObj: root.gameHudObj; gameViewObj: root.gameViewObj; commandSummary: root.commandsFor("training"); onInvokeNative: (a)=>root.invokeNative(a) }
-     ReportPage { anchors.fill: parent; visible: currentPage==="report"; appStateObj: root.appStateObj; controlStateObj: root.controlStateObj; sessionObj: root.sessionObj; commandSummary: root.commandsFor("report") }
-     DiagnosticsPage { anchors.fill: parent; visible: currentPage==="diagnostics"; controlStateObj: root.controlStateObj; runtimeObj: root.runtimeObj; sessionObj: root.sessionObj; gameHudObj: root.gameHudObj; commandSummary: root.commandsFor("diagnostics"); onInvokeNative: (a)=>root.invokeNative(a) }
-     DeveloperLabPage { anchors.fill: parent; visible: currentPage==="developer_lab"; controlStateObj: root.controlStateObj; commandSummary: root.commandsFor("developer_lab") }
+    Item { id: pageHost; objectName: "PageHost"; anchors.fill: parent; anchors.margins: 8 // PageHost
+     HomePage { anchors.fill: parent; designThemeObj: root.designThemeObj; pageStyleObj: root.pageStylesObj.home_page||({}); componentStyleObj: root.componentStylesObj; renderResourcesObj: root.renderResourcesObj; visible: currentPage==="home"; controlStateObj: root.controlStateObj; runtimeObj: root.runtimeObj; commandSummary: root.commandsFor("home"); onNavigateTo: (p)=>{root.currentPage=p}; onInvokeNative: (a)=>root.invokeNative(a) }
+     UserPage { anchors.fill: parent; designThemeObj: root.designThemeObj; pageStyleObj: root.pageStylesObj.user_page||({}); componentStyleObj: root.componentStylesObj; renderResourcesObj: root.renderResourcesObj; visible: currentPage==="user"; appStateObj: root.appStateObj; controlStateObj: root.controlStateObj; commandSummary: root.commandsFor("user"); onInvokeNative: (a)=>root.invokeNative(a) }
+     CalibrationPage { anchors.fill: parent; designThemeObj: root.designThemeObj; pageStyleObj: root.pageStylesObj.calibration_page||({}); componentStyleObj: root.componentStylesObj; renderResourcesObj: root.renderResourcesObj; visible: currentPage==="calibration"; controlStateObj: root.controlStateObj; commandSummary: root.commandsFor("calibration"); onInvokeNative: (a)=>root.invokeNative(a) }
+     TrainingPage { anchors.fill: parent; designThemeObj: root.designThemeObj; pageStyleObj: root.pageStylesObj.training_page||({}); componentStyleObj: root.componentStylesObj; renderResourcesObj: root.renderResourcesObj; visible: currentPage==="training"; appStateObj: root.appStateObj; controlStateObj: root.controlStateObj; runtimeObj: root.runtimeObj; gameHudObj: root.gameHudObj; gameViewObj: root.gameViewObj; commandSummary: root.commandsFor("training"); onInvokeNative: (a)=>root.invokeNative(a) }
+     ReportPage { anchors.fill: parent; designThemeObj: root.designThemeObj; pageStyleObj: root.pageStylesObj.report_page||({}); componentStyleObj: root.componentStylesObj; renderResourcesObj: root.renderResourcesObj; visible: currentPage==="report"; appStateObj: root.appStateObj; controlStateObj: root.controlStateObj; sessionObj: root.sessionObj; commandSummary: root.commandsFor("report") }
+     DiagnosticsPage { anchors.fill: parent; designThemeObj: root.designThemeObj; pageStyleObj: root.pageStylesObj.diagnostics_page||({}); componentStyleObj: root.componentStylesObj; renderResourcesObj: root.renderResourcesObj; visible: currentPage==="diagnostics"; controlStateObj: root.controlStateObj; runtimeObj: root.runtimeObj; sessionObj: root.sessionObj; gameHudObj: root.gameHudObj; commandSummary: root.commandsFor("diagnostics"); onInvokeNative: (a)=>root.invokeNative(a) }
+     DeveloperLabPage { anchors.fill: parent; designThemeObj: root.designThemeObj; pageStyleObj: root.pageStylesObj.developer_lab_page||({}); componentStyleObj: root.componentStylesObj; renderResourcesObj: root.renderResourcesObj; visible: currentPage==="developer_lab"; controlStateObj: root.controlStateObj; commandSummary: root.commandsFor("developer_lab") }
     }
    }
   }
