@@ -1,0 +1,37 @@
+name: task23-gui-ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  gui-tests:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install dependencies
+        run: python -m pip install --upgrade pip && pip install -r requirements-dev.txt
+      - name: Environment check
+        run: python tools/check_dev_env.py
+      - name: Compile protected modules
+        run: |
+          python -m py_compile data/data_center.py
+          python -m py_compile data/realtime_snapshot.py
+          python -m py_compile device/adapters/mock_adapter.py
+      - name: Legacy compatibility tests
+        run: |
+          python -m pytest tests/test_data_center_semantics.py -vv
+          python -m pytest tests/test_mock_modes_quality.py -vv
+      - name: GUI targeted tests
+        run: |
+          python -m pytest tests/test_gui_qml_loads.py -vv
+          python -m pytest tests/test_gui_qml_style_safety.py -vv
+          python -m pytest tests/test_gui_inspection.py -vv
+          python -m pytest tests/test_gui_action_result_bridge.py tests/test_gui_qml_dynamic_bindings.py tests/test_gui_page_runtime_action_ids.py -vv
+      - name: GUI suite
+        run: |
+          python -m pytest tests -k "gui" -vv
+          python -m pytest tests -vv
