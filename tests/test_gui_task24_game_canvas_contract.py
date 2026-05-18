@@ -47,6 +47,10 @@ def test_task24_game_canvas_component_contract() -> None:
         "timer_bar",
         "effectColor",
         "DesignBackground",
+        "targetAssetKey",
+        "targetImageSource",
+        "targetFallbackShape",
+        "fallback_shape",
     ]:
         assert token in text
 

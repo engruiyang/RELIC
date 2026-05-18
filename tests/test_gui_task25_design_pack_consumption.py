@@ -64,6 +64,11 @@ def test_game_canvas_consumes_trace_lock_design_tokens_and_background_layers_onl
         "effectColor",
         "visualEvents",
         "canvas.background layered color/image/gradient/overlay",
+        "targetAssetKey",
+        "targetImageSource",
+        "targetFallbackShape",
+        "fallback_shape",
+        "TASK25C GameCanvas consumes TraceLock visual asset_key/style_key tokens",
     ]:
         assert token in text
     assert "sendEvent(\"pointer_click\"" in text
@@ -100,3 +105,36 @@ def test_design_pack_background_contract_supports_images_and_fallbacks() -> None
     manifest = Path("assets/manifest.json").read_text(encoding="utf-8")
     for token in ["background.app.main", "background.training.main", "tracelock.background.grid"]:
         assert token in manifest
+
+
+def test_task25c_trace_lock_asset_slots_and_high_contrast_theme_contract() -> None:
+    manifest = Path("assets/manifest.json").read_text(encoding="utf-8")
+    for token in [
+        "tracelock.target.marked_trace",
+        "tracelock.target.noise_trace",
+        "tracelock.focus_zone.default",
+        "tracelock.progress_ring.default",
+        "tracelock.timer_bar.default",
+        "fallback_shape",
+    ]:
+        assert token in manifest
+
+    trace_lock = Path("assets/packs/default/games/trace_lock.json").read_text(encoding="utf-8")
+    for token in [
+        "asset_key",
+        "fallback_shape",
+        "tracelock.target.marked_trace",
+        "tracelock.target.noise_trace",
+        "tracelock.progress_ring.default",
+        "tracelock.timer_bar.default",
+    ]:
+        assert token in trace_lock
+
+    theme = Path("assets/packs/default/theme.json").read_text(encoding="utf-8")
+    for token in [
+        "#F8FAFC",
+        "#0F172A",
+        "background.app.main",
+        "layered",
+    ]:
+        assert token in theme
