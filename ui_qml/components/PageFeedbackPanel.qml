@@ -50,5 +50,5 @@ Rectangle {
         Text { text: "last_command_error: " + String(feedbackPanel.lastError === undefined || feedbackPanel.lastError === null ? "n/a" : feedbackPanel.lastError); color: feedbackPanel.textColor }
     }
 
-    // TASK25B-2H PageFeedbackPanel is self-painted; no native Control background customization.
+    // TASK25B-2H PageFeedbackPanel is self-painted; avoids native style customization warnings.
 }
