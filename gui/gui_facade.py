@@ -15,6 +15,7 @@ from .gui_live_control_source import GuiLiveControlSource
 from core.resource_managers import build_render_resource_bundle
 from storage.sqlite_store import SqliteStore
 from .command_registry import build_page_command_manifest
+from game.game_client_registry import create_game_client
 
 
 class GuiFacade:
@@ -89,6 +90,7 @@ class GuiFacade:
                 "end_session",
                 "refresh_snapshot",
                 "send_test_click",
+                "select_trace_lock",
             ],
             "source": "mock",
         }
@@ -858,6 +860,96 @@ class GuiFacade:
         }
 
 
+
+    def _select_game_summary(self, game_id: str) -> dict[str, Any]:
+        game_id = str(game_id or "").strip()
+        if game_id not in {"trace_lock"}:
+            return {
+                "status": "unsupported_game",
+                "message": "only_existing_trace_lock_is_exposed_in_task24b",
+                "accepted": False,
+                "game_id": game_id,
+                "supported_game_ids": ["trace_lock"],
+            }
+
+        previous_game_id = str(self.get_app_state().get("current_game_id") or self.get_game_hud().get("game_id") or "")
+        self._render_resources = self._build_safe_render_resources(game_id=game_id)
+
+        # Keep using the existing live-control/game client pipeline. This does not create a
+        # second game route: it swaps the existing source client to the already-registered
+        # TraceLock client and preserves the current session id when possible.
+        if self._live_control_source:
+            source = self._live_control_source
+            source.game_id = game_id
+            try:
+                source._client = create_game_client(game_id)
+            except Exception as exc:
+                return {
+                    "status": "select_failed",
+                    "message": f"failed_to_create_existing_game_client: {exc}",
+                    "accepted": False,
+                    "game_id": game_id,
+                    "previous_game_id": previous_game_id,
+                }
+
+            session_id = (
+                getattr(source, "training_session_id", "")
+                or getattr(source, "live_debug_session_id", "")
+                or getattr(source, "last_session_id", "")
+                or ""
+            )
+            if getattr(source, "interaction_enabled", False) and session_id:
+                try:
+                    source._client.start({"session_id": session_id, "game_id": game_id})
+                except Exception:
+                    # The next session.start will start the client again; do not break GUI selection.
+                    pass
+            if hasattr(source, "last_game_view"):
+                try:
+                    source.last_game_view = source.get_game_view()
+                except Exception:
+                    source.last_game_view = {}
+            return {
+                "status": "accepted",
+                "message": "game_selected",
+                "accepted": True,
+                "game_id": game_id,
+                "previous_game_id": previous_game_id,
+                "game_hud": self.get_game_hud(),
+                "render_resources": self.get_render_resources(),
+            }
+
+        if self._core_source:
+            return {
+                "status": "not_implemented",
+                "message": "game_selection_requires_live_control_or_mock",
+                "accepted": False,
+                "game_id": game_id,
+                "previous_game_id": previous_game_id,
+            }
+
+        if self._live_source:
+            return {
+                "status": "readonly_not_allowed",
+                "message": "game_selection_requires_control_mode",
+                "accepted": False,
+                "game_id": game_id,
+                "previous_game_id": previous_game_id,
+            }
+
+        self._app_state["current_game_id"] = game_id
+        self._session_state["game_id"] = game_id
+        return {
+            "status": "accepted",
+            "message": "game_selected",
+            "accepted": True,
+            "game_id": game_id,
+            "previous_game_id": previous_game_id,
+            "game_hud": self.get_game_hud(),
+            "render_resources": self.get_render_resources(),
+        }
+
+
     def get_control_manifest(self) -> list[dict[str, Any]]:
         readonly = self.mode in {"core", "live-readonly"}
         mode = self.mode
@@ -880,6 +972,7 @@ class GuiFacade:
             item("session.stop", "Stop Session", "session", True, False, False, "stop current session"),
             item("session.status", "Session Status", "session", True, True, False, "show session status"),
             item("game.status", "Game Status", "game", True, True, False, "show game hud/state"),
+            item("game.select", "Select Game", "game", True, False, False, "select existing registered game client"),
             item("diagnostics.clear_last_error", "Clear Last Error", "diagnostics", True, True, False, "clear last command error"),
             item("diagnostics.refresh", "Refresh Diagnostics", "diagnostics", True, True, False, "refresh diagnostics")
         ]
@@ -1068,6 +1161,20 @@ class GuiFacade:
                 result = {"action_id": action_id, "status": cs.get("status", "no_calibration"), "result": "calibration_status", "message": cs.get("message", cs.get("status", "")), "accepted": cs.get("status") == "accepted", "calibration": cs, "detail": cs, "user_id": user_id}
         elif action_id == "session.status":
             result = {"action_id": action_id, "status": "accepted", "result": "session_status", "accepted": True, "session": self.get_session_state()}
+        elif action_id == "game.select":
+            game_id = str(payload.get("game_id") or "").strip()
+            summary = self._select_game_summary(game_id)
+            result = {
+                "action_id": action_id,
+                "status": summary.get("status", "unknown"),
+                "result": "game_selected" if summary.get("status") == "accepted" else summary.get("status", "unknown"),
+                "message": summary.get("message", ""),
+                "accepted": bool(summary.get("accepted", False)),
+                "game_id": summary.get("game_id", game_id),
+                "previous_game_id": summary.get("previous_game_id", ""),
+                "game_hud": summary.get("game_hud", self.get_game_hud()),
+                "detail": summary,
+            }
         elif action_id == "game.status":
             result = {"action_id": action_id, "status": "accepted", "result": "game_status", "accepted": True, "game_hud": self.get_game_hud()}
         elif action_id == "user.load_current":
