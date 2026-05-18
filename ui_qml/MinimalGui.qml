@@ -50,7 +50,7 @@ ApplicationWindow {
    Rectangle { width: parent.width-216; height: parent.height; color: "#172330"; radius: 8
     Item { id: pageHost; anchors.fill: parent; anchors.margins: 8 // PageHost
      HomePage { anchors.fill: parent; visible: currentPage==="home"; controlStateObj: root.controlStateObj; runtimeObj: root.runtimeObj; commandSummary: root.commandsFor("home"); onNavigateTo: (p)=>{root.currentPage=p}; onInvokeNative: (a)=>root.invokeNative(a) }
-     UserPage { anchors.fill: parent; visible: currentPage==="user"; controlStateObj: root.controlStateObj; commandSummary: root.commandsFor("user"); onInvokeNative: (a)=>root.invokeNative(a) }
+     UserPage { anchors.fill: parent; visible: currentPage==="user"; appStateObj: root.appStateObj; controlStateObj: root.controlStateObj; commandSummary: root.commandsFor("user"); onInvokeNative: (a)=>root.invokeNative(a) }
      CalibrationPage { anchors.fill: parent; visible: currentPage==="calibration"; controlStateObj: root.controlStateObj; commandSummary: root.commandsFor("calibration"); onInvokeNative: (a)=>root.invokeNative(a) }
      TrainingPage { anchors.fill: parent; visible: currentPage==="training"; controlStateObj: root.controlStateObj; runtimeObj: root.runtimeObj; gameHudObj: root.gameHudObj; commandSummary: root.commandsFor("training"); onInvokeNative: (a)=>root.invokeNative(a) }
      ReportPage { anchors.fill: parent; visible: currentPage==="report"; controlStateObj: root.controlStateObj; sessionObj: root.sessionObj; commandSummary: root.commandsFor("report") }
