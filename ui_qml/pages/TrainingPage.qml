@@ -7,7 +7,6 @@ Item {
     property var runtimeObj: ({})
     property var gameHudObj: ({})
     property string commandSummary: ""
-    property var actionResultObj: ({})
     property string selectedCommandId: ""
     property string selectedStatus: ""
     property string selectedExecutionMode: ""
@@ -108,7 +107,7 @@ Item {
             Column {
                 PageListPanel { width: parent.width; height: 80; items: (controlStateObj.items || []) }
                 PageDetailPanel { width: parent.width; height: 80; detailObj: (controlStateObj || {}) }
-                PageResultPanel { width: parent.width; actionResult: (actionResultObj || {"status":"n/a"}) }
+                PageResultPanel { width: parent.width; actionResult: (controlStateObj.last_action_result || {"status":"n/a"}) }
             }
         }
 

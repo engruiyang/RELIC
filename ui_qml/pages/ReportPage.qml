@@ -6,8 +6,6 @@ Item {
     property var controlStateObj: ({})
     property var sessionObj: ({})
     property string commandSummary: ""
-    property var actionResultObj: ({})
-    signal invokeNative(string actionId)
     property string selectedCommandId: ""
     property string selectedStatus: ""
     property string selectedExecutionMode: ""
@@ -18,7 +16,6 @@ Item {
         selectedStatus = status
         selectedExecutionMode = mode
         selectedNativeActionId = nativeActionId
-        if (mode === "native" && nativeActionId !== "") { invokeNative(nativeActionId) }
     }
 
     function s(v) {
@@ -40,15 +37,15 @@ Item {
                 spacing: 4
                 Button {
                     text: "List Sessions"
-                    onClicked: pick("report.list", "native_ready", "native", "report.list")
+                    onClicked: pick("report.list_sessions", "active", "copy_only", "")
                 }
                 Button {
                     text: "Show Session"
-                    onClicked: pick("report.show", "native_ready", "native", "report.show")
+                    onClicked: pick("report.show_session", "active", "copy_only", "")
                 }
                 Button {
                     text: "Latest Report"
-                    onClicked: pick("report.refresh", "native_ready", "native", "report.refresh")
+                    onClicked: pick("report.latest", "active", "manual", "")
                 }
                 Button {
                     text: "Replay Summary"
@@ -56,7 +53,7 @@ Item {
                 }
                 Button {
                     text: "Open Path Manual"
-                    onClicked: pick("report.export", "native_ready", "native", "report.export")
+                    onClicked: pick("report.open_path_manual", "manual", "manual", "")
                 }
             }
         }
@@ -90,9 +87,9 @@ Item {
         GroupBox {
             title: "Dynamic Content"
             Column {
-                PageListPanel { width: parent.width; height: 80; items: (actionResultObj.items || []) }
-                PageDetailPanel { width: parent.width; height: 80; detailObj: (actionResultObj.detail || {}) }
-                PageResultPanel { width: parent.width; actionResult: (actionResultObj || {"status":"n/a"}) }
+                PageListPanel { width: parent.width; height: 80; items: (controlStateObj.items || []) }
+                PageDetailPanel { width: parent.width; height: 80; detailObj: (controlStateObj || {}) }
+                PageResultPanel { width: parent.width; actionResult: (controlStateObj.last_action_result || {"status":"n/a"}) }
             }
         }
 
