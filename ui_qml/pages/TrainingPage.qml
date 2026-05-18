@@ -10,6 +10,12 @@ Item {
     property var runtimeObj: ({})
     property var gameHudObj: ({})
     property var gameViewObj: ({})
+    property var renderResourcesObj: ({})
+    property var designThemeObj: ({})
+    property var pageStyleObj: ({})
+    property var componentStyleObj: ({})
+    property var gameStyleObj: ({})
+    property var effectStyleObj: ({})
     property string commandSummary: ""
     property string selectedCommandId: ""
     property string selectedStatus: ""
@@ -40,6 +46,35 @@ Item {
 
     function s(v) {
         return (v === undefined || v === null || v === "") ? "n/a" : String(v)
+    }
+
+    function objectValue(obj, key, fallbackValue) {
+        if (obj === undefined || obj === null) {
+            return fallbackValue
+        }
+        var v = obj[key]
+        return (v === undefined || v === null || v === "") ? fallbackValue : v
+    }
+
+    function themeColor(key, fallbackValue) {
+        return objectValue(designThemeObj.colors || ({}), key, fallbackValue)
+    }
+
+    function themeSpacing(key, fallbackValue) {
+        return Number(objectValue(designThemeObj.spacing || ({}), key, fallbackValue))
+    }
+
+    function componentStyle(componentId) {
+        return objectValue(componentStyleObj, componentId, ({}))
+    }
+
+    function panelValue(key, fallbackValue) {
+        return objectValue(componentStyle("panel"), key, fallbackValue)
+    }
+
+    function gameDesignValue(section, key, fallbackValue) {
+        var sectionObj = objectValue(gameStyleObj, section, ({}))
+        return objectValue(sectionObj, key, fallbackValue)
     }
 
     function parseJson(text) {
@@ -378,17 +413,37 @@ Item {
         setActionResult(sessionResult, "session")
     }
 
+    Rectangle {
+        anchors.fill: parent
+        color: themeColor("background", "#0f1720")
+        opacity: 1.0
+    }
+
     ScrollView {
         anchors.fill: parent
+        anchors.margins: themeSpacing("page_margin", 0)
         clip: true
 
         Column {
             width: parent.width
-            spacing: 8
+            spacing: themeSpacing("section_gap", 8)
 
             PageHeader {
                 titleText: "Training Page"
                 subtitleText: "Training readiness gate + existing session/game commands"
+            }
+
+            GroupBox {
+                title: "Design Pack Status"
+                width: parent.width
+                Column {
+                    width: parent.width
+                    spacing: 4
+                    Label { text: "design_pack: " + s(objectValue(renderResourcesObj.design_pack || ({}), "pack_id", "default")) }
+                    Label { text: "game_styles: " + s(objectValue(gameStyleObj, "game_id", "trace_lock")) }
+                    Label { text: "effect_styles: " + s(Object.keys(effectStyleObj || ({})).join(",")) }
+                    Label { text: "panel_token_background: " + s(panelValue("background", "fallback")) }
+                }
             }
 
             GroupBox {
@@ -653,6 +708,7 @@ Item {
                     spacing: 6
 
                     Label { text: "GameCanvas restored in TASK24" }
+                    Label { text: "TASK25 design_pack game_styles active" }
                     Label { text: "GameCanvas will be restored in TASK24" }
                     Label { text: hasActiveGameView() ? "Game view active." : "No active game view." }
 
@@ -671,10 +727,13 @@ Item {
                     GameCanvas {
                         id: trainingGameCanvas
                         width: parent.width
-                        height: 360
+                        height: Number(gameDesignValue("canvas", "height", 360))
                         gameView: trainingPage.currentGameView()
                         guiBridgeRef: (typeof guiBridge !== "undefined") ? guiBridge : null
                         fallbackGameId: s(gameViewField("game_id"))
+                        designThemeObj: trainingPage.designThemeObj
+                        gameStyleObj: trainingPage.gameStyleObj
+                        effectStyleObj: trainingPage.effectStyleObj
                     }
 
                     Label {
