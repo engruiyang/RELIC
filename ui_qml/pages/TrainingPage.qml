@@ -77,6 +77,22 @@ Item {
         return objectValue(sectionObj, key, fallbackValue)
     }
 
+    function gameHudCardStyle() {
+        var hud = gameStyleObj.hud || ({})
+        return ({
+            "background": objectValue(hud, "metric_card_background", themeColor("panel", "#0F172A")),
+            "border": objectValue(hud, "metric_card_border", themeColor("panel_border", "#334155")),
+            "width": Number(objectValue(hud, "metric_width", (pageStyleObj.layout || ({})).hud_metric_width || 170)),
+            "height": Number(objectValue(hud, "metric_height", (pageStyleObj.layout || ({})).hud_metric_height || 92)),
+            "label_size": Number(objectValue(hud, "metric_title_size", 12)),
+            "value_size": Number(objectValue(hud, "metric_value_size", 24)),
+            "value_color": objectValue(hud, "text_color", themeColor("accent", "#22D3EE")),
+            "label_color": themeColor("text_muted", "#94A3B8"),
+            "padding": 10,
+            "radius": 10
+        })
+    }
+
     function parseJson(text) {
         try {
             return JSON.parse(text || "{}")
@@ -413,20 +429,22 @@ Item {
         setActionResult(sessionResult, "session")
     }
 
-    Rectangle {
+    DesignBackground {
         anchors.fill: parent
-        color: themeColor("background", "#0f1720")
-        opacity: 1.0
+        themeObj: trainingPage.designThemeObj
+        styleObj: trainingPage.pageStyleObj
+        renderResourcesObj: trainingPage.renderResourcesObj
+        fallbackColor: themeColor("background", "#0f1720")
     }
 
     ScrollView {
         anchors.fill: parent
-        anchors.margins: themeSpacing("page_margin", 0)
+        anchors.margins: Number((pageStyleObj.layout || ({})).content_margin || themeSpacing("page_margin", 0))
         clip: true
 
         Column {
             width: parent.width
-            spacing: themeSpacing("section_gap", 8)
+            spacing: Number((pageStyleObj.layout || ({})).section_spacing || themeSpacing("section_gap", 8))
 
             PageHeader {
                 titleText: "Training Page"
@@ -668,34 +686,39 @@ Item {
                 visible: activePanel === "game" || activePanel === "session" || activePanel === "readiness"
                 Column {
                     width: parent.width
-                    spacing: 4
+                    spacing: 8
+
+                    Flow {
+                        width: parent.width
+                        spacing: 8
+
+                        DesignMetricCard { label: "Score"; value: s(gameHudObj.score); themeObj: trainingPage.designThemeObj; cardStyleObj: trainingPage.gameHudCardStyle() }
+                        DesignMetricCard { label: "Combo"; value: s(gameHudObj.combo) + " / " + s(gameHudObj.max_combo); themeObj: trainingPage.designThemeObj; cardStyleObj: trainingPage.gameHudCardStyle() }
+                        DesignMetricCard { label: "Level"; value: s(gameHudObj.effective_level || gameHudObj.level); themeObj: trainingPage.designThemeObj; cardStyleObj: trainingPage.gameHudCardStyle() }
+                        DesignMetricCard { label: "Difficulty"; value: s(gameHudObj.difficulty_mode) + " / " + s(gameHudObj.debug_difficulty); themeObj: trainingPage.designThemeObj; cardStyleObj: trainingPage.gameHudCardStyle() }
+                        DesignMetricCard { label: "Accuracy"; value: s(gameHudObj.accuracy); themeObj: trainingPage.designThemeObj; cardStyleObj: trainingPage.gameHudCardStyle() }
+                        DesignMetricCard { label: "Omission"; value: s(gameHudObj.omission); themeObj: trainingPage.designThemeObj; cardStyleObj: trainingPage.gameHudCardStyle() }
+                        DesignMetricCard { label: "False Action"; value: s(gameHudObj.false_action); themeObj: trainingPage.designThemeObj; cardStyleObj: trainingPage.gameHudCardStyle() }
+                        DesignMetricCard { label: "Time Left"; value: s(gameHudObj.time_left_ms); themeObj: trainingPage.designThemeObj; cardStyleObj: trainingPage.gameHudCardStyle() }
+                    }
+
                     Label { text: "game_id: " + s(gameHudObj.game_id) }
-                    Label { text: "score: " + s(gameHudObj.score) }
-                    Label { text: "combo: " + s(gameHudObj.combo) }
-                    Label { text: "level: " + s(gameHudObj.level) }
-                    Label { text: "effective_level: " + s(gameHudObj.effective_level) }
-                    Label { text: "max_combo: " + s(gameHudObj.max_combo) }
                     Label { text: "movement_type: " + s(gameHudObj.movement_type) }
                     Label { text: "target_time_left_ms: " + s(gameHudObj.target_time_left_ms) }
                     Label { text: "target_lifetime_ms: " + s(gameHudObj.target_lifetime_ms) }
                     Label { text: "target_pressure_level: " + s(gameHudObj.target_pressure_level) }
-                    Label { text: "difficulty_mode: " + s(gameHudObj.difficulty_mode) }
-                    Label { text: "debug_difficulty: " + s(gameHudObj.debug_difficulty) }
                     Label { text: "dynamic_difficulty_enabled: " + s(gameHudObj.dynamic_difficulty_enabled) }
                     Label { text: "difficulty_locked: " + s(gameHudObj.difficulty_locked) }
                     Label { text: "selected_difficulty_level: " + s(selectedDifficultyLevel) }
                     Label { text: "elapsed_ms: " + s(gameHudObj.elapsed_ms) }
                     Label { text: "game_duration_ms: " + s(gameHudObj.game_duration_ms) }
-                    Label { text: "time_left_ms: " + s(gameHudObj.time_left_ms) }
                     Label { text: "game_completed: " + s(gameHudObj.game_completed) }
-                    Label { text: "accuracy: " + s(gameHudObj.accuracy) }
-                    Label { text: "omission: " + s(gameHudObj.omission) }
-                    Label { text: "false_action: " + s(gameHudObj.false_action) }
                     Label { text: "rt_stability: " + s(gameHudObj.rt_stability) }
                     Label { text: "behavior_sample_count: " + s(controlStateObj.behavior_sample_count) }
                     Label { text: "score_update_count: " + s(gameHudObj.score_update_count) }
                     Label { text: "feedback_hint: " + s(gameHudObj.feedback_hint) }
                     Label { text: "game.action_status: " + s(gameResult.status) }
+                    Label { text: "TASK25B enlarged design-pack HUD metric cards active" }
                 }
             }
 
@@ -734,6 +757,7 @@ Item {
                         designThemeObj: trainingPage.designThemeObj
                         gameStyleObj: trainingPage.gameStyleObj
                         effectStyleObj: trainingPage.effectStyleObj
+                        renderResourcesObj: trainingPage.renderResourcesObj
                     }
 
                     Label {
