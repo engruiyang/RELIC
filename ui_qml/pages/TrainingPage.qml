@@ -7,6 +7,7 @@ Item {
     property var controlStateObj: ({})
     property var runtimeObj: ({})
     property var gameHudObj: ({})
+    property var gameViewObj: ({})
     property string commandSummary: ""
     property string selectedCommandId: ""
     property string selectedStatus: ""
@@ -131,6 +132,40 @@ Item {
         lines.push("accepted: " + s(obj.accepted))
         return lines.join("\n")
     }
+
+    function gameView() {
+        if (gameViewObj !== undefined && gameViewObj !== null) {
+            return gameViewObj
+        }
+        return ({})
+    }
+
+    function gameEntities() {
+        var gv = gameView()
+        return (gv.entities && Array.isArray(gv.entities)) ? gv.entities : []
+    }
+
+    function gameVisualEvents() {
+        var gv = gameView()
+        return (gv.visual_events && Array.isArray(gv.visual_events)) ? gv.visual_events : []
+    }
+
+    function gameViewField(key) {
+        var gv = gameView()
+        if (gv[key] !== undefined && gv[key] !== null && gv[key] !== "") {
+            return gv[key]
+        }
+        if (gameHudObj[key] !== undefined && gameHudObj[key] !== null && gameHudObj[key] !== "") {
+            return gameHudObj[key]
+        }
+        return "n/a"
+    }
+
+    function hasActiveGameView() {
+        var gv = gameView()
+        return gameEntities().length > 0 || gameVisualEvents().length > 0 || s(gv.game_id) !== "n/a"
+    }
+
 
     function callAction(actionId, payload) {
         var raw = ""
@@ -340,11 +375,43 @@ Item {
             }
 
             GroupBox {
-                title: "GameCanvas Placeholder"
+                title: "GameCanvas / Game View"
                 width: parent.width
+
                 Column {
-                    spacing: 4
+                    width: parent.width
+                    spacing: 6
+
+                    Label { text: "GameCanvas restored in TASK24" }
                     Label { text: "GameCanvas will be restored in TASK24" }
+                    Label { text: hasActiveGameView() ? "Game view active." : "No active game view." }
+
+                    Row {
+                        width: parent.width
+                        spacing: 12
+                        Label { text: "game_id: " + s(gameViewField("game_id")) }
+                        Label { text: "score: " + s(gameViewField("score")) }
+                        Label { text: "combo: " + s(gameViewField("combo")) }
+                        Label { text: "level: " + s(gameViewField("level")) }
+                        Label { text: "entity_count: " + s(gameEntities().length) }
+                        Label { text: "visual_event_count: " + s(gameVisualEvents().length) }
+                    }
+
+                    GameCanvas {
+                        id: trainingGameCanvas
+                        width: parent.width
+                        height: 360
+                        gameView: gameView()
+                        guiBridgeRef: (typeof guiBridge !== "undefined") ? guiBridge : null
+                        fallbackGameId: s(gameViewField("game_id"))
+                    }
+
+                    Label {
+                        width: parent.width
+                        text: "Pointer input is routed through guiBridge.sendEvent('pointer_click', ...); hit testing remains in the existing game client / TraceLock pipeline."
+                        wrapMode: Text.WordWrap
+                    }
+
                     Label { text: "Fragment Lock / 碎片锁定: reference ready" }
                     Label { text: "Signal Hunter / 信号猎手: planned" }
                     Label { text: "Stabilizer / 稳定协议: planned" }
