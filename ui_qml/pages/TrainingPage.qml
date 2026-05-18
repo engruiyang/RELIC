@@ -19,7 +19,12 @@ Item {
     property string activePanel: "readiness"
     property var availableGameIds: ["trace_lock"]
     property string selectedGameId: "trace_lock"
+    property var difficultyModes: ["auto", "manual"]
+    property string selectedDifficultyMode: "auto"
+    property var difficultyLevels: [1, 2, 3, 4, 5]
+    property int selectedDifficultyLevel: 3
     property var gameSelectResult: ({})
+    property var difficultyResult: ({})
     property var profileResult: ({})
     property var calibrationResult: ({})
     property var sessionResult: ({})
@@ -27,6 +32,9 @@ Item {
     property var actionResult: ({})
     property string actionResultText: "No training action yet."
     property string readinessReason: "refresh_required"
+    property string lastDifficultyButtonFeedback: "No difficulty action yet."
+    property int difficultyActionSerial: 0
+    property string difficultyButtonState: "idle"
 
     signal invokeNative(string actionId)
 
@@ -223,6 +231,15 @@ Item {
         }, "readiness")
     }
 
+    function difficultyStartPayload() {
+        return {
+            "difficulty_mode": selectedDifficultyMode,
+            "difficulty_level": selectedDifficultyMode === "manual" ? selectedDifficultyLevel : null,
+            "debug_difficulty": selectedDifficultyMode === "manual" ? selectedDifficultyLevel : "auto",
+            "selected_difficulty_level": selectedDifficultyMode === "manual" ? selectedDifficultyLevel : "auto"
+        }
+    }
+
     function startTrainingSession() {
         refreshReadiness()
         if (!formalTrainingAllowed()) {
@@ -248,7 +265,23 @@ Item {
                 return
             }
         }
-        sessionResult = callAction("session.start", {"user_id": currentUserId(), "game_id": selectedGameId})
+
+        // TASK24C-3: session.start carries the selected difficulty as a reliable
+        // backend sync path. Apply/Reset buttons remain available, but starting a
+        // session no longer depends on a separate difficulty button click.
+        var payload = {
+            "user_id": currentUserId(),
+            "game_id": selectedGameId,
+            "difficulty_mode": selectedDifficultyMode,
+            "difficulty_level": selectedDifficultyMode === "manual" ? selectedDifficultyLevel : null,
+            "debug_difficulty": selectedDifficultyMode === "manual" ? selectedDifficultyLevel : "auto",
+            "selected_difficulty_level": selectedDifficultyMode === "manual" ? selectedDifficultyLevel : "auto"
+        }
+        updateDifficultyFeedback("session.start will sync difficulty mode="
+                                 + selectedDifficultyMode
+                                 + " level="
+                                 + s(payload.selected_difficulty_level))
+        sessionResult = callAction("session.start", payload)
         setActionResult(sessionResult, "session")
     }
 
@@ -271,6 +304,73 @@ Item {
         gameSelectResult = callAction("game.select", {"game_id": selectedGameId})
         gameResult = gameSelectResult
         setActionResult(gameSelectResult, "game")
+    }
+
+    function updateDifficultyFeedback(message) {
+        difficultyActionSerial += 1
+        lastDifficultyButtonFeedback = "#" + difficultyActionSerial + " " + message
+    }
+
+    function dispatchDifficulty(mode, level, label) {
+        var payload = {
+            "game_id": selectedGameId,
+            "mode": mode,
+            "level": mode === "manual" ? level : null
+        }
+        difficultyButtonState = "dispatching"
+        updateDifficultyFeedback(label + " pressed; dispatching game.difficulty")
+
+        if (selectedGameId !== "trace_lock") {
+            selectedGameId = "trace_lock"
+        }
+        if (s(gameViewField("game_id")) !== "trace_lock") {
+            gameSelectResult = callAction("game.select", {"game_id": "trace_lock"})
+        }
+
+        difficultyResult = callAction("game.difficulty", payload)
+
+        if (difficultyResult.status === "unsupported"
+                || difficultyResult.status === "not_implemented"
+                || difficultyResult.status === "unsupported_game"
+                || difficultyResult.status === "bridge_missing") {
+            if (typeof guiBridge !== "undefined" && guiBridge) {
+                guiBridge.sendCommand("set_debug_difficulty", JSON.stringify({"level": mode === "manual" ? level : null}))
+                difficultyResult = {
+                    "action_id": "game.difficulty",
+                    "status": "sent_via_legacy_command",
+                    "message": "fallback set_debug_difficulty command sent",
+                    "accepted": true,
+                    "difficulty_mode": mode,
+                    "debug_difficulty": mode === "manual" ? level : "auto",
+                    "level": mode === "manual" ? level : "auto"
+                }
+            }
+        }
+
+        gameResult = difficultyResult
+        difficultyButtonState = s(difficultyResult.status)
+        updateDifficultyFeedback(label + " result=" + s(difficultyResult.status)
+                                 + " mode=" + mode
+                                 + " debug=" + s(difficultyResult.debug_difficulty)
+                                 + " level=" + s(difficultyResult.level))
+        setActionResult(difficultyResult, "game")
+    }
+
+    function applyTraceLockDifficulty() {
+        selectedDifficultyMode = "manual"
+        dispatchDifficulty("manual", selectedDifficultyLevel, "Apply Difficulty manual level " + selectedDifficultyLevel)
+    }
+
+    function resetTraceLockAutoDifficulty() {
+        selectedDifficultyMode = "auto"
+        dispatchDifficulty("auto", null, "Reset Auto Difficulty")
+    }
+
+    function difficultyValue(key) {
+        if (difficultyResult[key] !== undefined && difficultyResult[key] !== null && difficultyResult[key] !== "") {
+            return difficultyResult[key]
+        }
+        return gameViewField(key)
     }
 
     function safeStop() {
@@ -391,6 +491,86 @@ Item {
             }
 
             GroupBox {
+                title: "TraceLock Difficulty"
+                width: parent.width
+
+                Column {
+                    width: parent.width
+                    spacing: 6
+
+                    Label { text: "Difficulty Control" }
+                    Label { text: "difficulty_mode: " + s(difficultyValue("difficulty_mode")) }
+                    Label { text: "debug_difficulty: " + s(difficultyValue("debug_difficulty")) }
+                    Label { text: "effective_level: " + s(difficultyValue("effective_level")) }
+                    Label { text: "dynamic_difficulty_enabled: " + s(difficultyValue("dynamic_difficulty_enabled")) }
+                    Label { text: "selected_difficulty_level: " + s(selectedDifficultyLevel) }
+                    Label {
+                        width: parent.width
+                        text: "Manual locks TraceLock at the selected level. Auto enables TraceLock DDA and may adjust level during play."
+                        wrapMode: Text.WordWrap
+                    }
+                    Label { text: "difficulty_button_state: " + s(difficultyButtonState) }
+                    Label {
+                        width: parent.width
+                        text: "last difficulty button: " + s(lastDifficultyButtonFeedback)
+                        wrapMode: Text.WordWrap
+                    }
+                    Label {
+                        width: parent.width
+                        text: "Button feedback is text-based to stay compatible with the native Qt Quick Controls style."
+                        wrapMode: Text.WordWrap
+                    }
+
+                    Row {
+                        width: parent.width
+                        spacing: 8
+
+                        ComboBox {
+                            id: difficultyModeSelector
+                            width: 160
+                            model: trainingPage.difficultyModes
+                            currentIndex: Math.max(0, trainingPage.difficultyModes.indexOf(trainingPage.selectedDifficultyMode))
+                            onActivated: function(index) {
+                                if (index >= 0 && index < trainingPage.difficultyModes.length) {
+                                    trainingPage.selectedDifficultyMode = trainingPage.difficultyModes[index]
+                                }
+                            }
+                        }
+
+                        ComboBox {
+                            id: difficultyLevelSelector
+                            width: 120
+                            model: trainingPage.difficultyLevels
+                            enabled: trainingPage.selectedDifficultyMode === "manual"
+                            currentIndex: Math.max(0, trainingPage.difficultyLevels.indexOf(trainingPage.selectedDifficultyLevel))
+                            onActivated: function(index) {
+                                if (index >= 0 && index < trainingPage.difficultyLevels.length) {
+                                    trainingPage.selectedDifficultyLevel = trainingPage.difficultyLevels[index]
+                                }
+                            }
+                        }
+
+                        Button {
+                            id: applyDifficultyButton
+                            text: applyDifficultyButton.down ? "Applying..." : "Apply Difficulty"
+                            onPressed: trainingPage.updateDifficultyFeedback("Apply Difficulty pressed visually")
+                            onClicked: trainingPage.applyTraceLockDifficulty()
+                        }
+
+                        Button {
+                            id: resetAutoDifficultyButton
+                            text: resetAutoDifficultyButton.down ? "Resetting..." : "Reset Auto Difficulty"
+                            onPressed: trainingPage.updateDifficultyFeedback("Reset Auto Difficulty pressed visually")
+                            onClicked: trainingPage.resetTraceLockAutoDifficulty()
+                        }
+                    }
+
+                    Label { text: "game.difficulty status: " + s(difficultyResult.status) }
+                    Label { text: "game.difficulty message: " + s(difficultyResult.message); wrapMode: Text.WordWrap }
+                }
+            }
+
+            GroupBox {
                 title: "Session Status"
                 width: parent.width
                 visible: activePanel === "session" || activePanel === "readiness" || activePanel === "result"
@@ -438,10 +618,21 @@ Item {
                     Label { text: "score: " + s(gameHudObj.score) }
                     Label { text: "combo: " + s(gameHudObj.combo) }
                     Label { text: "level: " + s(gameHudObj.level) }
+                    Label { text: "effective_level: " + s(gameHudObj.effective_level) }
                     Label { text: "max_combo: " + s(gameHudObj.max_combo) }
                     Label { text: "movement_type: " + s(gameHudObj.movement_type) }
                     Label { text: "target_time_left_ms: " + s(gameHudObj.target_time_left_ms) }
                     Label { text: "target_lifetime_ms: " + s(gameHudObj.target_lifetime_ms) }
+                    Label { text: "target_pressure_level: " + s(gameHudObj.target_pressure_level) }
+                    Label { text: "difficulty_mode: " + s(gameHudObj.difficulty_mode) }
+                    Label { text: "debug_difficulty: " + s(gameHudObj.debug_difficulty) }
+                    Label { text: "dynamic_difficulty_enabled: " + s(gameHudObj.dynamic_difficulty_enabled) }
+                    Label { text: "difficulty_locked: " + s(gameHudObj.difficulty_locked) }
+                    Label { text: "selected_difficulty_level: " + s(selectedDifficultyLevel) }
+                    Label { text: "elapsed_ms: " + s(gameHudObj.elapsed_ms) }
+                    Label { text: "game_duration_ms: " + s(gameHudObj.game_duration_ms) }
+                    Label { text: "time_left_ms: " + s(gameHudObj.time_left_ms) }
+                    Label { text: "game_completed: " + s(gameHudObj.game_completed) }
                     Label { text: "accuracy: " + s(gameHudObj.accuracy) }
                     Label { text: "omission: " + s(gameHudObj.omission) }
                     Label { text: "false_action: " + s(gameHudObj.false_action) }
@@ -472,6 +663,7 @@ Item {
                         Label { text: "score: " + s(gameViewField("score")) }
                         Label { text: "combo: " + s(gameViewField("combo")) }
                         Label { text: "level: " + s(gameViewField("level")) }
+                        Label { text: "time_left_ms: " + s(gameViewField("time_left_ms")) }
                         Label { text: "entity_count: " + s(gameEntities().length) }
                         Label { text: "visual_event_count: " + s(gameVisualEvents().length) }
                     }
