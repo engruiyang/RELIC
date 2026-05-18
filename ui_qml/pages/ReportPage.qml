@@ -3,12 +3,11 @@ import QtQuick.Controls
 import "../components"
 
 Item {
-    id: root
+    id: reportPage
     property var designThemeObj: ({})
     property var pageStyleObj: ({})
     property var componentStyleObj: ({})
     property var renderResourcesObj: ({})
-    id: reportPage
 
     property var appStateObj: ({})
     property var controlStateObj: ({})
@@ -237,10 +236,10 @@ Item {
 
     DesignBackground {
         anchors.fill: parent
-        themeObj: root.designThemeObj
-        styleObj: root.pageStyleObj
-        renderResourcesObj: root.renderResourcesObj
-        fallbackColor: (root.designThemeObj.colors && root.designThemeObj.colors.background) ? root.designThemeObj.colors.background : "#F8FAFC"
+        themeObj: reportPage.designThemeObj
+        styleObj: reportPage.pageStyleObj
+        renderResourcesObj: reportPage.renderResourcesObj
+        fallbackColor: (reportPage.designThemeObj.colors && reportPage.designThemeObj.colors.background) ? reportPage.designThemeObj.colors.background : "#F8FAFC"
     }
 
     ScrollView {
@@ -252,9 +251,9 @@ Item {
             spacing: 8
 
             PageHeader {
-            designThemeObj: root.designThemeObj
-            componentStyleObj: root.componentStyleObj
-            headerStyleObj: root.componentStyleObj.header || ({})
+            designThemeObj: reportPage.designThemeObj
+            componentStyleObj: reportPage.componentStyleObj
+            headerStyleObj: reportPage.componentStyleObj.header || ({})
                 titleText: "Report Page"
                 subtitleText: "Session/report viewer for the current user"
             }
@@ -409,9 +408,9 @@ Item {
             }
 
             PageFeedbackPanel {
-            designThemeObj: root.designThemeObj
-            componentStyleObj: root.componentStyleObj
-            feedbackStyleObj: root.componentStyleObj.feedback_panel || ({})
+            designThemeObj: reportPage.designThemeObj
+            componentStyleObj: reportPage.componentStyleObj
+            feedbackStyleObj: reportPage.componentStyleObj.feedback_panel || ({})
                 pageId: "report"
                 selectedCommandId: reportPage.selectedCommandId
                 selectedStatus: reportPage.selectedStatus
