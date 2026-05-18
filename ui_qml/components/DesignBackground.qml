@@ -92,21 +92,61 @@ Item {
         return firstLayer("image")
     }
 
+    function normalizedImageUrl(rawUrl) {
+        if (rawUrl === undefined || rawUrl === null || rawUrl === "") {
+            return ""
+        }
+        var u = String(rawUrl)
+        if (u.indexOf("placeholder://") === 0) {
+            return ""
+        }
+        if (u.indexOf("file:") === 0 || u.indexOf("qrc:") === 0 || u.indexOf("http:") === 0 || u.indexOf("https:") === 0 || u.indexOf("/") === 0) {
+            return u
+        }
+        return "../../assets/" + u
+    }
+
     function assetUrl(assetKey) {
         if (assetKey === undefined || assetKey === null || assetKey === "") {
             return ""
         }
         var assets = renderResourcesObj.assets || ({})
         var item = assets[String(assetKey)] || ({})
-        return item.url || ""
+        return normalizedImageUrl(item.url || "")
     }
 
     function imageSource() {
         var layer = imageLayer()
         if (layer.url !== undefined && layer.url !== null && layer.url !== "") {
-            return String(layer.url)
+            return normalizedImageUrl(layer.url)
         }
         return assetUrl(layer.asset_key)
+    }
+
+    function imagePosition() {
+        return String(value(imageLayer(), "position", "center"))
+    }
+
+    function imageHorizontalAlignment() {
+        var p = imagePosition()
+        if (p.indexOf("left") >= 0) {
+            return Image.AlignLeft
+        }
+        if (p.indexOf("right") >= 0) {
+            return Image.AlignRight
+        }
+        return Image.AlignHCenter
+    }
+
+    function imageVerticalAlignment() {
+        var p = imagePosition()
+        if (p.indexOf("top") >= 0) {
+            return Image.AlignTop
+        }
+        if (p.indexOf("bottom") >= 0) {
+            return Image.AlignBottom
+        }
+        return Image.AlignVCenter
     }
 
     function imageOpacity() {
@@ -138,6 +178,8 @@ Item {
         source: root.imageSource()
         visible: source !== ""
         fillMode: root.imageFillMode()
+        horizontalAlignment: root.imageHorizontalAlignment()
+        verticalAlignment: root.imageVerticalAlignment()
         opacity: root.imageOpacity()
         smooth: true
         clip: true
@@ -160,5 +202,5 @@ Item {
         opacity: Number(root.value(root.overlayLayer(), "opacity", 0.0))
     }
 
-    // TASK25B background supports color / image asset_key / gradient / overlay / opacity / fit / position fallback.
+    // TASK25C background supports color / image asset_key/url / gradient / overlay / opacity / fit / position / relative asset fallback.
 }

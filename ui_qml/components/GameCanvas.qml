@@ -96,14 +96,65 @@ Rectangle {
         return styleValue(e, "color", "#ffffff")
     }
 
+    function normalizedImageUrl(rawUrl) {
+        if (rawUrl === undefined || rawUrl === null || rawUrl === "") {
+            return ""
+        }
+        var u = String(rawUrl)
+        if (u.indexOf("placeholder://") === 0) {
+            return ""
+        }
+        if (u.indexOf("file:") === 0 || u.indexOf("qrc:") === 0 || u.indexOf("http:") === 0 || u.indexOf("https:") === 0 || u.indexOf("/") === 0) {
+            return u
+        }
+        return "../../assets/" + u
+    }
+
+    function assetDescriptor(assetKey) {
+        if (assetKey === undefined || assetKey === null || assetKey === "") {
+            return ({})
+        }
+        var assets = renderResourcesObj.assets || ({})
+        return assets[String(assetKey)] || ({})
+    }
+
+    function targetAssetKey(entity) {
+        var s = targetStyle(entity)
+        var key = entity && entity.asset_key ? entity.asset_key : ""
+        if (key === "") {
+            key = styleValue(s, "asset_key", "")
+        }
+        return key
+    }
+
+    function targetAssetDescriptor(entity) {
+        return assetDescriptor(targetAssetKey(entity))
+    }
+
+    function targetImageSource(entity) {
+        var desc = targetAssetDescriptor(entity)
+        var style = targetStyle(entity)
+        return normalizedImageUrl(desc.url || styleValue(style, "url", ""))
+    }
+
+    function targetFallbackShape(entity) {
+        var desc = targetAssetDescriptor(entity)
+        var style = targetStyle(entity)
+        return String(desc.fallback_shape || styleValue(style, "fallback_shape", "circle"))
+    }
+
+    function isTargetImageAvailable(entity) {
+        return targetImageSource(entity) !== ""
+    }
+
     Rectangle {
         id: timerBack
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
         anchors.margins: 8
-        height: 6
-        radius: 3
+        height: Number(styleValue(gameStyleObj.timer_bar || ({}), "height", 6))
+        radius: height / 2
         color: styleValue(gameStyleObj.timer_bar || ({}), "background", "#374151")
 
         Rectangle {
@@ -111,7 +162,7 @@ Rectangle {
             anchors.top: parent.top
             anchors.bottom: parent.bottom
             width: parent.width * root.timerProgress()
-            radius: 3
+            radius: height / 2
             color: styleValue(gameStyleObj.timer_bar || ({}), "fill", "#F59E0B")
         }
     }
@@ -121,7 +172,7 @@ Rectangle {
         anchors.top: timerBack.bottom
         anchors.margins: 8
         color: styleValue(gameStyleObj.hud || ({}), "text_color", "#ddd")
-        text: "GameCanvas | entities=" + root.entities.length + " | design_pack=active | background image asset_key supported"
+        text: "GameCanvas | entities=" + root.entities.length + " | design_pack=active | background/target image asset_key supported"
     }
 
     Repeater {
@@ -146,13 +197,23 @@ Rectangle {
                 visible: entity.kind === "target"
             }
 
+            Image {
+                anchors.fill: parent
+                source: root.targetImageSource(entity)
+                visible: entity.kind === "target" && root.isTargetImageAvailable(entity)
+                fillMode: Image.PreserveAspectFit
+                smooth: true
+                mipmap: true
+            }
+
             Rectangle {
                 anchors.fill: parent
-                radius: width / 2
+                radius: root.targetFallbackShape(entity) === "circle" ? width / 2 : Math.max(2, width * 0.12)
+                rotation: root.targetFallbackShape(entity) === "diamond" ? 45 : 0
                 color: entity.kind === "target" ? root.targetFill(entity) : (entity.kind === "focus_zone" ? "#44aaff33" : "transparent")
-                border.width: entity.kind === "progress_ring" ? 3 : (entity.state === "active" ? 2 : 1)
+                border.width: entity.kind === "progress_ring" ? Number(styleValue(gameStyleObj.progress_ring || ({}), "width", 3)) : (entity.state === "active" ? 2 : 1)
                 border.color: entity.kind === "progress_ring" ? styleValue(gameStyleObj.progress_ring || ({}), "stroke", "#ffdd55") : root.targetStroke(entity)
-                visible: entity.kind === "target" || entity.kind === "focus_zone" || entity.kind === "progress_ring"
+                visible: (entity.kind === "target" && !root.isTargetImageAvailable(entity)) || entity.kind === "focus_zone" || entity.kind === "progress_ring"
                 opacity: entity.kind === "focus_zone" ? 0.45 : 1.0
             }
 
@@ -193,6 +254,9 @@ Rectangle {
     }
 
     // TASK25B GameCanvas consumes canvas.background layered color/image/gradient/overlay and TraceLock game style tokens.
+    // TASK25C GameCanvas consumes TraceLock visual asset_key/style_key tokens.
+    // canvas.background layered color/image/gradient/overlay
+    // targetAssetKey targetAssetDescriptor targetImageSource targetFallbackShape isTargetImageAvailable asset_key fallback_shape Image {
 
     MouseArea {
         anchors.fill: parent
