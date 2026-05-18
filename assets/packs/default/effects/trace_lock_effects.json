@@ -1,20 +1,54 @@
 {
   "trace_seal": {
-    "type": "pulse",
+    "type": "particle_burst",
     "duration_ms": 320,
-    "particle_count": 12,
-    "color": "#22D3EE"
+    "particle_count": 18,
+    "color": "#22D3EE",
+    "glow": "#67E8F9",
+    "radius": 38,
+    "scale_from": 0.65,
+    "scale_to": 1.55,
+    "opacity_from": 0.88,
+    "opacity_to": 0.0,
+    "easing": "out_cubic"
   },
   "lock_failed": {
     "type": "flash",
     "duration_ms": 260,
-    "color": "#EF4444"
+    "particle_count": 0,
+    "color": "#EF4444",
+    "glow": "#FCA5A5",
+    "radius": 42,
+    "scale_from": 0.85,
+    "scale_to": 1.25,
+    "opacity_from": 0.78,
+    "opacity_to": 0.0,
+    "easing": "out_cubic"
   },
   "trace_drop": {
     "type": "fade",
-    "duration_ms": 220
+    "duration_ms": 300,
+    "particle_count": 6,
+    "color": "#F59E0B",
+    "glow": "#FCD34D",
+    "radius": 34,
+    "scale_from": 1.0,
+    "scale_to": 0.55,
+    "opacity_from": 0.62,
+    "opacity_to": 0.0,
+    "easing": "out_cubic"
   },
   "combo_popup": {
-    "duration_ms": 500
+    "type": "popup",
+    "duration_ms": 500,
+    "particle_count": 0,
+    "color": "#10B981",
+    "glow": "#6EE7B7",
+    "radius": 54,
+    "scale_from": 0.75,
+    "scale_to": 1.35,
+    "opacity_from": 0.9,
+    "opacity_to": 0.0,
+    "easing": "out_cubic"
   }
 }
