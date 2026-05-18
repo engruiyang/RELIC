@@ -13,6 +13,14 @@ def test_task24_training_game_canvas_tokens_present() -> None:
         "pointer_click",
         "guiBridge.sendEvent",
         "TraceLock pipeline",
+        "Game Selection",
+        "Select Existing Game",
+        "Use TraceLock",
+        "selected_game_id",
+        "game.select",
+        "movement_type",
+        "target_time_left_ms",
+        "accuracy",
     ]:
         assert token in text
 

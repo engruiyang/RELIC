@@ -29,6 +29,8 @@ PAGES = {
         "Stop Session",
         "GameCanvas will be restored in TASK24",
         "GameCanvas restored in TASK24",
+        "Game Selection",
+        "Use TraceLock",
     ],
     "ui_qml/pages/ReportPage.qml": [
         "Report Readiness",
@@ -70,6 +72,7 @@ REQUIRED_ACTIONS = [
     "session.stop",
     "session.status",
     "game.status",
+    "game.select",
     "report.refresh",
     "report.list",
     "report.show",

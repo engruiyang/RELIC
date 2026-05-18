@@ -14,6 +14,15 @@ def test_training_page_readiness_tokens() -> None:
         "Game Status",
         "Runtime Signal Summary",
         "Game HUD Summary",
+        "Game Selection",
+        "Select Existing Game",
+        "selected_game_id",
+        "Use TraceLock",
+        "TraceLock",
+        "game.select",
+        "movement_type",
+        "target_time_left_ms",
+        "accuracy",
         "Training Action Result",
         "GameCanvas will be restored in TASK24",
         "GameCanvas restored in TASK24",
@@ -30,6 +39,7 @@ def test_training_page_readiness_tokens() -> None:
         "session.stop",
         "session.status",
         "game.status",
+        "game.select",
     ]:
         assert token in text
 

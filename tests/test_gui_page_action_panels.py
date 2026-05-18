@@ -7,7 +7,7 @@ def test_page_action_panels_tokens() -> None:
         assert t in c
     t = Path('ui_qml/pages/TrainingPage.qml').read_text(encoding='utf-8')
     assert 'Start Session' in t and 'Stop Session' in t and 'GameCanvas will be restored in TASK24' in t
-    assert 'GameCanvas restored in TASK24' in t and 'GameCanvas {' in t
+    assert 'GameCanvas restored in TASK24' in t and 'GameCanvas {' in t and 'Use TraceLock' in t
     r = Path('ui_qml/pages/ReportPage.qml').read_text(encoding='utf-8')
     for x in ['List Sessions','Show Session','Latest Report','latest_report_path']:
         assert x in r

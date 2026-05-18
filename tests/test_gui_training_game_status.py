@@ -12,8 +12,11 @@ def test_game_status_feedback_inactive_and_active() -> None:
 
 def test_training_uses_existing_session_and_calibration_actions() -> None:
     f = GuiFacade(mode='mock')
-    for action in ['user.show_profile', 'calibration.status', 'session.status', 'session.start', 'session.stop', 'game.status']:
-        r = f.invoke_action(action, {'user_id': 'demo_user'})
+    for action in ['user.show_profile', 'calibration.status', 'session.status', 'session.start', 'session.stop', 'game.status', 'game.select']:
+        payload = {'user_id': 'demo_user'}
+        if action == 'game.select':
+            payload['game_id'] = 'trace_lock'
+        r = f.invoke_action(action, payload)
         assert isinstance(r, dict)
         assert 'status' in r
         assert 'result' in r
@@ -29,3 +32,19 @@ def test_training_game_view_contract_fields() -> None:
     hud = f.get_game_hud()
     assert 'game_id' in hud
     f.close()
+
+
+def test_game_select_uses_existing_trace_lock_in_mock_mode() -> None:
+    f = GuiFacade(mode='mock')
+    r = f.invoke_action('game.select', {'game_id': 'trace_lock'})
+    assert r['status'] == 'accepted'
+    assert r['game_id'] == 'trace_lock'
+    hud = f.get_game_hud()
+    assert hud.get('game_id') == 'trace_lock'
+
+
+def test_game_select_rejects_unknown_game() -> None:
+    f = GuiFacade(mode='mock')
+    r = f.invoke_action('game.select', {'game_id': 'new_game_pipeline'})
+    assert r['status'] == 'unsupported_game'
+    assert r['accepted'] is False
