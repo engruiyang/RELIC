@@ -1,0 +1,6 @@
+{
+  "page_id": "calibration_page",
+  "background": "theme.colors.background",
+  "panel": "component.panel",
+  "button": "component.button"
+}

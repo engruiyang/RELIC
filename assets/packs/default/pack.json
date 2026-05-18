@@ -1,0 +1,27 @@
+{
+  "pack_id": "default",
+  "display_name": "Default Design Pack",
+  "version": "1.0.0",
+  "theme": "theme.json",
+  "pages": {
+    "app_shell": "pages/app_shell.json",
+    "home_page": "pages/home_page.json",
+    "user_page": "pages/user_page.json",
+    "calibration_page": "pages/calibration_page.json",
+    "training_page": "pages/training_page.json",
+    "report_page": "pages/report_page.json"
+  },
+  "components": {
+    "button": "components/button.json",
+    "panel": "components/panel.json",
+    "header": "components/header.json",
+    "feedback_panel": "components/feedback_panel.json"
+  },
+  "games": {
+    "trace_lock": "games/trace_lock.json"
+  },
+  "effects": {
+    "trace_lock": "effects/trace_lock_effects.json"
+  },
+  "fallback_pack": "default"
+}

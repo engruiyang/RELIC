@@ -35,5 +35,9 @@
       "style_key": "target.background",
       "description": "shared fallback circle"
     }
+  },
+  "default_design_pack": "default",
+  "design_packs": {
+    "default": "packs/default/pack.json"
   }
 }

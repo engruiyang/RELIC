@@ -1,0 +1,20 @@
+{
+  "trace_seal": {
+    "type": "pulse",
+    "duration_ms": 320,
+    "particle_count": 12,
+    "color": "#22D3EE"
+  },
+  "lock_failed": {
+    "type": "flash",
+    "duration_ms": 260,
+    "color": "#EF4444"
+  },
+  "trace_drop": {
+    "type": "fade",
+    "duration_ms": 220
+  },
+  "combo_popup": {
+    "duration_ms": 500
+  }
+}

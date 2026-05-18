@@ -1,0 +1,6 @@
+{
+  "page_id": "app_shell",
+  "background": "theme.colors.background",
+  "panel": "component.panel",
+  "button": "component.button"
+}
