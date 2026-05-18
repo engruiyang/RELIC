@@ -183,6 +183,21 @@ def build_render_resource_bundle(game_id: str, theme_id: str = "default", layout
             if not s.get("exists"):
                 missing_styles.append(str(sk))
 
+    # TASK25B: expose common design/background asset slots in renderResourcesJson as well.
+    # These keys are safe placeholders until real images are provided in TASK25E.
+    for common_key, desc in (am.manifest.get("common_assets") or {}).items():
+        if common_key not in assets:
+            assets[str(common_key)] = {
+                "asset_key": str(common_key),
+                "type": desc.get("type"),
+                "url": desc.get("url"),
+                "fallback_shape": desc.get("fallback_shape"),
+                "style_key": desc.get("style_key"),
+                "source": "common_assets",
+                "exists": bool(desc),
+                "description": desc.get("description", ""),
+            }
+
     layout_regions: dict[str, dict[str, Any]] = {}
     missing_regions: list[str] = []
     for rk in ["root", "game_canvas", "status_panel", "live_panel", "debug_panel"]:
