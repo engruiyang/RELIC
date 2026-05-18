@@ -1,8 +1,8 @@
 import QtQuick
-import QtQuick.Controls
 
-GroupBox {
-    title: "Page Feedback"
+Rectangle {
+    id: feedbackPanel
+
     property string pageId: ""
     property var selectedCommandId: ""
     property var selectedStatus: ""
@@ -15,25 +15,40 @@ GroupBox {
     property var componentStyleObj: ({})
     property var feedbackStyleObj: ({})
 
-    readonly property color textColor: (designThemeObj.colors && designThemeObj.colors.text) ? designThemeObj.colors.text : "#0F172A"
+    readonly property var colorsObj: designThemeObj.colors || ({})
+    readonly property color textColor: colorsObj.text || "#0F172A"
+    readonly property color mutedTextColor: colorsObj.text_muted || "#475569"
+    readonly property var effectiveStyleObj: Object.keys(feedbackStyleObj || ({})).length > 0 ? feedbackStyleObj : ((componentStyleObj || ({})).feedback_panel || ({}))
 
-    background: Rectangle {
-        color: feedbackStyleObj.background || "#FFFFFF"
-        border.color: feedbackStyleObj.border || "#CBD5E1"
-        border.width: 1
-        radius: feedbackStyleObj.radius !== undefined ? Number(feedbackStyleObj.radius) : 8
-        opacity: feedbackStyleObj.opacity !== undefined ? Number(feedbackStyleObj.opacity) : 0.96
-    }
+    implicitWidth: 360
+    implicitHeight: feedbackColumn.implicitHeight + 20
+    color: effectiveStyleObj.background || colorsObj.panel || "#FFFFFF"
+    border.color: effectiveStyleObj.border || colorsObj.panel_border || "#CBD5E1"
+    border.width: Number(effectiveStyleObj.border_width || 1)
+    radius: Number(effectiveStyleObj.radius || 8)
+    opacity: Number(effectiveStyleObj.opacity === undefined ? 0.96 : effectiveStyleObj.opacity)
 
     Column {
-        spacing: 2
-        Label { text: "page_id: " + pageId; color: textColor }
-        Label { text: "selected command_id: " + String(selectedCommandId === undefined || selectedCommandId === null ? "n/a" : selectedCommandId); color: textColor }
-        Label { text: "selected status: " + String(selectedStatus === undefined || selectedStatus === null ? "n/a" : selectedStatus); color: textColor }
-        Label { text: "execution_mode: " + String(selectedExecutionMode === undefined || selectedExecutionMode === null ? "n/a" : selectedExecutionMode); color: textColor }
-        Label { text: "native_action_id: " + String(selectedNativeActionId === undefined || selectedNativeActionId === null ? "n/a" : selectedNativeActionId); color: textColor }
-        Label { text: "last_command: " + String(lastCommand === undefined || lastCommand === null ? "n/a" : lastCommand); color: textColor }
-        Label { text: "last_command_result: " + String(lastResult === undefined || lastResult === null ? "n/a" : lastResult); color: textColor }
-        Label { text: "last_command_error: " + String(lastError === undefined || lastError === null ? "n/a" : lastError); color: textColor }
+        id: feedbackColumn
+        anchors.fill: parent
+        anchors.margins: Number(feedbackPanel.effectiveStyleObj.padding || 10)
+        spacing: Number(feedbackPanel.effectiveStyleObj.spacing || 2)
+
+        Text {
+            text: "Page Feedback"
+            color: feedbackPanel.textColor
+            font.bold: true
+            font.pixelSize: Number((feedbackPanel.designThemeObj.typography || ({})).subtitle_size || 14)
+        }
+        Text { text: "page_id: " + feedbackPanel.pageId; color: feedbackPanel.mutedTextColor }
+        Text { text: "selected command_id: " + String(feedbackPanel.selectedCommandId === undefined || feedbackPanel.selectedCommandId === null ? "n/a" : feedbackPanel.selectedCommandId); color: feedbackPanel.textColor }
+        Text { text: "selected status: " + String(feedbackPanel.selectedStatus === undefined || feedbackPanel.selectedStatus === null ? "n/a" : feedbackPanel.selectedStatus); color: feedbackPanel.textColor }
+        Text { text: "execution_mode: " + String(feedbackPanel.selectedExecutionMode === undefined || feedbackPanel.selectedExecutionMode === null ? "n/a" : feedbackPanel.selectedExecutionMode); color: feedbackPanel.textColor }
+        Text { text: "native_action_id: " + String(feedbackPanel.selectedNativeActionId === undefined || feedbackPanel.selectedNativeActionId === null ? "n/a" : feedbackPanel.selectedNativeActionId); color: feedbackPanel.textColor }
+        Text { text: "last_command: " + String(feedbackPanel.lastCommand === undefined || feedbackPanel.lastCommand === null ? "n/a" : feedbackPanel.lastCommand); color: feedbackPanel.textColor }
+        Text { text: "last_command_result: " + String(feedbackPanel.lastResult === undefined || feedbackPanel.lastResult === null ? "n/a" : feedbackPanel.lastResult); color: feedbackPanel.textColor }
+        Text { text: "last_command_error: " + String(feedbackPanel.lastError === undefined || feedbackPanel.lastError === null ? "n/a" : feedbackPanel.lastError); color: feedbackPanel.textColor }
     }
+
+    // TASK25B-2H PageFeedbackPanel is self-painted; no native Control background customization.
 }

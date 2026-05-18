@@ -35,15 +35,15 @@ Rectangle {
     }
 
     function pxX(xNorm) {
-        return Math.max(0, Math.min(width, Number(xNorm || 0) * width))
+        return Math.max(0, Math.min(width, xNorm * width))
     }
 
     function pxY(yNorm) {
-        return Math.max(0, Math.min(height, Number(yNorm || 0) * height))
+        return Math.max(0, Math.min(height, yNorm * height))
     }
 
     function pxRadius(rNorm) {
-        return Math.max(4, Number(rNorm || 0) * Math.min(width, height))
+        return Math.max(4, rNorm * Math.min(width, height))
     }
 
     function targetType(entity) {
@@ -91,9 +91,71 @@ Rectangle {
         return Math.max(0, Math.min(1, left / total))
     }
 
+    function effectStyle(effectType) {
+        return effectStyleObj[effectType] || ({})
+    }
+
     function effectColor(effectType) {
-        var e = effectStyleObj[effectType] || ({})
+        var e = effectStyle(effectType)
         return styleValue(e, "color", "#ffffff")
+    }
+
+    function effectGlow(effectType) {
+        var e = effectStyle(effectType)
+        return styleValue(e, "glow", effectColor(effectType))
+    }
+
+    function effectDuration(effectType) {
+        var e = effectStyle(effectType)
+        return Number(styleValue(e, "duration_ms", 320))
+    }
+
+    function effectTypeName(effectType) {
+        var e = effectStyle(effectType)
+        return String(styleValue(e, "type", effectType))
+    }
+
+    function effectParticleCount(effectType) {
+        var e = effectStyle(effectType)
+        return Math.max(0, Number(styleValue(e, "particle_count", 0)))
+    }
+
+    function effectScaleFrom(effectType) {
+        var e = effectStyle(effectType)
+        return Number(styleValue(e, "scale_from", 0.7))
+    }
+
+    function effectScaleTo(effectType) {
+        var e = effectStyle(effectType)
+        return Number(styleValue(e, "scale_to", 1.45))
+    }
+
+    function effectOpacityFrom(effectType) {
+        var e = effectStyle(effectType)
+        return Number(styleValue(e, "opacity_from", 0.82))
+    }
+
+    function effectOpacityTo(effectType) {
+        var e = effectStyle(effectType)
+        return Number(styleValue(e, "opacity_to", 0.0))
+    }
+
+    function effectRadius(effectType) {
+        var e = effectStyle(effectType)
+        return Number(styleValue(e, "radius", 34))
+    }
+
+    function effectLabel(effectType) {
+        if (effectType === "combo_popup") {
+            return "COMBO"
+        }
+        if (effectType === "lock_failed") {
+            return "MISS"
+        }
+        if (effectType === "trace_drop") {
+            return "DROP"
+        }
+        return "HIT"
     }
 
     function normalizedImageUrl(rawUrl) {
@@ -119,10 +181,10 @@ Rectangle {
     }
 
     function targetAssetKey(entity) {
-        var style = targetStyle(entity)
+        var s = targetStyle(entity)
         var key = entity && entity.asset_key ? entity.asset_key : ""
         if (key === "") {
-            key = styleValue(style, "asset_key", "")
+            key = styleValue(s, "asset_key", "")
         }
         return key
     }
@@ -200,7 +262,7 @@ Rectangle {
             Image {
                 anchors.fill: parent
                 source: root.targetImageSource(entity)
-                visible: entity.kind === "target" && source !== ""
+                visible: entity.kind === "target" && root.isTargetImageAvailable(entity)
                 fillMode: Image.PreserveAspectFit
                 smooth: true
                 mipmap: true
@@ -211,8 +273,8 @@ Rectangle {
                 radius: root.targetFallbackShape(entity) === "circle" ? width / 2 : Math.max(2, width * 0.12)
                 rotation: root.targetFallbackShape(entity) === "diamond" ? 45 : 0
                 color: entity.kind === "target" ? root.targetFill(entity) : (entity.kind === "focus_zone" ? "#44aaff33" : "transparent")
-                border.width: entity.kind === "progress_ring" ? Number(root.styleValue(root.gameStyleObj.progress_ring || ({}), "width", 3)) : (entity.state === "active" ? 2 : 1)
-                border.color: entity.kind === "progress_ring" ? root.styleValue(root.gameStyleObj.progress_ring || ({}), "stroke", "#ffdd55") : root.targetStroke(entity)
+                border.width: entity.kind === "progress_ring" ? Number(styleValue(gameStyleObj.progress_ring || ({}), "width", 3)) : (entity.state === "active" ? 2 : 1)
+                border.color: entity.kind === "progress_ring" ? styleValue(gameStyleObj.progress_ring || ({}), "stroke", "#ffdd55") : root.targetStroke(entity)
                 visible: (entity.kind === "target" && !root.isTargetImageAvailable(entity)) || entity.kind === "focus_zone" || entity.kind === "progress_ring"
                 opacity: entity.kind === "focus_zone" ? 0.45 : 1.0
             }
@@ -222,13 +284,13 @@ Rectangle {
                 width: parent.width * root.progressValue(entity)
                 height: Math.max(3, parent.height * 0.08)
                 radius: height / 2
-                color: root.styleValue(root.gameStyleObj.progress_ring || ({}), "background", "#1F2937")
+                color: styleValue(gameStyleObj.progress_ring || ({}), "background", "#1F2937")
                 visible: entity.kind === "progress_ring"
             }
 
             Text {
                 anchors.centerIn: parent
-                color: root.styleValue(root.gameStyleObj.hud || ({}), "text_color", "#ddd")
+                color: styleValue(gameStyleObj.hud || ({}), "text_color", "#ddd")
                 text: entity.kind === "progress_ring" ? ("P " + Math.round(root.progressValue(entity) * 100) + "%") : ""
                 visible: entity.kind === "progress_ring"
                 font.pixelSize: 11
@@ -238,24 +300,82 @@ Rectangle {
 
     Repeater {
         model: root.visualEvents
-        delegate: Rectangle {
+        delegate: Item {
+            id: effectRoot
             property var eventObj: modelData
             property string effectType: String(eventObj.effect_type || eventObj.type || eventObj.kind || "trace_seal")
-            width: 34
-            height: 34
-            radius: 17
+            property string effectKind: root.effectTypeName(effectType)
+            property real baseSize: root.effectRadius(effectType)
+            property int durationMs: root.effectDuration(effectType)
+            property real startScale: root.effectScaleFrom(effectType)
+            property real endScale: root.effectScaleTo(effectType)
+            property real startOpacity: root.effectOpacityFrom(effectType)
+            property real endOpacity: root.effectOpacityTo(effectType)
+
+            width: baseSize
+            height: baseSize
             x: root.pxX(eventObj.x || 0.5) - width / 2
             y: root.pxY(eventObj.y || 0.5) - height / 2
-            color: root.effectColor(effectType)
-            opacity: 0.42
-            border.width: 1
-            border.color: "#ffffff"
+            opacity: startOpacity
+            scale: startScale
+
+            Rectangle {
+                id: effectHalo
+                anchors.fill: parent
+                radius: width / 2
+                color: root.effectColor(effectRoot.effectType)
+                opacity: effectRoot.effectKind === "flash" ? 0.54 : 0.28
+                border.width: effectRoot.effectKind === "fade" ? 1 : 2
+                border.color: root.effectGlow(effectRoot.effectType)
+            }
+
+            Text {
+                anchors.centerIn: parent
+                visible: effectRoot.effectType === "combo_popup" || effectRoot.effectKind === "popup"
+                text: root.effectLabel(effectRoot.effectType)
+                color: root.effectGlow(effectRoot.effectType)
+                font.bold: true
+                font.pixelSize: 12
+            }
+
+            Repeater {
+                model: root.effectParticleCount(effectRoot.effectType)
+                delegate: Rectangle {
+                    property real angle: (index / Math.max(1, root.effectParticleCount(effectRoot.effectType))) * Math.PI * 2
+                    property real distance: effectRoot.baseSize * 0.72
+                    width: 5
+                    height: 5
+                    radius: 2.5
+                    x: effectRoot.width / 2 + Math.cos(angle) * distance - width / 2
+                    y: effectRoot.height / 2 + Math.sin(angle) * distance - height / 2
+                    color: root.effectColor(effectRoot.effectType)
+                    opacity: 0.72
+                    visible: effectRoot.effectKind === "particle_burst" || effectRoot.effectKind === "burst" || root.effectParticleCount(effectRoot.effectType) > 0
+                }
+            }
+
+            NumberAnimation on scale {
+                from: effectRoot.startScale
+                to: effectRoot.endScale
+                duration: effectRoot.durationMs
+                easing.type: Easing.OutCubic
+                running: true
+            }
+
+            NumberAnimation on opacity {
+                from: effectRoot.startOpacity
+                to: effectRoot.endOpacity
+                duration: effectRoot.durationMs
+                easing.type: Easing.OutCubic
+                running: true
+            }
         }
     }
 
     // TASK25B GameCanvas consumes canvas.background layered color/image/gradient/overlay and TraceLock game style tokens.
     // TASK25C GameCanvas consumes TraceLock visual asset_key/style_key tokens.
     // canvas.background layered color/image/gradient/overlay
+    // TASK25D effect_styles parameterize trace_seal lock_failed trace_drop combo_popup pulse flash fade popup simple burst particle_burst duration_ms color particle_count scale_from scale_to opacity_from opacity_to
     // targetAssetKey targetAssetDescriptor targetImageSource targetFallbackShape isTargetImageAvailable asset_key fallback_shape Image {
 
     MouseArea {
