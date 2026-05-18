@@ -178,7 +178,13 @@ class GuiFacade:
             elif command == "start_mock_session":
                 self.last_command_result = self._live_control_source.start_live_debug_session(args.get("user_id"))
             elif command == "start_training_session":
-                self.last_command_result = self._live_control_source.start_training_session(args.get("user_id"), args.get("db_path", self.db_path))
+                self.last_command_result = self._live_control_source.start_training_session(
+                    args.get("user_id"),
+                    args.get("db_path", self.db_path),
+                    difficulty_mode=args.get("difficulty_mode"),
+                    difficulty_level=args.get("difficulty_level", args.get("debug_difficulty", args.get("selected_difficulty_level"))),
+                    game_duration_ms=args.get("game_duration_ms"),
+                )
             elif command == "end_training_session":
                 self.last_command_result = self._live_control_source.end_training_session()
             elif command == "end_session":
@@ -880,30 +886,30 @@ class GuiFacade:
         # TraceLock client and preserves the current session id when possible.
         if self._live_control_source:
             source = self._live_control_source
-            source.game_id = game_id
-            try:
-                source._client = create_game_client(game_id)
-            except Exception as exc:
+            if getattr(source, "interaction_enabled", False) and source.game_id != game_id:
                 return {
-                    "status": "select_failed",
-                    "message": f"failed_to_create_existing_game_client: {exc}",
+                    "status": "active_session_requires_stop",
+                    "message": "stop_current_session_before_switching_game",
                     "accepted": False,
                     "game_id": game_id,
                     "previous_game_id": previous_game_id,
                 }
 
-            session_id = (
-                getattr(source, "training_session_id", "")
-                or getattr(source, "live_debug_session_id", "")
-                or getattr(source, "last_session_id", "")
-                or ""
-            )
-            if getattr(source, "interaction_enabled", False) and session_id:
+            if source.game_id != game_id or getattr(source, "_client", None) is None:
+                source.game_id = game_id
                 try:
-                    source._client.start({"session_id": session_id, "game_id": game_id})
-                except Exception:
-                    # The next session.start will start the client again; do not break GUI selection.
-                    pass
+                    source._client = create_game_client(game_id)
+                except Exception as exc:
+                    return {
+                        "status": "select_failed",
+                        "message": f"failed_to_create_existing_game_client: {exc}",
+                        "accepted": False,
+                        "game_id": game_id,
+                        "previous_game_id": previous_game_id,
+                    }
+            else:
+                source.game_id = game_id
+
             if hasattr(source, "last_game_view"):
                 try:
                     source.last_game_view = source.get_game_view()
@@ -917,6 +923,7 @@ class GuiFacade:
                 "previous_game_id": previous_game_id,
                 "game_hud": self.get_game_hud(),
                 "render_resources": self.get_render_resources(),
+                "selection_note": "existing_client_preserved" if previous_game_id == game_id else "existing_registered_client_selected",
             }
 
         if self._core_source:
@@ -949,6 +956,105 @@ class GuiFacade:
             "render_resources": self.get_render_resources(),
         }
 
+    def _set_game_difficulty_summary(self, game_id: str, mode: str = "auto", level: Any = None) -> dict[str, Any]:
+        game_id = str(game_id or self.get_app_state().get("current_game_id") or self.get_game_hud().get("game_id") or "").strip()
+        if game_id != "trace_lock":
+            return {
+                "status": "unsupported_game",
+                "message": "difficulty_control_only_exposes_existing_trace_lock",
+                "accepted": False,
+                "game_id": game_id,
+                "supported_game_ids": ["trace_lock"],
+            }
+
+        mode = str(mode or "auto").strip().lower()
+        if mode not in {"auto", "manual"}:
+            return {
+                "status": "invalid_mode",
+                "message": "difficulty_mode_must_be_auto_or_manual",
+                "accepted": False,
+                "game_id": game_id,
+                "difficulty_mode": mode,
+            }
+
+        debug_level: int | None
+        if mode == "auto":
+            debug_level = None
+        else:
+            try:
+                debug_level = max(1, min(5, int(level)))
+            except (TypeError, ValueError):
+                return {
+                    "status": "missing_input",
+                    "message": "missing_or_invalid_difficulty_level",
+                    "accepted": False,
+                    "game_id": game_id,
+                    "difficulty_mode": mode,
+                }
+
+        previous_game_id = str(self.get_app_state().get("current_game_id") or self.get_game_hud().get("game_id") or "")
+        if previous_game_id != "trace_lock":
+            select_summary = self._select_game_summary("trace_lock")
+            if select_summary.get("status") != "accepted":
+                return {
+                    "status": select_summary.get("status", "select_failed"),
+                    "message": select_summary.get("message", "trace_lock_select_failed"),
+                    "accepted": False,
+                    "game_id": game_id,
+                    "difficulty_mode": mode,
+                    "select": select_summary,
+                }
+
+        if self._live_control_source:
+            summary = self._live_control_source.set_debug_difficulty(debug_level)
+            accepted = bool(summary.get("accepted", False)) and summary.get("status") == "accepted"
+            hud = self.get_game_hud()
+            return {
+                "status": summary.get("status", "accepted"),
+                "message": summary.get("message", "difficulty_updated"),
+                "accepted": accepted,
+                "game_id": "trace_lock",
+                "difficulty_mode": "auto" if debug_level is None else "manual",
+                "debug_difficulty": "auto" if debug_level is None else debug_level,
+                "level": hud.get("level", debug_level if debug_level is not None else "auto"),
+                "game_hud": hud,
+                "detail": summary,
+            }
+
+        if self._live_source:
+            return {
+                "status": "readonly_not_allowed",
+                "message": "difficulty_control_requires_control_mode",
+                "accepted": False,
+                "game_id": "trace_lock",
+                "difficulty_mode": mode,
+            }
+
+        if self._core_source:
+            # Core-control already has its own mouse routing tests. Keep TASK24C difficulty
+            # control on the GUI live/mock side unless a runtime API is added later.
+            return {
+                "status": "not_implemented",
+                "message": "difficulty_control_not_implemented_for_core_source",
+                "accepted": False,
+                "game_id": "trace_lock",
+                "difficulty_mode": mode,
+            }
+
+        # Mock facade: keep the action testable without constructing a second game pipe.
+        self._app_state["current_game_id"] = "trace_lock"
+        self._session_state["game_id"] = "trace_lock"
+        return {
+            "status": "accepted",
+            "message": "difficulty_updated",
+            "accepted": True,
+            "game_id": "trace_lock",
+            "difficulty_mode": "auto" if debug_level is None else "manual",
+            "debug_difficulty": "auto" if debug_level is None else debug_level,
+            "level": debug_level if debug_level is not None else "auto",
+            "game_hud": self.get_game_hud(),
+        }
+
 
     def get_control_manifest(self) -> list[dict[str, Any]]:
         readonly = self.mode in {"core", "live-readonly"}
@@ -973,6 +1079,7 @@ class GuiFacade:
             item("session.status", "Session Status", "session", True, True, False, "show session status"),
             item("game.status", "Game Status", "game", True, True, False, "show game hud/state"),
             item("game.select", "Select Game", "game", True, False, False, "select existing registered game client"),
+            item("game.difficulty", "TraceLock Difficulty", "game", True, False, False, "set TraceLock manual difficulty or reset auto difficulty"),
             item("diagnostics.clear_last_error", "Clear Last Error", "diagnostics", True, True, False, "clear last command error"),
             item("diagnostics.refresh", "Refresh Diagnostics", "diagnostics", True, True, False, "refresh diagnostics")
         ]
@@ -1172,6 +1279,25 @@ class GuiFacade:
                 "accepted": bool(summary.get("accepted", False)),
                 "game_id": summary.get("game_id", game_id),
                 "previous_game_id": summary.get("previous_game_id", ""),
+                "game_hud": summary.get("game_hud", self.get_game_hud()),
+                "detail": summary,
+            }
+        elif action_id == "game.difficulty":
+            summary = self._set_game_difficulty_summary(
+                str(payload.get("game_id") or ""),
+                str(payload.get("mode") or payload.get("difficulty_mode") or "auto"),
+                payload.get("level", payload.get("difficulty_level")),
+            )
+            result = {
+                "action_id": action_id,
+                "status": summary.get("status", "unknown"),
+                "result": "difficulty_updated" if summary.get("status") == "accepted" else summary.get("status", "unknown"),
+                "message": summary.get("message", ""),
+                "accepted": bool(summary.get("accepted", False)),
+                "game_id": summary.get("game_id", "trace_lock"),
+                "difficulty_mode": summary.get("difficulty_mode", ""),
+                "debug_difficulty": summary.get("debug_difficulty", ""),
+                "level": summary.get("level", ""),
                 "game_hud": summary.get("game_hud", self.get_game_hud()),
                 "detail": summary,
             }
@@ -1386,4 +1512,8 @@ class GuiFacade:
         self.last_command_result = deepcopy(result)
         status = str(result.get("status") or "")
         self._last_command_error = "" if status in {"accepted", "completed", "training_started", "training_completed", "live_debug_started", "live_debug_stopped", "noop"} else status
+        print(
+            f"[GUI ACTION] action_id={action_id} status={status} result={result.get('result')} message='{result.get('message', result.get('reason', ''))}'",
+            flush=True,
+        )
         return result
