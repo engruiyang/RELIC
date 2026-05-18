@@ -66,7 +66,8 @@ class TraceLockClient:
         self._fx_seq = 0
         self._target_seq = 0
         self._clock_ms = 0
-        self._game_duration_ms = 30000
+        self._default_game_duration_ms = 30000
+        self._game_duration_ms = self._default_game_duration_ms
         self._score = 0
         self._combo = 0
         self._max_combo = 0
@@ -99,6 +100,12 @@ class TraceLockClient:
 
     def start(self, context: dict[str, Any]) -> None:
         self._session_id = str(context.get("session_id", ""))
+        raw_duration = context.get("game_duration_ms", context.get("duration_ms", self._default_game_duration_ms))
+        try:
+            duration_ms = int(raw_duration)
+        except (TypeError, ValueError):
+            duration_ms = self._default_game_duration_ms
+        self._game_duration_ms = max(15000, min(10 * 60 * 1000, duration_ms))
         self._level = int(context.get("difficulty", self._manifest["default_difficulty"]))
         if self._debug_difficulty_level is not None:
             self._level = self._debug_difficulty_level
@@ -209,7 +216,7 @@ class TraceLockClient:
         visual_events = [v for v in self._visual_events]
         self._visual_events.clear()
         sample = self.collect_behavior_sample()
-        return GameViewState(game_id=self.game_id, view_version="game_view.v1", frame_id=self._frame_id, score=self._score, combo=self._combo, level=self._level, hud={"score": self._score, "combo": self._combo, "max_combo": self._max_combo, "score_multiplier": score_multiplier, "level": self._level, "load_tier": self._level, "time_left_ms": max(0, self._game_duration_ms - self._clock_ms), "hint": self._hint, "attention_fresh": bool(self._snapshot.get("attention_fresh", True)), "gyro_fresh": bool(self._snapshot.get("gyro_fresh", True)), "stream_alive": bool(self._snapshot.get("stream_alive", True)), "target_time_left_ms": target_time_left_ms, "target_lifetime_ms": target_lifetime_ms, "target_pressure_level": pressure, "target_type": target_type, "movement_type": target.movement_type if target else "n/a", "remaining_lifetime_ratio": remaining_ratio, "target_x": target.x if target else None, "target_y": target.y if target else None, "target_vx": target.vx if target else None, "target_vy": target.vy if target else None, "protocol_name": "TraceLock Protocol", "vendor": "Qilin Logic", "target_count": self._target_count, "correct_count": self._correct_count, "omission_count": self._omission_count, "false_action_count": self._false_action_count, "accuracy": sample.accuracy, "omission": sample.omission, "false_action": sample.false_action, "rt_stability": sample.rt_stability}, entities=entities, visual_events=visual_events, layout_hints={"canvas": "game_canvas", "render_mode": "contract_only"})
+        return GameViewState(game_id=self.game_id, view_version="game_view.v1", frame_id=self._frame_id, score=self._score, combo=self._combo, level=self._level, hud={"score": self._score, "combo": self._combo, "max_combo": self._max_combo, "score_multiplier": score_multiplier, "level": self._level, "effective_level": self._level, "load_tier": self._level, "elapsed_ms": self._clock_ms, "game_duration_ms": self._game_duration_ms, "time_left_ms": max(0, self._game_duration_ms - self._clock_ms), "game_completed": self._completed, "game_running": self._started and not self._completed, "hint": self._hint, "attention_fresh": bool(self._snapshot.get("attention_fresh", True)), "gyro_fresh": bool(self._snapshot.get("gyro_fresh", True)), "stream_alive": bool(self._snapshot.get("stream_alive", True)), "target_time_left_ms": target_time_left_ms, "target_lifetime_ms": target_lifetime_ms, "target_pressure_level": pressure, "target_type": target_type, "movement_type": target.movement_type if target else "n/a", "difficulty_mode": "manual" if self._debug_difficulty_level is not None else "auto", "debug_difficulty": self._debug_difficulty_level if self._debug_difficulty_level is not None else "auto", "dynamic_difficulty_enabled": self._debug_difficulty_level is None, "difficulty_locked": self._debug_difficulty_level is not None, "remaining_lifetime_ratio": remaining_ratio, "target_x": target.x if target else None, "target_y": target.y if target else None, "target_vx": target.vx if target else None, "target_vy": target.vy if target else None, "protocol_name": "TraceLock Protocol", "vendor": "Qilin Logic", "target_count": self._target_count, "correct_count": self._correct_count, "omission_count": self._omission_count, "false_action_count": self._false_action_count, "accuracy": sample.accuracy, "omission": sample.omission, "false_action": sample.false_action, "rt_stability": sample.rt_stability}, entities=entities, visual_events=visual_events, layout_hints={"canvas": "game_canvas", "render_mode": "contract_only"})
 
     def collect_game_events(self) -> list[GameEvent]:
         out = list(self._events)
@@ -344,11 +351,15 @@ class TraceLockClient:
     def set_debug_difficulty(self, level: int | None) -> None:
         if level is None:
             self._debug_difficulty_level = None
+            self._last_difficulty_check_ms = self._clock_ms
+            self._last_level_change_ms = self._clock_ms
             logger.info("[TRACELOCK] debug_difficulty level=auto")
             return
         clamped = max(1, min(5, int(level)))
         self._debug_difficulty_level = clamped
         self._level = clamped
+        self._last_difficulty_check_ms = self._clock_ms
+        self._last_level_change_ms = self._clock_ms
         if self._started:
             self._spawn_target()
         logger.info("[TRACELOCK] debug_difficulty level=%s", clamped)
