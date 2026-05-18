@@ -53,18 +53,8 @@ def main():
     facade=GuiFacade(mode=a.mode,db_path=a.db_path,user_id=a.user_id,host=a.host,port=a.port)
     bridge=GuiBridge(facade)
     eng=QQmlApplicationEngine(); eng.rootContext().setContextProperty('guiBridge',bridge); eng.load(str(Path(__file__).resolve().parent.parent/'ui_qml'/'MinimalGui.qml'))
-    roots = eng.rootObjects()
+    root=eng.rootObjects()[0]; root.setProperty('width',a.width); root.setProperty('height',a.height); wait(250)
     report={"mode":a.mode,"window_size":[a.width,a.height],"pages":{},"errors":[]}
-    if not roots:
-        report["errors"].append("QML failed to load")
-        report["screenshots_skipped_reason"] = "QML root object missing"
-        for page in PAGES:
-            report["pages"][page] = {"screenshot": f"{page}.png", "visible_tokens": [], "panel_geometry": {}, "actions": {}}
-        (out/'gui_inspect_report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8')
-        (out/'gui_inspect_report.md').write_text('# GUI Inspect Report\n- QML failed to load\n',encoding='utf-8')
-        facade.close()
-        return 1
-    root=roots[0]; root.setProperty('width',a.width); root.setProperty('height',a.height); wait(250)
     for page in PAGES:
         root.setProperty('currentPage',page); bridge.update_state_from_facade(); wait(250)
         entry={"visible_tokens":[],"panel_geometry":{},"actions":{}}
