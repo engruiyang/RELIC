@@ -24,6 +24,7 @@ def test_task24_training_game_canvas_tokens_present() -> None:
         "TASK25 design_pack game_styles active",
         "gameStyleObj",
         "effectStyleObj",
+        "DesignMetricCard",
     ]:
         assert token in text
 
@@ -41,9 +42,11 @@ def test_task24_game_canvas_component_contract() -> None:
         "property var gameStyleObj",
         "property var effectStyleObj",
         "property var designThemeObj",
+        "property var renderResourcesObj",
         "targetGlow",
         "timer_bar",
         "effectColor",
+        "DesignBackground",
     ]:
         assert token in text
 
