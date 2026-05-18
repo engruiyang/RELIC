@@ -1,28 +1,37 @@
 {
   "game_id": "trace_lock",
   "canvas": {
-    "background": "#020617"
+    "background": {
+      "type": "layered",
+      "layers": [
+        {"type": "color", "value": "#020617"},
+        {"type": "image", "asset_key": "tracelock.background.grid", "fit": "cover", "position": "center", "opacity": 0.0},
+        {"type": "gradient", "from": "#020617", "to": "#082F49", "direction": "vertical", "opacity": 0.45},
+        {"type": "overlay", "value": "#000000", "opacity": 0.10}
+      ]
+    },
+    "background_color": "#020617",
+    "border": "#22D3EE",
+    "height": 460,
+    "radius": 16,
+    "grid_enabled": true,
+    "scanline_enabled": false
   },
   "target": {
-    "marked_trace": {
-      "fill": "#22D3EE",
-      "stroke": "#0891B2",
-      "glow": "#67E8F9"
-    },
-    "noise_trace": {
-      "fill": "#334155"
-    }
+    "marked_trace": {"fill": "#22D3EE", "stroke": "#0891B2", "glow": "#67E8F9"},
+    "noise_trace": {"fill": "#334155", "stroke": "#64748B", "glow": "#94A3B8"}
   },
-  "progress_ring": {
-    "stroke": "#10B981",
-    "background": "#1F2937"
-  },
-  "timer_bar": {
-    "fill": "#F59E0B",
-    "background": "#374151"
-  },
+  "progress_ring": {"stroke": "#10B981", "background": "#1F2937", "width": 4},
+  "timer_bar": {"fill": "#F59E0B", "background": "#374151", "height": 8},
   "hud": {
     "position": "top_right",
-    "text_color": "#F8FAFC"
+    "text_color": "#F8FAFC",
+    "metric_card_background": "#0F172A",
+    "metric_card_border": "#334155",
+    "metric_title_size": 12,
+    "metric_value_size": 24,
+    "metric_columns": 4,
+    "metric_width": 170,
+    "metric_height": 92
   }
 }
