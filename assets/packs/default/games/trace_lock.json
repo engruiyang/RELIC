@@ -4,10 +4,29 @@
     "background": {
       "type": "layered",
       "layers": [
-        {"type": "color", "value": "#020617"},
-        {"type": "image", "asset_key": "tracelock.background.grid", "fit": "cover", "position": "center", "opacity": 0.0},
-        {"type": "gradient", "from": "#020617", "to": "#082F49", "direction": "vertical", "opacity": 0.45},
-        {"type": "overlay", "value": "#000000", "opacity": 0.10}
+        {
+          "type": "color",
+          "value": "#020617"
+        },
+        {
+          "type": "image",
+          "asset_key": "tracelock.background.grid",
+          "fit": "cover",
+          "position": "center",
+          "opacity": 0.0
+        },
+        {
+          "type": "gradient",
+          "from": "#020617",
+          "to": "#082F49",
+          "direction": "vertical",
+          "opacity": 0.45
+        },
+        {
+          "type": "overlay",
+          "value": "#000000",
+          "opacity": 0.1
+        }
       ]
     },
     "background_color": "#020617",
@@ -18,11 +37,37 @@
     "scanline_enabled": false
   },
   "target": {
-    "marked_trace": {"fill": "#22D3EE", "stroke": "#0891B2", "glow": "#67E8F9"},
-    "noise_trace": {"fill": "#334155", "stroke": "#64748B", "glow": "#94A3B8"}
+    "marked_trace": {
+      "fill": "#22D3EE",
+      "stroke": "#0891B2",
+      "glow": "#67E8F9",
+      "asset_key": "tracelock.target.marked_trace",
+      "fallback_shape": "circle",
+      "stroke_width": 2
+    },
+    "noise_trace": {
+      "fill": "#334155",
+      "stroke": "#64748B",
+      "glow": "#94A3B8",
+      "asset_key": "tracelock.target.noise_trace",
+      "fallback_shape": "diamond",
+      "stroke_width": 1
+    }
   },
-  "progress_ring": {"stroke": "#10B981", "background": "#1F2937", "width": 4},
-  "timer_bar": {"fill": "#F59E0B", "background": "#374151", "height": 8},
+  "progress_ring": {
+    "stroke": "#10B981",
+    "background": "#1F2937",
+    "width": 4,
+    "asset_key": "tracelock.progress_ring.default",
+    "fallback_shape": "ring"
+  },
+  "timer_bar": {
+    "fill": "#F59E0B",
+    "background": "#374151",
+    "height": 10,
+    "asset_key": "tracelock.timer_bar.default",
+    "fallback_shape": "bar"
+  },
   "hud": {
     "position": "top_right",
     "text_color": "#F8FAFC",
@@ -33,5 +78,11 @@
     "metric_columns": 4,
     "metric_width": 170,
     "metric_height": 92
+  },
+  "focus_zone": {
+    "fill": "#38BDF833",
+    "stroke": "#0EA5E9",
+    "asset_key": "tracelock.focus_zone.default",
+    "fallback_shape": "circle"
   }
 }
