@@ -376,27 +376,117 @@ class GuiFacade:
             "calibration_usable": self.last_command_result.get("calibration", {}).get("calibration_usable", "") if isinstance(self.last_command_result, dict) else "",
         }
 
+    def _set_current_user_context(self, user_id: str, display_name: str | None = None, user_type: str = "local_user") -> None:
+        if not user_id:
+            return
+        if self._live_control_source:
+            self._live_control_source.user_id = user_id
+            return
+        if self._core_source or self._live_source:
+            return
+        self._app_state["current_user_id"] = user_id
+        self._app_state["current_user_name"] = display_name or user_id
+        self._app_state["user_type"] = user_type
+
     def _list_users_summary(self) -> dict[str, Any]:
         store = SqliteStore(self.db_path)
         store.connect()
         try:
             users = store.list_users()
-            return {"status": "accepted", "user_count": len(users), "users": users}
+            normalized = []
+            for user in users:
+                item = dict(user)
+                item.setdefault("display_name", item.get("user_id", ""))
+                item.setdefault("user_type", "local_user")
+                normalized.append(item)
+            return {
+                "status": "accepted",
+                "message": "user_list",
+                "user_count": len(normalized),
+                "items_count": len(normalized),
+                "users": normalized,
+                "items": normalized,
+            }
         finally:
             store.close()
 
     def _create_user_summary(self, user_id: str, display_name: str) -> dict[str, Any]:
         if not user_id:
-            return {"status": "missing_input", "message": "missing_user_id"}
+            return {"status": "missing_input", "message": "missing_user_id", "user_id": ""}
         store = SqliteStore(self.db_path)
         store.connect()
         try:
-            if store.get_user(user_id):
-                return {"status": "accepted", "message": "user_exists", "user_id": user_id}
-            store.upsert_user({"user_id": user_id, "display_name": display_name or user_id, "user_type": "local_user", "created_at": "", "last_login_at": ""})
-            return {"status": "created", "message": "user_created", "user_id": user_id}
+            existing = store.get_user(user_id)
+            if existing:
+                self._set_current_user_context(user_id, str(existing.get("display_name") or display_name or user_id), str(existing.get("user_type") or "local_user"))
+                return {
+                    "status": "accepted",
+                    "message": "user_exists",
+                    "user_id": user_id,
+                    "display_name": existing.get("display_name") or display_name or user_id,
+                    "user_type": existing.get("user_type") or "local_user",
+                }
+            user = {
+                "user_id": user_id,
+                "display_name": display_name or user_id,
+                "user_type": "local_user",
+                "created_at": "",
+                "last_login_at": "",
+            }
+            store.upsert_user(user)
+            self._set_current_user_context(user_id, display_name or user_id, "local_user")
+            return {
+                "status": "created",
+                "message": "user_created",
+                "user_id": user_id,
+                "display_name": display_name or user_id,
+                "user_type": "local_user",
+            }
         finally:
             store.close()
+
+    def _load_user_summary(self, user_id: str) -> dict[str, Any]:
+        if not user_id:
+            return {"status": "missing_input", "message": "missing_user_id", "user_id": ""}
+        store = SqliteStore(self.db_path)
+        store.connect()
+        try:
+            user = store.get_user(user_id)
+            if user:
+                display_name = str(user.get("display_name") or user_id)
+                user_type = str(user.get("user_type") or "local_user")
+                self._set_current_user_context(user_id, display_name, user_type)
+                profile = self._fetch_profile_summary(user_id)
+                return {
+                    "status": "user_loaded",
+                    "message": "user_loaded",
+                    "user_id": user_id,
+                    "display_name": display_name,
+                    "user_type": user_type,
+                    "profile": profile,
+                }
+        finally:
+            store.close()
+        self._set_current_user_context(user_id, user_id, "local_user")
+        return {
+            "status": "user_loaded",
+            "message": "user_loaded_without_persisted_profile",
+            "user_id": user_id,
+            "display_name": user_id,
+            "user_type": "local_user",
+            "profile": {
+                "status": "profile_not_found",
+                "message": "profile_not_found",
+                "current_user_id": user_id,
+                "user_type": "local_user",
+                "profile_loaded": False,
+                "last_calibration_id": "n/a",
+                "attention_low_threshold": "n/a",
+                "attention_high_threshold": "n/a",
+                "preferred_game_id": "n/a",
+                "difficulty_level": "n/a",
+            },
+        }
 
     def invoke_action(self, action_id: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
         payload = payload or {}
@@ -418,12 +508,12 @@ class GuiFacade:
             result = {"action_id": action_id, "status": "accepted", "result": "quit_requested", "accepted": True}
         elif action_id == "user.show_profile":
             app = self.get_app_state()
-            user_id = str(app.get("current_user_id") or "")
+            user_id = str(payload.get("user_id") or app.get("current_user_id") or "").strip()
             if not user_id:
                 result = {"action_id": action_id, "status": "missing_user", "result": "missing_user", "message": "missing_user", "accepted": False}
             else:
                 ps = self._fetch_profile_summary(user_id)
-                result = {"action_id": action_id, "status": ps.get("status", "profile_not_available"), "result": "profile", "message": ps.get("message", ""), "accepted": ps.get("status") == "accepted", "profile": ps}
+                result = {"action_id": action_id, "status": ps.get("status", "profile_not_available"), "result": "profile", "message": ps.get("message", ""), "accepted": ps.get("status") == "accepted", "user_id": user_id, "detail": ps, "profile": ps}
         elif action_id == "calibration.status":
             app = self.get_app_state()
             user_id = str(app.get("current_user_id") or "")
@@ -437,12 +527,20 @@ class GuiFacade:
         elif action_id == "game.status":
             result = {"action_id": action_id, "status": "accepted", "result": "game_status", "accepted": True, "game_hud": self.get_game_hud()}
         elif action_id == "user.load_current":
-            uid = str(self.get_app_state().get("current_user_id") or "")
+            uid = str(payload.get("user_id") or self.get_app_state().get("current_user_id") or "")
             if not uid:
-                result = {"action_id": action_id, "status": "missing_user", "result": "missing_user", "accepted": False}
+                result = {"action_id": action_id, "status": "missing_user", "result": "missing_user", "message": "missing_user", "accepted": False}
             else:
-                self.handle_gui_command("load_demo_user", {"user_id": uid})
-                result = {"action_id": action_id, "status": "current_user_loaded", "result": "current_user_loaded", "accepted": True, "user_id": uid}
+                s = self._load_user_summary(uid)
+                result = {
+                    "action_id": action_id,
+                    "status": s.get("status", "user_loaded"),
+                    "result": s,
+                    "message": s.get("message", "user_loaded"),
+                    "accepted": s.get("status") == "user_loaded",
+                    "user_id": uid,
+                    "detail": s.get("profile", s),
+                }
         elif action_id == "diagnostics.clear_last_error":
             self._last_command_error = ""
             result = {"action_id": action_id, "status": "accepted", "result": "cleared", "accepted": True}
@@ -450,19 +548,46 @@ class GuiFacade:
             result = {"action_id": action_id, "status": "not_implemented", "result": "not_implemented", "accepted": False, "reason": "requires calibration workflow/progress UI"}
         elif action_id == "user.list":
             s = self._list_users_summary()
-            result = {"action_id": action_id, "status": s.get("status"), "result": s, "message": "user_list", "accepted": True}
+            result = {
+                "action_id": action_id,
+                "status": s.get("status", "accepted"),
+                "result": s,
+                "message": s.get("message", "user_list"),
+                "accepted": True,
+                "items": s.get("items", []),
+                "items_count": s.get("items_count", s.get("user_count", 0)),
+                "detail": {"user_count": s.get("user_count", 0)},
+            }
         elif action_id == "user.create":
-            uid = str(payload.get("user_id") or "")
-            display_name = str(payload.get("display_name") or uid or "")
+            uid = str(payload.get("user_id") or "").strip()
+            display_name = str(payload.get("display_name") or uid or "").strip()
             s = self._create_user_summary(uid, display_name)
-            result = {"action_id": action_id, "status": s.get("status"), "result": s, "message": s.get("message", ""), "accepted": s.get("status") in {"created", "accepted"}}
+            accepted = s.get("status") in {"created", "accepted"}
+            detail = self._fetch_profile_summary(uid) if accepted and uid else s
+            result = {
+                "action_id": action_id,
+                "status": s.get("status", "unknown"),
+                "result": s,
+                "message": s.get("message", ""),
+                "accepted": accepted,
+                "user_id": uid,
+                "detail": detail,
+            }
         elif action_id == "user.load":
-            uid = str(payload.get("user_id") or self.get_app_state().get("current_user_id") or "")
+            uid = str(payload.get("user_id") or "").strip()
             if not uid:
-                result = {"action_id": action_id, "status": "missing_input", "result": "missing_user_id", "accepted": False}
+                result = {"action_id": action_id, "status": "missing_input", "result": "missing_user_id", "message": "missing_user_id", "accepted": False}
             else:
-                self.handle_gui_command("load_demo_user", {"user_id": uid})
-                result = {"action_id": action_id, "status": "user_loaded", "result": self.last_command_result, "accepted": True, "user_id": uid}
+                s = self._load_user_summary(uid)
+                result = {
+                    "action_id": action_id,
+                    "status": s.get("status", "user_loaded"),
+                    "result": s,
+                    "message": s.get("message", "user_loaded"),
+                    "accepted": s.get("status") == "user_loaded",
+                    "user_id": uid,
+                    "detail": s.get("profile", s),
+                }
         elif action_id in {"calibration.list", "calibration.latest", "calibration.show", "calibration.bind", "calibration.cancel"}:
             result = {"action_id": action_id, "status": "not_implemented_in_this_task", "result": "not_implemented_in_this_task", "accepted": False}
         elif action_id == "report.refresh":

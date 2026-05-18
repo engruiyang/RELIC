@@ -259,7 +259,7 @@ class GuiBridge(QObject):
         self._facade.handle_gui_command("refresh_snapshot", {"silent": True})
         self.update_state_from_facade()
 
-    @Slot(str, str)
+    @Slot(str, str, result=str)
     def invokeAction(self, action_id: str, payload_json: str = "{}") -> str:
         try:
             payload = loads(payload_json or "{}")
