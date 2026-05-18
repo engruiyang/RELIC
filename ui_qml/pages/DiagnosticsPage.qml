@@ -3,179 +3,71 @@ import QtQuick.Controls
 import "../components"
 
 Item {
+    id: root
+    objectName: "DiagnosticsPage"
+    property var debugVisibleTokens: ["diagnostics", "diagnosticsLiveBusPanel", "diagnosticsQualityPanel", "diagnosticsSnapshotPanel"]
     property var controlStateObj: ({})
     property var runtimeObj: ({})
     property var sessionObj: ({})
-    property var gameHudObj: ({})
     property string commandSummary: ""
-    property var actionResultObj: ({})
-    property string selectedCommandId: ""
-    property string selectedStatus: ""
-    property string selectedExecutionMode: ""
-    property string selectedNativeActionId: ""
-
     signal invokeNative(string actionId)
 
-    function pick(id, status, mode, nativeActionId) {
-        selectedCommandId = id
-        selectedStatus = status
-        selectedExecutionMode = mode
-        selectedNativeActionId = nativeActionId
-        if (mode === "native" && nativeActionId !== "") {
-            invokeNative(nativeActionId)
-        }
-    }
-
-    function s(v) {
-        return (v === undefined || v === null || v === "") ? "n/a" : String(v)
-    }
+    function s(v) { return (v === undefined || v === null || v === "") ? "n/a" : String(v) }
 
     Column {
         anchors.fill: parent
-        spacing: 4
+        spacing: 6
 
-        PageHeader {
-            titleText: "Developer Diagnostics Console"
-            subtitleText: "QML smoke shell loaded"
-        }
-
-        GroupBox {
-            title: "Control Panel"
-            Row {
-                Button {
-                    text: "Diagnostics Refresh"
-                    onClicked: pick("diagnostics.refresh", "native_ready", "native", "diagnostics.refresh")
-                }
-            }
-        }
-
+        PageHeader { titleText: "Developer Diagnostics Console"; subtitleText: "Live Input / Quality / Focus" }
         Label { text: "Live Input" }
-        Label { text: "Quality / Focus (TASK6)" }
+        Label { text: "Quality / Focus" }
 
         GroupBox {
-            title: "Connection / Runtime"
-            Column {
-                Label { text: "connection_status: " + s(runtimeObj.connection_status) }
-                Label { text: "stream_alive: " + s(runtimeObj.stream_alive) }
-                Label { text: "device_connected: " + s(runtimeObj.device_connected) }
-            }
+            objectName: "diagnosticsLiveBusPanel"
+            title: "Live Bus"
+            width: parent.width
+            Label { text: "connection_status: " + s(runtimeObj.connection_status) }
         }
 
         GroupBox {
-            title: "Attention"
-            Column {
-                Label { text: "attention: " + s(runtimeObj.attention) }
-                Label { text: "attention_fresh: " + s(runtimeObj.attention_fresh) }
-                Label { text: "attention_age_ms: " + s(runtimeObj.attention_age_ms) }
-                Label { text: "attention_last_update_ms: " + s(runtimeObj.attention_last_update_ms) }
-            }
+            objectName: "diagnosticsQualityPanel"
+            title: "Quality"
+            width: parent.width
+            Label { text: "quality_state: " + s(runtimeObj.quality_state) }
+            Label { text: "warning_flags: " + s(runtimeObj.warning_flags) }
+            Label { text: "error_flags: " + s(runtimeObj.error_flags) }
         }
 
         GroupBox {
-            title: "Gyroscope"
-            Column {
-                Label { text: "gyro_x: " + s(runtimeObj.gyro_x) }
-                Label { text: "gyro_y: " + s(runtimeObj.gyro_y) }
-                Label { text: "gyro_z: " + s(runtimeObj.gyro_z) }
-                Label { text: "gyro_fresh: " + s(runtimeObj.gyro_fresh) }
-                Label { text: "gyro_age_ms: " + s(runtimeObj.gyro_age_ms) }
-                Label { text: "gyro_last_update_ms: " + s(runtimeObj.gyro_last_update_ms) }
-            }
+            objectName: "diagnosticsSnapshotPanel"
+            title: "Snapshot"
+            width: parent.width
+            Label { text: "session_id: " + s(sessionObj.session_id) }
         }
 
         GroupBox {
-            title: "Session / Report"
-            Column {
-                Label { text: "session_type: " + s(sessionObj.session_type) }
-                Label { text: "session_id: " + s(sessionObj.session_id) }
-                Label { text: "session_active: " + s(controlStateObj.session_active) }
-                Label { text: "current_session_id: " + s(controlStateObj.current_session_id) }
-                Label { text: "session_elapsed_ms: " + s(controlStateObj.session_elapsed_ms) }
-                Label { text: "latest_report_path: " + s(controlStateObj.latest_report_path) }
-                Label { text: "report_path: " + s(sessionObj.report_path) }
-                Label { text: "last_session_status: " + s(controlStateObj.last_session_status) }
-            }
+            title: "Diagnostics List"
+            width: parent.width
+            PageListPanel { width: parent.width; height: 90; items: [] }
         }
 
         GroupBox {
-            title: "Diagnostics"
-            Column {
-                Label { text: "warning_flags: " + s(runtimeObj.warning_flags) }
-                Label { text: "error_flags: " + s(runtimeObj.error_flags) }
-                Label { text: "last_command: " + s(controlStateObj.last_command) }
-                Label { text: "last_command_result: " + s(controlStateObj.last_command_result) }
-                Label { text: "last_command_error: " + s(controlStateObj.last_command_error) }
-                Label { text: "command_count: " + s(controlStateObj.command_count) }
-            }
+            title: "Diagnostics Detail"
+            width: parent.width
+            PageDetailPanel { width: parent.width; height: 90; detailObj: ({"warning_flags": runtimeObj.warning_flags, "error_flags": runtimeObj.error_flags}) }
         }
 
         GroupBox {
-            title: "Quality / Focus"
-            Column {
-                Label { text: "sqi: " + s(runtimeObj.sqi) }
-                Label { text: "quality_state: " + s(runtimeObj.quality_state) }
-                Label { text: "quality_reasons: " + s(runtimeObj.quality_reasons) }
-                Label { text: "fi_smoothed: " + s(runtimeObj.fi_smoothed) }
-                Label { text: "fi_valid: " + s(runtimeObj.fi_valid) }
-                Label { text: "control_state: " + s(runtimeObj.control_state) }
-                Label { text: "control_state_reason: " + s(runtimeObj.control_state_reason) }
-            }
-        }
-
-        GroupBox {
-            title: "Profile / Calibration"
-            Column {
-                Label { text: "current_user_id: " + s(controlStateObj.current_user_id) }
-                Label { text: "profile_status: " + s(controlStateObj.profile_status) }
-                Label { text: "profile_loaded: " + s(controlStateObj.profile_loaded) }
-                Label { text: "calibration_status: " + s(controlStateObj.calibration_status) }
-                Label { text: "last_calibration_id: " + s(controlStateObj.last_calibration_id) }
-                Label { text: "calibration_usable: " + s(controlStateObj.calibration_usable) }
-            }
-        }
-
-        GroupBox {
-            title: "Game HUD"
-            Column {
-                Label { text: "gameHudJson" }
-                Label { text: "game_id: " + s(controlStateObj.current_game_id) }
-                Label { text: "score: " + s(gameHudObj.score) }
-                Label { text: "combo: " + s(gameHudObj.combo) }
-                Label { text: "level: " + s(gameHudObj.level) }
-                Label { text: "behavior_sample_count: " + s(sessionObj.behavior_sample_count) }
-                Label { text: "score_update_count: " + s(gameHudObj.score_update_count) }
-                Label { text: "feedback_hint: " + s(gameHudObj.feedback_hint) }
-            }
+            title: "Diagnostics Result"
+            width: parent.width
+            PageResultPanel { width: parent.width; actionResult: ({"status": "n/a"}) }
         }
 
         GroupBox {
             title: "Page Commands"
-            Label {
-                text: commandSummary
-                wrapMode: Text.WordWrap
-            }
+            Label { text: commandSummary; wrapMode: Text.WordWrap }
         }
 
-        GroupBox {
-            title: "Dynamic Content"
-            Column {
-                PageListPanel { width: parent.width; height: 80; items: (controlStateObj.items || []) }
-                PageDetailPanel { width: parent.width; height: 80; detailObj: (controlStateObj || {}) }
-                PageResultPanel { width: parent.width; actionResult: (controlStateObj.last_action_result || {"status":"n/a"}) }
-            }
-        }
-
-        PageFeedbackPanel {
-            pageId: "diagnostics"
-            selectedCommandId: parent.selectedCommandId
-            selectedStatus: parent.selectedStatus
-            selectedExecutionMode: parent.selectedExecutionMode
-            selectedNativeActionId: parent.selectedNativeActionId
-            lastCommand: s(controlStateObj.last_command)
-            lastResult: s(controlStateObj.last_command_result)
-            lastError: s(controlStateObj.last_command_error)
-        }
+        // Page Feedback
     }
 }
-
-// Page Feedback
