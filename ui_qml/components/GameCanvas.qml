@@ -169,7 +169,7 @@ Rectangle {
         if (u.indexOf("file:") === 0 || u.indexOf("qrc:") === 0 || u.indexOf("http:") === 0 || u.indexOf("https:") === 0 || u.indexOf("/") === 0) {
             return u
         }
-        return "../../assets/" + u
+        return Qt.resolvedUrl("../../assets/" + u)
     }
 
     function assetDescriptor(assetKey) {

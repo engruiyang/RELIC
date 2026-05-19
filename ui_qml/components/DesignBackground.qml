@@ -45,17 +45,53 @@ Item {
         if (bg.layers && Array.isArray(bg.layers)) {
             return bg
         }
-        if (bg.color !== undefined || bg.overlay !== undefined) {
-            var layers = []
-            if (bg.color !== undefined) {
-                layers.push({"type": "color", "value": bg.color, "opacity": root.value(bg, "opacity", 1.0)})
+
+        var layers = []
+
+        if (bg.color !== undefined) {
+            layers.push({
+                "type": "color",
+                "value": bg.color,
+                "opacity": root.value(bg, "color_opacity", 1.0)
+            })
+        }
+
+        if (bg.image !== undefined || bg.asset_key !== undefined || bg.url !== undefined) {
+            var image = (typeof bg.image === "object" && bg.image !== null) ? bg.image : ({})
+            var assetKey = root.value(image, "asset_key", root.value(bg, "asset_key", (typeof bg.image === "string" ? bg.image : "")))
+            layers.push({
+                "type": "image",
+                "asset_key": assetKey,
+                "url": root.value(image, "url", root.value(bg, "url", "")),
+                "opacity": root.value(image, "opacity", root.value(bg, "image_opacity", root.value(bg, "opacity", 1.0))),
+                "fit": root.value(image, "fit", root.value(bg, "fit", "cover")),
+                "position": root.value(image, "position", root.value(bg, "position", "center"))
+            })
+        }
+
+        if (bg.gradient !== undefined) {
+            var gradient = bg.gradient || ({})
+            if (root.value(gradient, "enabled", true) !== false) {
+                layers.push({
+                    "type": "gradient",
+                    "from": root.value(gradient, "from", "#00000000"),
+                    "to": root.value(gradient, "to", "#00000000"),
+                    "angle": root.value(gradient, "angle", 180),
+                    "opacity": root.value(gradient, "opacity", 0.45)
+                })
             }
-            if (bg.image !== undefined || bg.asset_key !== undefined) {
-                layers.push({"type": "image", "asset_key": bg.asset_key || bg.image, "opacity": root.value(bg, "image_opacity", 1.0), "fit": root.value(bg, "fit", "cover")})
-            }
-            if (bg.overlay !== undefined) {
-                layers.push({"type": "overlay", "value": (bg.overlay.color || bg.overlay), "opacity": root.value(bg.overlay || ({}), "opacity", 0.0)})
-            }
+        }
+
+        if (bg.overlay !== undefined) {
+            var overlay = (typeof bg.overlay === "object" && bg.overlay !== null) ? bg.overlay : ({"color": bg.overlay})
+            layers.push({
+                "type": "overlay",
+                "value": root.value(overlay, "color", "#000000"),
+                "opacity": root.value(overlay, "opacity", 0.0)
+            })
+        }
+
+        if (layers.length > 0) {
             return ({"type": "layered", "layers": layers})
         }
         return bg
@@ -114,7 +150,7 @@ Item {
         if (u.indexOf("file:") === 0 || u.indexOf("qrc:") === 0 || u.indexOf("http:") === 0 || u.indexOf("https:") === 0 || u.indexOf("/") === 0) {
             return u
         }
-        return "../../assets/" + u
+        return Qt.resolvedUrl("../../assets/" + u)
     }
 
     function assetUrl(assetKey) {
@@ -136,7 +172,7 @@ Item {
 
     function imageOpacity() {
         var layer = root.imageLayer()
-        return Number(root.value(layer, "opacity", 0.0))
+        return Number(root.value(layer, "opacity", 1.0))
     }
 
     function imageFillMode() {
@@ -165,6 +201,8 @@ Item {
         fillMode: root.imageFillMode()
         opacity: root.imageOpacity()
         smooth: true
+        asynchronous: true
+        cache: false
         clip: true
     }
 
@@ -186,4 +224,5 @@ Item {
     }
 
     // TASK25B background supports color / image asset_key / gradient / overlay / opacity / fit / position fallback.
+    // TASK25E background image path resolves manifest url through renderResourcesObj.assets and Qt.resolvedUrl("../../assets/" + url).
 }
