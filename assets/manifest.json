@@ -37,7 +37,7 @@
     },
     "background.app.main": {
       "type": "image",
-      "url": null,
+      "url": "packs/default/images/backgrounds/main_bg.png",
       "fallback_shape": "rect",
       "style_key": "panel.debug",
       "description": "design-pack background slot: background.app.main",
@@ -46,7 +46,7 @@
     },
     "background.home.main": {
       "type": "image",
-      "url": null,
+      "url": "packs/default/images/backgrounds/main_bg.png",
       "fallback_shape": "rect",
       "style_key": "panel.debug",
       "description": "design-pack background slot: background.home.main",
@@ -55,7 +55,7 @@
     },
     "background.user.main": {
       "type": "image",
-      "url": null,
+      "url": "packs/default/images/backgrounds/main_bg.png",
       "fallback_shape": "rect",
       "style_key": "panel.debug",
       "description": "design-pack background slot: background.user.main",
@@ -64,7 +64,7 @@
     },
     "background.calibration.main": {
       "type": "image",
-      "url": null,
+      "url": "packs/default/images/backgrounds/main_bg.png",
       "fallback_shape": "rect",
       "style_key": "panel.debug",
       "description": "design-pack background slot: background.calibration.main",
@@ -73,7 +73,7 @@
     },
     "background.training.main": {
       "type": "image",
-      "url": null,
+      "url": "packs/default/images/backgrounds/main_bg.png",
       "fallback_shape": "rect",
       "style_key": "panel.debug",
       "description": "design-pack background slot: background.training.main",
@@ -82,7 +82,7 @@
     },
     "background.report.main": {
       "type": "image",
-      "url": null,
+      "url": "packs/default/images/backgrounds/main_bg.png",
       "fallback_shape": "rect",
       "style_key": "panel.debug",
       "description": "design-pack background slot: background.report.main",
@@ -91,7 +91,7 @@
     },
     "background.diagnostics.main": {
       "type": "image",
-      "url": null,
+      "url": "packs/default/images/backgrounds/main_bg.png",
       "fallback_shape": "rect",
       "style_key": "panel.debug",
       "description": "design-pack background slot: background.diagnostics.main",
@@ -100,7 +100,7 @@
     },
     "background.developer_lab.main": {
       "type": "image",
-      "url": null,
+      "url": "packs/default/images/backgrounds/main_bg.png",
       "fallback_shape": "rect",
       "style_key": "panel.debug",
       "description": "design-pack background slot: background.developer_lab.main",
