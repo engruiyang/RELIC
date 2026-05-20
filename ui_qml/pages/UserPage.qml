@@ -310,6 +310,7 @@ Item {
         spacing: 6
 
         PageHeader {
+            renderResourcesObj: root.renderResourcesObj
             designThemeObj: root.designThemeObj
             componentStyleObj: root.componentStyleObj
             headerStyleObj: root.componentStyleObj.header || ({})
@@ -320,10 +321,10 @@ Item {
         Row {
             width: parent.width
             spacing: 6
-            Button { text: "Summary"; onClicked: activePanel = "summary" }
-            Button { text: "List Users"; onClicked: runUserAction("user.list", ({}), "list", false) }
-            Button { text: "Create / Load"; onClicked: activePanel = "form" }
-            Button { text: "Show Profile Detail"; onClicked: showSelectedProfile() }
+            DesignButton { buttonStyleObj: root.componentStyleObj.button || ({}); themeObj: root.designThemeObj; renderResourcesObj: root.renderResourcesObj; text: "Summary"; onClicked: activePanel = "summary" }
+            DesignButton { buttonStyleObj: root.componentStyleObj.button || ({}); themeObj: root.designThemeObj; renderResourcesObj: root.renderResourcesObj; text: "List Users"; onClicked: runUserAction("user.list", ({}), "list", false) }
+            DesignButton { buttonStyleObj: root.componentStyleObj.button || ({}); themeObj: root.designThemeObj; renderResourcesObj: root.renderResourcesObj; text: "Create / Load"; onClicked: activePanel = "form" }
+            DesignButton { buttonStyleObj: root.componentStyleObj.button || ({}); themeObj: root.designThemeObj; renderResourcesObj: root.renderResourcesObj; text: "Show Profile Detail"; onClicked: showSelectedProfile() }
         }
 
         Row {
@@ -370,9 +371,9 @@ Item {
                     }
                     Row {
                         spacing: 6
-                        Button { text: "Create"; onClicked: runUserAction("user.create", payloadFromForm(), "profile", "form", false) }
-                        Button { text: "Load"; onClicked: runUserAction("user.load", {"user_id": userIdField.text.trim()}, "profile", "form", false) }
-                        Button { text: "Load Current"; onClicked: runUserAction("user.load_current", ({}), "profile", "form", false) }
+                        DesignButton { buttonStyleObj: root.componentStyleObj.button || ({}); themeObj: root.designThemeObj; renderResourcesObj: root.renderResourcesObj; text: "Create"; onClicked: runUserAction("user.create", payloadFromForm(), "profile", "form", false) }
+                        DesignButton { buttonStyleObj: root.componentStyleObj.button || ({}); themeObj: root.designThemeObj; renderResourcesObj: root.renderResourcesObj; text: "Load"; onClicked: runUserAction("user.load", {"user_id": userIdField.text.trim()}, "profile", "form", false) }
+                        DesignButton { buttonStyleObj: root.componentStyleObj.button || ({}); themeObj: root.designThemeObj; renderResourcesObj: root.renderResourcesObj; text: "Load Current"; onClicked: runUserAction("user.load_current", ({}), "profile", "form", false) }
                     }
                 }
             }
@@ -404,12 +405,12 @@ Item {
                             }
                         }
                     }
-                    Button {
+                    DesignButton { buttonStyleObj: root.componentStyleObj.button || ({}); themeObj: root.designThemeObj; renderResourcesObj: root.renderResourcesObj;
                         text: "Load Selected User"
                         enabled: root.selectedUserId !== "" || userIdField.text.trim() !== ""
                         onClicked: loadSelectedUser()
                     }
-                    Button {
+                    DesignButton { buttonStyleObj: root.componentStyleObj.button || ({}); themeObj: root.designThemeObj; renderResourcesObj: root.renderResourcesObj;
                         text: "Show Selected Profile"
                         enabled: root.selectedUserId !== "" || userIdField.text.trim() !== ""
                         onClicked: showSelectedProfile()
@@ -433,7 +434,7 @@ Item {
 
             Column {
                 spacing: 4
-                Button { text: "Open Profile Detail Popup"; onClicked: profileDialog.open() }
+                DesignButton { buttonStyleObj: root.componentStyleObj.button || ({}); themeObj: root.designThemeObj; renderResourcesObj: root.renderResourcesObj; text: "Open Profile Detail Popup"; onClicked: profileDialog.open() }
                 TextArea {
                     width: root.width - 40
                     height: 170
@@ -479,6 +480,7 @@ Item {
         }
 
         PageFeedbackPanel {
+            renderResourcesObj: root.renderResourcesObj
             designThemeObj: root.designThemeObj
             componentStyleObj: root.componentStyleObj
             feedbackStyleObj: root.componentStyleObj.feedback_panel || ({})

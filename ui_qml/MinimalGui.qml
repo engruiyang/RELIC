@@ -171,18 +171,18 @@ ApplicationWindow {
                     spacing: Number(root.designSpacing("nav_gap", 7))
 
                     Label { text: "Navigation"; color: root.designColor("text", "#e6edf5"); font.bold: true }
-                    DesignButton { text: "Home"; buttonStyleObj: root.componentStyle("button"); themeObj: root.designThemeObj; onClicked: root.currentPage = "home" }
-                    DesignButton { text: "User"; buttonStyleObj: root.componentStyle("button"); themeObj: root.designThemeObj; onClicked: root.currentPage = "user" }
-                    DesignButton { text: "Calibration"; buttonStyleObj: root.componentStyle("button"); themeObj: root.designThemeObj; onClicked: root.currentPage = "calibration" }
-                    DesignButton { text: "Training"; buttonStyleObj: root.componentStyle("button"); themeObj: root.designThemeObj; onClicked: root.currentPage = "training" }
-                    DesignButton { text: "Report"; buttonStyleObj: root.componentStyle("button"); themeObj: root.designThemeObj; onClicked: root.currentPage = "report" }
-                    DesignButton { text: "Diagnostics"; buttonStyleObj: root.componentStyle("button"); themeObj: root.designThemeObj; onClicked: root.currentPage = "diagnostics" }
-                    DesignButton { text: "Developer Lab"; buttonStyleObj: root.componentStyle("button"); themeObj: root.designThemeObj; onClicked: root.currentPage = "developer_lab" }
+                    DesignButton { renderResourcesObj: root.renderResourcesObj; text: "Home"; buttonStyleObj: root.componentStyle("button"); themeObj: root.designThemeObj; onClicked: root.currentPage = "home" }
+                    DesignButton { renderResourcesObj: root.renderResourcesObj; text: "User"; buttonStyleObj: root.componentStyle("button"); themeObj: root.designThemeObj; onClicked: root.currentPage = "user" }
+                    DesignButton { renderResourcesObj: root.renderResourcesObj; text: "Calibration"; buttonStyleObj: root.componentStyle("button"); themeObj: root.designThemeObj; onClicked: root.currentPage = "calibration" }
+                    DesignButton { renderResourcesObj: root.renderResourcesObj; text: "Training"; buttonStyleObj: root.componentStyle("button"); themeObj: root.designThemeObj; onClicked: root.currentPage = "training" }
+                    DesignButton { renderResourcesObj: root.renderResourcesObj; text: "Report"; buttonStyleObj: root.componentStyle("button"); themeObj: root.designThemeObj; onClicked: root.currentPage = "report" }
+                    DesignButton { renderResourcesObj: root.renderResourcesObj; text: "Diagnostics"; buttonStyleObj: root.componentStyle("button"); themeObj: root.designThemeObj; onClicked: root.currentPage = "diagnostics" }
+                    DesignButton { renderResourcesObj: root.renderResourcesObj; text: "Developer Lab"; buttonStyleObj: root.componentStyle("button"); themeObj: root.designThemeObj; onClicked: root.currentPage = "developer_lab" }
                     Label { text: "Global Safety"; color: root.designColor("text_muted", "#9aacbd") }
-                    DesignButton { text: "Refresh"; buttonStyleObj: root.componentStyle("button"); themeObj: root.designThemeObj; onClicked: root.invokeNative("app.refresh_now") }
-                    DesignButton { text: "Safe Stop"; buttonStyleObj: root.componentStyle("button"); themeObj: root.designThemeObj; onClicked: root.invokeNative("live.safe_stop") }
-                    DesignButton { text: "Go Diagnostics"; buttonStyleObj: root.componentStyle("button"); themeObj: root.designThemeObj; onClicked: root.currentPage = "diagnostics" }
-                    DesignButton { text: "Quit"; buttonStyleObj: root.componentStyle("button"); themeObj: root.designThemeObj; onClicked: Qt.quit() }
+                    DesignButton { renderResourcesObj: root.renderResourcesObj; text: "Refresh"; buttonStyleObj: root.componentStyle("button"); themeObj: root.designThemeObj; onClicked: root.invokeNative("app.refresh_now") }
+                    DesignButton { renderResourcesObj: root.renderResourcesObj; text: "Safe Stop"; buttonStyleObj: root.componentStyle("button"); themeObj: root.designThemeObj; onClicked: root.invokeNative("live.safe_stop") }
+                    DesignButton { renderResourcesObj: root.renderResourcesObj; text: "Go Diagnostics"; buttonStyleObj: root.componentStyle("button"); themeObj: root.designThemeObj; onClicked: root.currentPage = "diagnostics" }
+                    DesignButton { renderResourcesObj: root.renderResourcesObj; text: "Quit"; buttonStyleObj: root.componentStyle("button"); themeObj: root.designThemeObj; onClicked: Qt.quit() }
                 }
             }
 

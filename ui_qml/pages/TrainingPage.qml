@@ -447,6 +447,7 @@ Item {
             spacing: Number((pageStyleObj.layout || ({})).section_spacing || themeSpacing("section_gap", 8))
 
             PageHeader {
+            renderResourcesObj: trainingPage.renderResourcesObj
             designThemeObj: trainingPage.designThemeObj
             componentStyleObj: trainingPage.componentStyleObj
             headerStyleObj: trainingPage.componentStyleObj.header || ({})
@@ -492,27 +493,27 @@ Item {
                 Flow {
                     width: parent.width
                     spacing: 6
-                    Button {
+                    DesignButton { buttonStyleObj: trainingPage.componentStyleObj.button || ({}); themeObj: trainingPage.designThemeObj; renderResourcesObj: trainingPage.renderResourcesObj;
                         text: "Refresh Readiness"
                         onClicked: refreshReadiness()
                     }
-                    Button {
+                    DesignButton { buttonStyleObj: trainingPage.componentStyleObj.button || ({}); themeObj: trainingPage.designThemeObj; renderResourcesObj: trainingPage.renderResourcesObj;
                         text: "Start Session"
                         onClicked: startTrainingSession()
                     }
-                    Button {
+                    DesignButton { buttonStyleObj: trainingPage.componentStyleObj.button || ({}); themeObj: trainingPage.designThemeObj; renderResourcesObj: trainingPage.renderResourcesObj;
                         text: "Stop Session"
                         onClicked: stopTrainingSession()
                     }
-                    Button {
+                    DesignButton { buttonStyleObj: trainingPage.componentStyleObj.button || ({}); themeObj: trainingPage.designThemeObj; renderResourcesObj: trainingPage.renderResourcesObj;
                         text: "Safe Stop"
                         onClicked: safeStop()
                     }
-                    Button {
+                    DesignButton { buttonStyleObj: trainingPage.componentStyleObj.button || ({}); themeObj: trainingPage.designThemeObj; renderResourcesObj: trainingPage.renderResourcesObj;
                         text: "Session Status"
                         onClicked: querySessionStatus()
                     }
-                    Button {
+                    DesignButton { buttonStyleObj: trainingPage.componentStyleObj.button || ({}); themeObj: trainingPage.designThemeObj; renderResourcesObj: trainingPage.renderResourcesObj;
                         text: "Game Status"
                         onClicked: queryGameStatus()
                     }
@@ -552,7 +553,7 @@ Item {
                             }
                         }
 
-                        Button {
+                        DesignButton { buttonStyleObj: trainingPage.componentStyleObj.button || ({}); themeObj: trainingPage.designThemeObj; renderResourcesObj: trainingPage.renderResourcesObj;
                             text: "Use TraceLock"
                             onClicked: {
                                 trainingPage.selectedGameId = "trace_lock"
@@ -626,14 +627,14 @@ Item {
                             }
                         }
 
-                        Button {
+                        DesignButton { buttonStyleObj: trainingPage.componentStyleObj.button || ({}); themeObj: trainingPage.designThemeObj; renderResourcesObj: trainingPage.renderResourcesObj;
                             id: applyDifficultyButton
                             text: applyDifficultyButton.down ? "Applying..." : "Apply Difficulty"
                             onPressed: trainingPage.updateDifficultyFeedback("Apply Difficulty pressed visually")
                             onClicked: trainingPage.applyTraceLockDifficulty()
                         }
 
-                        Button {
+                        DesignButton { buttonStyleObj: trainingPage.componentStyleObj.button || ({}); themeObj: trainingPage.designThemeObj; renderResourcesObj: trainingPage.renderResourcesObj;
                             id: resetAutoDifficultyButton
                             text: resetAutoDifficultyButton.down ? "Resetting..." : "Reset Auto Difficulty"
                             onPressed: trainingPage.updateDifficultyFeedback("Reset Auto Difficulty pressed visually")
@@ -798,6 +799,7 @@ Item {
             }
 
             PageFeedbackPanel {
+            renderResourcesObj: trainingPage.renderResourcesObj
             designThemeObj: trainingPage.designThemeObj
             componentStyleObj: trainingPage.componentStyleObj
             feedbackStyleObj: trainingPage.componentStyleObj.feedback_panel || ({})

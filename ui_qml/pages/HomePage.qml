@@ -52,6 +52,7 @@ Item {
         spacing: 6
 
         PageHeader {
+            renderResourcesObj: root.renderResourcesObj
             designThemeObj: root.designThemeObj
             componentStyleObj: root.componentStyleObj
             headerStyleObj: root.componentStyleObj.header || ({})
@@ -112,27 +113,27 @@ Item {
             Row {
                 spacing: 4
 
-                Button {
+                DesignButton { buttonStyleObj: root.componentStyleObj.button || ({}); themeObj: root.designThemeObj; renderResourcesObj: root.renderResourcesObj;
                     text: "Go User"
                     onClicked: root.navigateTo("user")
                 }
-                Button {
+                DesignButton { buttonStyleObj: root.componentStyleObj.button || ({}); themeObj: root.designThemeObj; renderResourcesObj: root.renderResourcesObj;
                     text: "Go Calibration"
                     onClicked: root.navigateTo("calibration")
                 }
-                Button {
+                DesignButton { buttonStyleObj: root.componentStyleObj.button || ({}); themeObj: root.designThemeObj; renderResourcesObj: root.renderResourcesObj;
                     text: "Go Training"
                     onClicked: root.navigateTo("training")
                 }
-                Button {
+                DesignButton { buttonStyleObj: root.componentStyleObj.button || ({}); themeObj: root.designThemeObj; renderResourcesObj: root.renderResourcesObj;
                     text: "Go Report"
                     onClicked: root.navigateTo("report")
                 }
-                Button {
+                DesignButton { buttonStyleObj: root.componentStyleObj.button || ({}); themeObj: root.designThemeObj; renderResourcesObj: root.renderResourcesObj;
                     text: "Go Diagnostics"
                     onClicked: root.navigateTo("diagnostics")
                 }
-                Button {
+                DesignButton { buttonStyleObj: root.componentStyleObj.button || ({}); themeObj: root.designThemeObj; renderResourcesObj: root.renderResourcesObj;
                     text: "Refresh"
                     onClicked: root.invokeNative("app.refresh_now")
                 }
@@ -150,6 +151,7 @@ Item {
         }
 
         PageFeedbackPanel {
+            renderResourcesObj: root.renderResourcesObj
             designThemeObj: root.designThemeObj
             componentStyleObj: root.componentStyleObj
             feedbackStyleObj: root.componentStyleObj.feedback_panel || ({})

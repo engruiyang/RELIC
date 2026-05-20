@@ -45,53 +45,53 @@ Item {
         if (bg.layers && Array.isArray(bg.layers)) {
             return bg
         }
-
-        var layers = []
-
-        if (bg.color !== undefined) {
-            layers.push({
-                "type": "color",
-                "value": bg.color,
-                "opacity": root.value(bg, "color_opacity", 1.0)
-            })
-        }
-
-        if (bg.image !== undefined || bg.asset_key !== undefined || bg.url !== undefined) {
-            var image = (typeof bg.image === "object" && bg.image !== null) ? bg.image : ({})
-            var assetKey = root.value(image, "asset_key", root.value(bg, "asset_key", (typeof bg.image === "string" ? bg.image : "")))
-            layers.push({
-                "type": "image",
-                "asset_key": assetKey,
-                "url": root.value(image, "url", root.value(bg, "url", "")),
-                "opacity": root.value(image, "opacity", root.value(bg, "image_opacity", root.value(bg, "opacity", 1.0))),
-                "fit": root.value(image, "fit", root.value(bg, "fit", "cover")),
-                "position": root.value(image, "position", root.value(bg, "position", "center"))
-            })
-        }
-
-        if (bg.gradient !== undefined) {
-            var gradient = bg.gradient || ({})
-            if (root.value(gradient, "enabled", true) !== false) {
+        if (bg.color !== undefined || bg.image !== undefined || bg.gradient !== undefined || bg.overlay !== undefined || bg.asset_key !== undefined) {
+            var layers = []
+            if (bg.color !== undefined) {
+                layers.push({"type": "color", "value": bg.color, "opacity": root.value(bg, "opacity", 1.0)})
+            }
+            if (bg.image !== undefined || bg.asset_key !== undefined) {
+                var image = bg.image || ({})
+                if (typeof bg.image === "object") {
+                    layers.push({
+                        "type": "image",
+                        "asset_key": root.value(image, "asset_key", root.value(bg, "asset_key", "")),
+                        "url": root.value(image, "url", ""),
+                        "opacity": root.value(image, "opacity", root.value(bg, "image_opacity", 1.0)),
+                        "fit": root.value(image, "fit", root.value(bg, "fit", "cover")),
+                        "position": root.value(image, "position", "center")
+                    })
+                } else {
+                    layers.push({
+                        "type": "image",
+                        "asset_key": root.value(bg, "asset_key", String(image)),
+                        "opacity": root.value(bg, "image_opacity", 1.0),
+                        "fit": root.value(bg, "fit", "cover"),
+                        "position": root.value(bg, "position", "center")
+                    })
+                }
+            }
+            if (bg.gradient !== undefined) {
+                var gradient = bg.gradient || ({})
+                if (root.value(gradient, "enabled", true) !== false) {
+                    layers.push({
+                        "type": "gradient",
+                        "from": root.value(gradient, "from", "#00000000"),
+                        "to": root.value(gradient, "to", "#00000000"),
+                        "opacity": root.value(gradient, "opacity", root.value(bg, "gradient_opacity", 0.45)),
+                        "angle": root.value(gradient, "angle", 180),
+                        "direction": root.value(gradient, "direction", "vertical")
+                    })
+                }
+            }
+            if (bg.overlay !== undefined) {
+                var overlay = bg.overlay || ({})
                 layers.push({
-                    "type": "gradient",
-                    "from": root.value(gradient, "from", "#00000000"),
-                    "to": root.value(gradient, "to", "#00000000"),
-                    "angle": root.value(gradient, "angle", 180),
-                    "opacity": root.value(gradient, "opacity", 0.45)
+                    "type": "overlay",
+                    "value": root.value(overlay, "color", overlay),
+                    "opacity": root.value(overlay, "opacity", 0.0)
                 })
             }
-        }
-
-        if (bg.overlay !== undefined) {
-            var overlay = (typeof bg.overlay === "object" && bg.overlay !== null) ? bg.overlay : ({"color": bg.overlay})
-            layers.push({
-                "type": "overlay",
-                "value": root.value(overlay, "color", "#000000"),
-                "opacity": root.value(overlay, "opacity", 0.0)
-            })
-        }
-
-        if (layers.length > 0) {
             return ({"type": "layered", "layers": layers})
         }
         return bg
@@ -224,5 +224,4 @@ Item {
     }
 
     // TASK25B background supports color / image asset_key / gradient / overlay / opacity / fit / position fallback.
-    // TASK25E background image path resolves manifest url through renderResourcesObj.assets and Qt.resolvedUrl("../../assets/" + url).
 }

@@ -47,6 +47,7 @@ Item {
         spacing: 4
 
         PageHeader {
+            renderResourcesObj: root.renderResourcesObj
             designThemeObj: root.designThemeObj
             componentStyleObj: root.componentStyleObj
             headerStyleObj: root.componentStyleObj.header || ({})
@@ -57,7 +58,7 @@ Item {
         GroupBox {
             title: "Control Panel"
             Row {
-                Button {
+                DesignButton { buttonStyleObj: root.componentStyleObj.button || ({}); themeObj: root.designThemeObj; renderResourcesObj: root.renderResourcesObj;
                     text: "Diagnostics Refresh"
                     onClicked: pick("diagnostics.refresh", "native_ready", "native", "diagnostics.refresh")
                 }
@@ -172,6 +173,7 @@ Item {
         }
 
         PageFeedbackPanel {
+            renderResourcesObj: root.renderResourcesObj
             designThemeObj: root.designThemeObj
             componentStyleObj: root.componentStyleObj
             feedbackStyleObj: root.componentStyleObj.feedback_panel || ({})

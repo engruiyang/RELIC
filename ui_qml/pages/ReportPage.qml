@@ -251,6 +251,7 @@ Item {
             spacing: 8
 
             PageHeader {
+            renderResourcesObj: reportPage.renderResourcesObj
             designThemeObj: reportPage.designThemeObj
             componentStyleObj: reportPage.componentStyleObj
             headerStyleObj: reportPage.componentStyleObj.header || ({})
@@ -280,37 +281,37 @@ Item {
                     width: parent.width
                     spacing: 6
 
-                    Button {
+                    DesignButton { buttonStyleObj: reportPage.componentStyleObj.button || ({}); themeObj: reportPage.designThemeObj; renderResourcesObj: reportPage.renderResourcesObj;
                         text: "Refresh Report"
                         onClicked: reportPage.refreshReport()
                     }
 
-                    Button {
+                    DesignButton { buttonStyleObj: reportPage.componentStyleObj.button || ({}); themeObj: reportPage.designThemeObj; renderResourcesObj: reportPage.renderResourcesObj;
                         text: "List Sessions"
                         onClicked: reportPage.listSessions()
                     }
 
-                    Button {
+                    DesignButton { buttonStyleObj: reportPage.componentStyleObj.button || ({}); themeObj: reportPage.designThemeObj; renderResourcesObj: reportPage.renderResourcesObj;
                         text: "Show Session"
                         onClicked: reportPage.showSelectedSession()
                     }
 
-                    Button {
+                    DesignButton { buttonStyleObj: reportPage.componentStyleObj.button || ({}); themeObj: reportPage.designThemeObj; renderResourcesObj: reportPage.renderResourcesObj;
                         text: "Show Selected Session"
                         onClicked: reportPage.showSelectedSession()
                     }
 
-                    Button {
+                    DesignButton { buttonStyleObj: reportPage.componentStyleObj.button || ({}); themeObj: reportPage.designThemeObj; renderResourcesObj: reportPage.renderResourcesObj;
                         text: "Latest Report"
                         onClicked: reportPage.refreshReport()
                     }
 
-                    Button {
+                    DesignButton { buttonStyleObj: reportPage.componentStyleObj.button || ({}); themeObj: reportPage.designThemeObj; renderResourcesObj: reportPage.renderResourcesObj;
                         text: "Export Report"
                         onClicked: reportPage.exportReport()
                     }
 
-                    Button {
+                    DesignButton { buttonStyleObj: reportPage.componentStyleObj.button || ({}); themeObj: reportPage.designThemeObj; renderResourcesObj: reportPage.renderResourcesObj;
                         text: "Open Path Manual"
                         onClicked: reportPage.pick("report.open_path_manual", "manual", "manual", "")
                     }
@@ -408,6 +409,7 @@ Item {
             }
 
             PageFeedbackPanel {
+            renderResourcesObj: reportPage.renderResourcesObj
             designThemeObj: reportPage.designThemeObj
             componentStyleObj: reportPage.componentStyleObj
             feedbackStyleObj: reportPage.componentStyleObj.feedback_panel || ({})

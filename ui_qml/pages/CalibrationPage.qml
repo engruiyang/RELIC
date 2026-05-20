@@ -327,6 +327,7 @@ Item {
             spacing: 6
 
         PageHeader {
+            renderResourcesObj: root.renderResourcesObj
             designThemeObj: root.designThemeObj
             componentStyleObj: root.componentStyleObj
             headerStyleObj: root.componentStyleObj.header || ({})
@@ -349,14 +350,14 @@ Item {
             Flow {
                 width: parent.width
                 spacing: 6
-                Button { text: "Calibration Status"; onClicked: root.doStatus() }
-                Button { text: "List Calibrations"; onClicked: root.doList() }
-                Button { text: "Latest Calibration"; onClicked: root.doLatest() }
-                Button { text: "Show Calibration"; onClicked: root.doShowSelected() }
-                Button { text: "Bind Calibration"; onClicked: root.doBindSelected() }
-                Button { text: "Start IPC Calibration"; onClicked: root.doStartCalibration() }
-                Button { text: "Refresh Calibration Progress"; onClicked: root.doPollProgress() }
-                Button { text: "Cancel Calibration"; onClicked: root.doCancel() }
+                DesignButton { buttonStyleObj: root.componentStyleObj.button || ({}); themeObj: root.designThemeObj; renderResourcesObj: root.renderResourcesObj; text: "Calibration Status"; onClicked: root.doStatus() }
+                DesignButton { buttonStyleObj: root.componentStyleObj.button || ({}); themeObj: root.designThemeObj; renderResourcesObj: root.renderResourcesObj; text: "List Calibrations"; onClicked: root.doList() }
+                DesignButton { buttonStyleObj: root.componentStyleObj.button || ({}); themeObj: root.designThemeObj; renderResourcesObj: root.renderResourcesObj; text: "Latest Calibration"; onClicked: root.doLatest() }
+                DesignButton { buttonStyleObj: root.componentStyleObj.button || ({}); themeObj: root.designThemeObj; renderResourcesObj: root.renderResourcesObj; text: "Show Calibration"; onClicked: root.doShowSelected() }
+                DesignButton { buttonStyleObj: root.componentStyleObj.button || ({}); themeObj: root.designThemeObj; renderResourcesObj: root.renderResourcesObj; text: "Bind Calibration"; onClicked: root.doBindSelected() }
+                DesignButton { buttonStyleObj: root.componentStyleObj.button || ({}); themeObj: root.designThemeObj; renderResourcesObj: root.renderResourcesObj; text: "Start IPC Calibration"; onClicked: root.doStartCalibration() }
+                DesignButton { buttonStyleObj: root.componentStyleObj.button || ({}); themeObj: root.designThemeObj; renderResourcesObj: root.renderResourcesObj; text: "Refresh Calibration Progress"; onClicked: root.doPollProgress() }
+                DesignButton { buttonStyleObj: root.componentStyleObj.button || ({}); themeObj: root.designThemeObj; renderResourcesObj: root.renderResourcesObj; text: "Cancel Calibration"; onClicked: root.doCancel() }
             }
         }
 
@@ -403,8 +404,8 @@ Item {
                 }
                 Row {
                     spacing: 6
-                    Button { text: "Show Selected Calibration"; onClicked: root.doShowSelected() }
-                    Button { text: "Bind Selected Calibration"; onClicked: root.doBindSelected() }
+                    DesignButton { buttonStyleObj: root.componentStyleObj.button || ({}); themeObj: root.designThemeObj; renderResourcesObj: root.renderResourcesObj; text: "Show Selected Calibration"; onClicked: root.doShowSelected() }
+                    DesignButton { buttonStyleObj: root.componentStyleObj.button || ({}); themeObj: root.designThemeObj; renderResourcesObj: root.renderResourcesObj; text: "Bind Selected Calibration"; onClicked: root.doBindSelected() }
                 }
             }
         }
@@ -470,9 +471,9 @@ Item {
                 Flow {
                     width: parent.width
                     spacing: 6
-                    Button { text: "Refresh Calibration Progress"; onClicked: root.doPollProgress() }
-                    Button { text: "Latest Calibration"; onClicked: root.doLatest() }
-                    Button { text: "List Calibrations"; onClicked: root.doList() }
+                    DesignButton { buttonStyleObj: root.componentStyleObj.button || ({}); themeObj: root.designThemeObj; renderResourcesObj: root.renderResourcesObj; text: "Refresh Calibration Progress"; onClicked: root.doPollProgress() }
+                    DesignButton { buttonStyleObj: root.componentStyleObj.button || ({}); themeObj: root.designThemeObj; renderResourcesObj: root.renderResourcesObj; text: "Latest Calibration"; onClicked: root.doLatest() }
+                    DesignButton { buttonStyleObj: root.componentStyleObj.button || ({}); themeObj: root.designThemeObj; renderResourcesObj: root.renderResourcesObj; text: "List Calibrations"; onClicked: root.doList() }
                 }
             }
         }
@@ -495,6 +496,7 @@ Item {
         }
 
         PageFeedbackPanel {
+            renderResourcesObj: root.renderResourcesObj
             designThemeObj: root.designThemeObj
             componentStyleObj: root.componentStyleObj
             feedbackStyleObj: root.componentStyleObj.feedback_panel || ({})
