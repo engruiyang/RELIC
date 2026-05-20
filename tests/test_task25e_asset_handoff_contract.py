@@ -108,8 +108,22 @@ def test_task25e0_asset_handoff_validation_and_bundle_fields() -> None:
     assert bundle["asset_handoff_validation"]["invalid_url_assets"] == []
 
 
-def test_task25e0_does_not_commit_real_binary_assets_yet() -> None:
-    forbidden_exts = {".png", ".jpg", ".jpeg", ".webp", ".svg", ".ttf", ".otf", ".wav", ".ogg", ".mp3"}
+def test_task25e_real_binary_assets_are_allowed_only_in_declared_handoff_dirs() -> None:
+    manifest = _load_json(MANIFEST)
+    handoff = manifest.get("asset_handoff") or {}
+    allowed_exts = set()
+    for values in (handoff.get("allowed_extensions") or {}).values():
+        allowed_exts.update(str(v).lower() for v in values)
+    allowed_roots = [PACK_ROOT / "images", PACK_ROOT / "audio", PACK_ROOT / "fonts"]
+    referenced_urls = {
+        str(desc.get("url"))
+        for desc in (manifest.get("common_assets") or {}).values()
+        if desc.get("url")
+    }
+
     for path in PACK_ROOT.rglob("*"):
-        if path.is_file():
-            assert path.suffix.lower() not in forbidden_exts, path
+        if not path.is_file() or path.suffix.lower() not in allowed_exts:
+            continue
+        assert any(root in path.parents for root in allowed_roots), path
+        rel_from_assets = path.relative_to(Path("assets")).as_posix()
+        assert rel_from_assets in referenced_urls, path

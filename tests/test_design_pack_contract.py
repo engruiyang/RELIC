@@ -7,6 +7,7 @@ from core.resource_managers import build_render_resource_bundle
 
 
 PACK_ROOT = Path("assets/packs/default")
+MANIFEST = Path("assets/manifest.json")
 
 
 def _load_json(path: Path) -> dict:
@@ -72,7 +73,22 @@ def test_build_render_resource_bundle_includes_new_and_legacy_fields() -> None:
         assert field in bundle
 
 
-def test_no_binary_art_assets_in_repo() -> None:
-    forbidden_exts = {".png", ".jpg", ".jpeg", ".svg", ".ttf", ".otf", ".wav", ".mp3"}
+def test_binary_art_assets_are_only_under_declared_handoff_directories() -> None:
+    manifest = _load_json(MANIFEST)
+    handoff = manifest.get("asset_handoff") or {}
+    allowed_exts = set()
+    for values in (handoff.get("allowed_extensions") or {}).values():
+        allowed_exts.update(str(v).lower() for v in values)
+    allowed_roots = [PACK_ROOT / "images", PACK_ROOT / "audio", PACK_ROOT / "fonts"]
+    referenced_urls = {
+        str(desc.get("url"))
+        for desc in (manifest.get("common_assets") or {}).values()
+        if desc.get("url")
+    }
+
     for path in PACK_ROOT.rglob("*"):
-        assert path.suffix.lower() not in forbidden_exts
+        if not path.is_file() or path.suffix.lower() not in allowed_exts:
+            continue
+        assert any(root in path.parents for root in allowed_roots), path
+        rel_from_assets = path.relative_to(Path("assets")).as_posix()
+        assert rel_from_assets in referenced_urls or path.name == ".gitkeep", path
