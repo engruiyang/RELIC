@@ -5,5 +5,7 @@
   "radius": 12,
   "padding": 12,
   "shadow_enabled": false,
-  "opacity": 0.96
+  "opacity": 0.96,
+  "background_asset_key": "",
+  "frame_asset_key": "ui.panel.frame"
 }

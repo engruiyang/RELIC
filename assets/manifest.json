@@ -133,7 +133,7 @@
     },
     "ui.button.primary.normal": {
       "type": "image",
-      "url": null,
+      "url": "packs/default/images/ui/buttons/button_primary.png",
       "fallback_shape": "rect",
       "style_key": "ui.button.primary.normal",
       "description": "primary button normal texture slot",
