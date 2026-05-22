@@ -85,27 +85,83 @@ class GuiLiveControlSource:
         calib = self._training_context.get("calibration_profile")
         return dict(calib) if isinstance(calib, dict) else {}
 
-    def _derive_fi_from_runtime(self, runtime: dict[str, Any]) -> tuple[float | None, str, str]:
-        for key in ("fi", "fi_smoothed", "focus_index", "fi_raw"):
-            val = self._as_float_or_none(runtime.get(key))
-            if val is not None and (val != 0.0 or bool(runtime.get("fi_valid", True))):
-                return self._clip(val), key, ""
+    def _derive_control_state_from_fi(self, fi_value: float | None) -> str:
+        if fi_value is None:
+            return "UNKNOWN"
+        if fi_value >= 80:
+            return "HIGH_FOCUS"
+        if fi_value >= 60:
+            return "STABLE_FOCUS"
+        if fi_value >= 40:
+            return "DISTRACTED"
+        return "FATIGUED"
 
+    def _resolve_runtime_fi(self, runtime: dict[str, Any], behavior_sample: dict[str, Any] | None = None, calibration_profile: dict[str, Any] | None = None) -> dict[str, Any]:
         attention = self._as_float_or_none(runtime.get("attention"))
         if attention is None:
             attention = self._as_float_or_none(runtime.get("last_runtime_attention"))
-        if attention is None:
-            return None, "unavailable", "attention_missing"
+        attention_age_ms = self._as_float_or_none(runtime.get("attention_age_ms"))
+        attention_fresh = bool(runtime.get("attention_fresh", runtime.get("last_runtime_attention_fresh", attention is not None)))
+        stream_alive = bool(runtime.get("stream_alive", True))
+        error_flags = list(runtime.get("error_flags") or [])
+        quality_state = str(runtime.get("quality_state") or "").lower()
+        sqi = self._as_float_or_none(runtime.get("sqi"))
 
-        calib = self._current_calibration_profile()
-        baseline = self._as_float_or_none(calib.get("attention_baseline"))
-        std = self._as_float_or_none(calib.get("attention_std"))
-        if baseline is not None and std is not None and std > 0:
-            # Map roughly baseline±2σ to 35..85, then clamp to UI/report range.
-            z = (attention - baseline) / max(std, 1.0)
-            return self._clip(60.0 + 12.5 * z), "attention_calibrated", ""
+        candidate_order = ("fi_smoothed", "focus_index", "fi_raw", "fi")
+        placeholder_zero_detected = False
+        placeholder_zero_source = ""
 
-        return self._clip(attention), "attention_raw", ""
+        for key in candidate_order:
+            val = self._as_float_or_none(runtime.get(key))
+            if val is None:
+                continue
+            if val == 0.0:
+                looks_placeholder = (
+                    attention is not None
+                    and (attention_fresh or (attention_age_ms is not None and attention_age_ms <= 1500))
+                    and stream_alive
+                    and not error_flags
+                    and ((sqi is not None and sqi >= 0.5) or quality_state in {"ok", "warning", "valid"} or attention_fresh)
+                )
+                if looks_placeholder:
+                    placeholder_zero_detected = True
+                    placeholder_zero_source = key
+                    continue
+                if attention is None or not stream_alive or error_flags:
+                    continue
+            return {"fi": self._clip(val), "fi_source": key, "fi_unavailable_reason": "", "fi_valid": True, "fi_provisional": False, "fi_placeholder_zero_detected": placeholder_zero_detected, "fi_placeholder_zero_source": placeholder_zero_source}
+
+        if attention is None or not stream_alive or error_flags:
+            return {"fi": None, "fi_source": "unavailable", "fi_unavailable_reason": "attention_or_stream_invalid", "fi_valid": False, "fi_provisional": False, "fi_placeholder_zero_detected": placeholder_zero_detected, "fi_placeholder_zero_source": placeholder_zero_source}
+
+        calib = calibration_profile if isinstance(calibration_profile, dict) else self._current_calibration_profile()
+        baseline = self._as_float_or_none(calib.get("attention_baseline")) if isinstance(calib, dict) else None
+        std = self._as_float_or_none(calib.get("attention_std")) if isinstance(calib, dict) else None
+        if baseline is not None:
+            z = (attention - baseline) / max(std or 1.0, 1.0)
+            s_eeg = max(0.0, min(1.0, 0.5 + z / 4.0))
+            fi_source = "calibration_attention_behavior_provisional"
+        else:
+            s_eeg = max(0.0, min(1.0, attention / 100.0))
+            fi_source = "attention_behavior_provisional"
+
+        gyro_fresh = bool(runtime.get("gyro_fresh", runtime.get("last_runtime_gyro_fresh", True)))
+        gyro_error = any(flag in {"gyro_lost", "gyro_unstable"} for flag in error_flags)
+        s_imu = 0.2 if gyro_error else (1.0 if gyro_fresh else 0.5)
+
+        behavior = behavior_sample or {}
+        acc = self._as_float_or_none(behavior.get("accuracy"))
+        omission = self._as_float_or_none(behavior.get("omission"))
+        false_action = self._as_float_or_none(behavior.get("false_action"))
+        rt_stability = self._as_float_or_none(behavior.get("rt_stability"))
+        if None in (acc, omission, false_action, rt_stability):
+            s_b = 0.5
+            fi_source = f"{fi_source}_neutral_behavior_default"
+        else:
+            s_b = 0.35 * max(0.0, min(1.0, acc)) + 0.20 * (1.0 - max(0.0, min(1.0, omission))) + 0.15 * (1.0 - max(0.0, min(1.0, false_action))) + 0.30 * max(0.0, min(1.0, rt_stability))
+
+        fi = self._clip(100.0 * (0.55 * s_eeg + 0.15 * s_imu + 0.30 * s_b))
+        return {"fi": fi, "fi_source": fi_source, "fi_unavailable_reason": "" if placeholder_zero_detected else "fi_missing_or_placeholder", "fi_valid": True, "fi_provisional": True, "fi_placeholder_zero_detected": placeholder_zero_detected, "fi_placeholder_zero_source": placeholder_zero_source}
 
     def _derive_sqi_from_runtime(self, runtime: dict[str, Any]) -> tuple[float | None, str, str]:
         for key in ("sqi", "signal_quality_index", "quality_score"):
@@ -133,10 +189,9 @@ class GuiLiveControlSource:
         return None, "unavailable", "no_attention_or_stream"
 
     def _normalize_training_runtime_sample(self, runtime: dict[str, Any]) -> dict[str, Any]:
-        fi_value, fi_source, fi_reason = self._derive_fi_from_runtime(runtime)
-        sqi_value, sqi_source, sqi_reason = self._derive_sqi_from_runtime(runtime)
         warning_flags = list(runtime.get("warning_flags") or [])
         error_flags = list(runtime.get("error_flags") or [])
+        sqi_value, sqi_source, sqi_reason = self._derive_sqi_from_runtime(runtime)
         quality_state = runtime.get("quality_state")
         if quality_state is None:
             if error_flags:
@@ -147,7 +202,13 @@ class GuiLiveControlSource:
                 quality_state = "ok"
             else:
                 quality_state = "unknown"
-        control_state = runtime.get("control_state") or ("UNKNOWN" if fi_value is None else ("HIGH_FOCUS" if fi_value >= 80 else ("STABLE_FOCUS" if fi_value >= 60 else ("DISTRACTED" if fi_value >= 40 else "FATIGUED"))))
+        enriched_runtime = dict(runtime)
+        enriched_runtime.setdefault("sqi", sqi_value)
+        enriched_runtime.setdefault("quality_state", quality_state)
+        fi_resolved = self._resolve_runtime_fi(enriched_runtime, behavior_sample=(self._training_samples[-1] if self._training_samples else None), calibration_profile=self._current_calibration_profile())
+        fi_value, fi_source, fi_reason = fi_resolved["fi"], fi_resolved["fi_source"], fi_resolved["fi_unavailable_reason"]
+        raw_control_state = runtime.get("control_state") or "UNKNOWN"
+        control_state = self._derive_control_state_from_fi(fi_value) if fi_value is not None else raw_control_state
         return {
             "now_ms": int(time.time() * 1000),
             "fi": fi_value,
@@ -155,7 +216,17 @@ class GuiLiveControlSource:
             "fi_source": fi_source,
             "sqi_source": sqi_source,
             "fi_unavailable_reason": fi_reason,
+            "fi_valid": bool(fi_resolved.get("fi_valid") and fi_value is not None),
+            "fi_provisional": bool(fi_resolved.get("fi_provisional")),
             "sqi_unavailable_reason": sqi_reason,
+            "sqi_valid": sqi_value is not None,
+            "raw_control_state": raw_control_state,
+            "raw_fi": runtime.get("fi"),
+            "raw_fi_raw": runtime.get("fi_raw"),
+            "raw_fi_smoothed": runtime.get("fi_smoothed"),
+            "raw_focus_index": runtime.get("focus_index"),
+            "fi_placeholder_zero_detected": bool(fi_resolved.get("fi_placeholder_zero_detected")),
+            "fi_placeholder_zero_source": fi_resolved.get("fi_placeholder_zero_source", ""),
             "attention": runtime.get("attention", runtime.get("last_runtime_attention")),
             "attention_age_ms": runtime.get("attention_age_ms"),
             "attention_fresh": bool(runtime.get("attention_fresh", runtime.get("last_runtime_attention_fresh", runtime.get("attention") is not None))),
@@ -348,8 +419,10 @@ class GuiLiveControlSource:
         started = int(self._training_context.get("started_at_ms") or now_ms)
         total_duration_ms = max(0, now_ms - started)
         duration_sec = round(total_duration_ms / 1000.0, 3)
-        fi_vals=[float(x.get("fi")) for x in self._training_runtime if x.get("fi") is not None]
-        sqi_vals=[float(x.get("sqi")) for x in self._training_runtime if x.get("sqi") is not None]
+        fi_valid_rows=[x for x in self._training_runtime if x.get("fi_valid") and x.get("fi") is not None]
+        sqi_valid_rows=[x for x in self._training_runtime if x.get("sqi_valid") and x.get("sqi") is not None]
+        fi_vals=[float(x.get("fi")) for x in fi_valid_rows]
+        sqi_vals=[float(x.get("sqi")) for x in sqi_valid_rows]
         runtime_step_ms = int(self.poll_interval_sec * 1000)
         valid_rows = [x for x in self._training_runtime if not x.get("error_flags") and str(x.get("quality_state", "")).lower() != "error"]
         warning_rows = [x for x in self._training_runtime if x.get("warning_flags") or str(x.get("quality_state", "")).lower() == "warning"]
@@ -361,6 +434,12 @@ class GuiLiveControlSource:
         behavior_sample_count = max(len(self._training_samples), 1 if sample else 0)
         log_path = f"logs/sessions/{self.training_session_id}.jsonl"
         self._write_training_log(log_path, sample, view, total_duration_ms)
+        score_update_count = sum(1 for evt in self._training_events if ((evt.get("payload") or {}).get("event_type") == "score_update" or evt.get("event_type") == "score_update") )
+        target_spawn_count = sum(1 for evt in self._training_events if ((evt.get("payload") or {}).get("event_type") == "target_spawn" or evt.get("event_type") == "target_spawn") )
+        target_click_count = sum(1 for evt in self._training_events if ((evt.get("payload") or {}).get("event_type") == "target_click" or evt.get("event_type") == "target_click") )
+        background_click_count = sum(1 for evt in self._training_events if ((evt.get("payload") or {}).get("event_type") == "background_click" or evt.get("event_type") == "background_click") )
+        target_omitted_count = sum(1 for evt in self._training_events if ((evt.get("payload") or {}).get("event_type") == "target_omitted" or evt.get("event_type") == "target_omitted") )
+        level_changed_count = sum(1 for evt in self._training_events if ((evt.get("payload") or {}).get("event_type") == "level_changed" or evt.get("event_type") == "level_changed") )
         summary={
             "session_id":self.training_session_id,
             "user_id":self.user_id,
@@ -404,6 +483,12 @@ class GuiLiveControlSource:
             "sqi_avg":(sum(sqi_vals)/len(sqi_vals) if sqi_vals else None),
             "final_fi_avg":(sum(fi_vals)/len(fi_vals) if fi_vals else None),
             "final_sqi_avg":(sum(sqi_vals)/len(sqi_vals) if sqi_vals else None),
+            "fi_min": (min(fi_vals) if fi_vals else None),
+            "fi_max": (max(fi_vals) if fi_vals else None),
+            "fi_last": (fi_vals[-1] if fi_vals else None),
+            "sqi_min": (min(sqi_vals) if sqi_vals else None),
+            "sqi_max": (max(sqi_vals) if sqi_vals else None),
+            "sqi_last": (sqi_vals[-1] if sqi_vals else None),
             "calibration_status":self._training_context.get("calibration_status","missing"),
             "calibration_id":self._training_context.get("calibration_id",""),
             "attention_baseline":(self._training_context.get("calibration_profile") or {}).get("attention_baseline"),
@@ -412,6 +497,14 @@ class GuiLiveControlSource:
             "fi_source_summary": self._summarize_field("fi_source", self._training_runtime),
             "sqi_source_summary": self._summarize_field("sqi_source", self._training_runtime),
             "control_state_summary": self._summarize_field("control_state", self._training_runtime),
+            "raw_control_state_summary": self._summarize_field("raw_control_state", self._training_runtime),
+            "fi_provisional_ratio": (sum(1 for x in fi_valid_rows if x.get("fi_provisional")) / len(fi_valid_rows) if fi_valid_rows else None),
+            "score_update_count": score_update_count,
+            "target_spawn_count": target_spawn_count,
+            "target_click_count": target_click_count,
+            "background_click_count": background_click_count,
+            "target_omitted_count": target_omitted_count,
+            "level_changed_count": level_changed_count,
             "quality_state_summary": self._summarize_field("quality_state", self._training_runtime),
             "warning_count":sum(len(x.get("warning_flags",[])) for x in self._training_runtime),
             "error_count":sum(len(x.get("error_flags",[])) for x in self._training_runtime),
