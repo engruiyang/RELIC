@@ -39,6 +39,7 @@ class GuiLiveControlSource:
         self._training_context: dict[str, Any] = {}
         self._training_samples: list[dict[str, Any]] = []
         self._training_runtime: list[dict[str, Any]] = []
+        self._training_events: list[dict[str, Any]] = []
         self.game_update_count = 0
         self.last_runtime_attention: int | None = None
         self.last_runtime_attention_fresh = False
@@ -69,6 +70,107 @@ class GuiLiveControlSource:
             self._tick_thread.join(timeout=1.0)
         self._live_source.stop()
 
+    def _as_float_or_none(self, value: Any) -> float | None:
+        if value is None or value == "":
+            return None
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return None
+
+    def _clip(self, value: float, lo: float = 0.0, hi: float = 100.0) -> float:
+        return max(lo, min(hi, float(value)))
+
+    def _current_calibration_profile(self) -> dict[str, Any]:
+        calib = self._training_context.get("calibration_profile")
+        return dict(calib) if isinstance(calib, dict) else {}
+
+    def _derive_fi_from_runtime(self, runtime: dict[str, Any]) -> tuple[float | None, str, str]:
+        for key in ("fi", "fi_smoothed", "focus_index", "fi_raw"):
+            val = self._as_float_or_none(runtime.get(key))
+            if val is not None and (val != 0.0 or bool(runtime.get("fi_valid", True))):
+                return self._clip(val), key, ""
+
+        attention = self._as_float_or_none(runtime.get("attention"))
+        if attention is None:
+            attention = self._as_float_or_none(runtime.get("last_runtime_attention"))
+        if attention is None:
+            return None, "unavailable", "attention_missing"
+
+        calib = self._current_calibration_profile()
+        baseline = self._as_float_or_none(calib.get("attention_baseline"))
+        std = self._as_float_or_none(calib.get("attention_std"))
+        if baseline is not None and std is not None and std > 0:
+            # Map roughly baseline±2σ to 35..85, then clamp to UI/report range.
+            z = (attention - baseline) / max(std, 1.0)
+            return self._clip(60.0 + 12.5 * z), "attention_calibrated", ""
+
+        return self._clip(attention), "attention_raw", ""
+
+    def _derive_sqi_from_runtime(self, runtime: dict[str, Any]) -> tuple[float | None, str, str]:
+        for key in ("sqi", "signal_quality_index", "quality_score"):
+            val = self._as_float_or_none(runtime.get(key))
+            if val is not None and val > 0.0:
+                return max(0.0, min(1.0, val if val <= 1.0 else val / 100.0)), key, ""
+
+        if runtime.get("error_flags"):
+            return 0.0, "runtime_error_flags", "error_flags_present"
+
+        attention_seen = runtime.get("attention") is not None or runtime.get("last_runtime_attention") is not None
+        attention_fresh = bool(runtime.get("attention_fresh", runtime.get("last_runtime_attention_fresh", attention_seen)))
+        gyro_fresh = bool(runtime.get("gyro_fresh", runtime.get("last_runtime_gyro_fresh", True)))
+        stream_alive = bool(runtime.get("stream_alive", True))
+        if attention_seen and stream_alive:
+            score = 1.0
+            if not attention_fresh:
+                score -= 0.35
+            if not gyro_fresh:
+                score -= 0.25
+            if runtime.get("warning_flags"):
+                score -= 0.15
+            return max(0.0, min(1.0, score)), "derived_freshness", ""
+
+        return None, "unavailable", "no_attention_or_stream"
+
+    def _normalize_training_runtime_sample(self, runtime: dict[str, Any]) -> dict[str, Any]:
+        fi_value, fi_source, fi_reason = self._derive_fi_from_runtime(runtime)
+        sqi_value, sqi_source, sqi_reason = self._derive_sqi_from_runtime(runtime)
+        warning_flags = list(runtime.get("warning_flags") or [])
+        error_flags = list(runtime.get("error_flags") or [])
+        quality_state = runtime.get("quality_state")
+        if quality_state is None:
+            if error_flags:
+                quality_state = "error"
+            elif warning_flags:
+                quality_state = "warning"
+            elif sqi_value is not None and sqi_value >= 0.5:
+                quality_state = "ok"
+            else:
+                quality_state = "unknown"
+        control_state = runtime.get("control_state") or ("UNKNOWN" if fi_value is None else ("HIGH_FOCUS" if fi_value >= 80 else ("STABLE_FOCUS" if fi_value >= 60 else ("DISTRACTED" if fi_value >= 40 else "FATIGUED"))))
+        return {
+            "now_ms": int(time.time() * 1000),
+            "fi": fi_value,
+            "sqi": sqi_value,
+            "fi_source": fi_source,
+            "sqi_source": sqi_source,
+            "fi_unavailable_reason": fi_reason,
+            "sqi_unavailable_reason": sqi_reason,
+            "attention": runtime.get("attention", runtime.get("last_runtime_attention")),
+            "attention_age_ms": runtime.get("attention_age_ms"),
+            "attention_fresh": bool(runtime.get("attention_fresh", runtime.get("last_runtime_attention_fresh", runtime.get("attention") is not None))),
+            "gyro_fresh": bool(runtime.get("gyro_fresh", runtime.get("last_runtime_gyro_fresh", True))),
+            "stream_alive": bool(runtime.get("stream_alive", True)),
+            "control_state": control_state,
+            "quality_state": quality_state,
+            "warning_flags": warning_flags,
+            "error_flags": error_flags,
+        }
+
+    def _record_training_event(self, evt_dict: dict[str, Any]) -> None:
+        if self.interaction_enabled and self.session_type == "training":
+            self._training_events.append(dict(evt_dict))
+
     def _tick_loop(self) -> None:
         while not self._stop.is_set():
             runtime = self._live_source.get_runtime_snapshot()
@@ -82,37 +184,39 @@ class GuiLiveControlSource:
                 self.last_runtime_gyro_fresh = bool(runtime.get("gyro_fresh"))
                 self.last_game_view = asdict(view)
                 if self.interaction_enabled and self.session_type == "training":
-                    fi_value = runtime.get("fi")
-                    if fi_value is None:
-                        fi_value = runtime.get("fi_smoothed")
-                    if fi_value is None:
-                        fi_value = runtime.get("focus_index")
-                    sqi_value = runtime.get("sqi")
-                    if sqi_value is None:
-                        sqi_value = runtime.get("signal_quality_index")
-                    if sqi_value is None:
-                        sqi_value = runtime.get("quality_score")
-                    self._training_runtime.append({"fi": fi_value, "sqi": sqi_value, "control_state": runtime.get("control_state"), "quality_state": runtime.get("quality_state"), "warning_flags": list(runtime.get("warning_flags") or []), "error_flags": list(runtime.get("error_flags") or [])})
+                    self._training_runtime.append(self._normalize_training_runtime_sample(runtime))
             time.sleep(self.poll_interval_sec)
+
+    def _set_public_last_game_event(self, evt_dict: dict[str, Any]) -> None:
+        """Expose only the event that should drive GUI feedback/platform state.
+
+        TASK26 adds non-reportable semantic events such as target_spawn,
+        score_update, and target_omitted for replay/report completeness.  Those
+        events must be written to the training log, but they must not replace
+        the immediate GUI feedback event produced by a pointer click.
+        """
+        self.last_game_event = evt_dict
+        ep = evt_dict.get("payload") or {}
+        self.last_game_action_name = str(ep.get("action_name") or "")
+        ti = ep.get("target_index")
+        self.last_game_target_index = ti if isinstance(ti, int) else None
 
     def _drain_game_events(self) -> None:
         events = self._client.collect_game_events()
         for evt in events:
             evt_dict = evt.to_dict()
-            self.last_game_event = evt_dict
+            self._record_training_event(evt_dict)
             self.game_event_count += 1
-            ep = evt.payload or {}
-            self.last_game_action_name = str(ep.get("action_name") or "")
-            ti = ep.get("target_index")
-            self.last_game_target_index = ti if isinstance(ti, int) else None
             if not evt.reportable:
                 continue
+            self._set_public_last_game_event(evt_dict)
             self._platform_adapter.process_game_event(evt_dict, allow_mock=True)
 
 
     def _reset_training_buffers(self) -> None:
         self._training_samples = []
         self._training_runtime = []
+        self._training_events = []
         self._session_start_game_event_count = self.game_event_count
 
     def _start_game_client(self, session_id: str, user_id: str, duration_ms: int) -> None:
@@ -176,7 +280,33 @@ class GuiLiveControlSource:
             except (TypeError, ValueError):
                 duration_ms = self._training_duration_ms
 
-        self._training_context = {"session_id": sid, "session_type": "training", "user_id": uid, "game_id": self.game_id, "started_at_ms": int(time.time()*1000), "db_path": db_path, "profile_status": "ok" if profile else "missing", "calibration_status": "ok" if calib else "missing", "calibration_fallback": calib is None, "runtime_mode": "live-control", "report_path": ""}
+        calib_dict = dict(calib or {})
+        profile_dict = dict(profile or {})
+        self._training_context = {
+            "session_id": sid,
+            "session_type": "training",
+            "user_id": uid,
+            "game_id": self.game_id,
+            "started_at_ms": int(time.time()*1000),
+            "db_path": db_path,
+            "profile_status": "ok" if profile else "missing",
+            "calibration_status": "ok" if calib else "missing",
+            "calibration_fallback": calib is None,
+            "calibration_id": calib_dict.get("calibration_id") or calib_dict.get("id") or profile_dict.get("last_calibration_id") or "",
+            "calibration_profile": {
+                "calibration_id": calib_dict.get("calibration_id") or calib_dict.get("id") or "",
+                "attention_baseline": calib_dict.get("attention_baseline"),
+                "attention_std": calib_dict.get("attention_std"),
+                "signal_quality_baseline": calib_dict.get("signal_quality_baseline"),
+                "gyro_noise_rms": calib_dict.get("gyro_noise_rms"),
+                "valid": calib_dict.get("valid"),
+                "failure_reason": calib_dict.get("failure_reason"),
+            },
+            "attention_low_threshold": profile_dict.get("attention_low_threshold"),
+            "attention_high_threshold": profile_dict.get("attention_high_threshold"),
+            "runtime_mode": "live-control",
+            "report_path": "",
+        }
         self._reset_training_buffers()
         manifest = getattr(self._client, "manifest", {}) or {}
         default_difficulty = self._debug_difficulty_level if self._debug_difficulty_level is not None else manifest.get("default_difficulty", 1)
@@ -190,12 +320,28 @@ class GuiLiveControlSource:
         self.interaction_enabled = True
         return {"command":"start_training_session","accepted":True,"status":"training_started","result":"training_started","session_id":sid,"session_context":dict(self._training_context),"source":"live_control"}
 
+    def _summarize_field(self, field_name: str, rows: list[dict[str, Any]]) -> str:
+        counts: dict[str, int] = {}
+        for row in rows:
+            val = row.get(field_name)
+            if val in (None, ""):
+                continue
+            key = str(val)
+            counts[key] = counts.get(key, 0) + 1
+        if not counts:
+            return "unknown"
+        return ",".join(f"{k}:{v}" for k, v in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0])))
+
     def end_training_session(self) -> dict[str, Any]:
         if not self.interaction_enabled or not self.training_session_id or self.session_type != "training":
             return {"command":"end_training_session","accepted":True,"status":"training_stopped","result":"noop","message":"no_active_training_session","source":"live_control"}
         self.interaction_enabled = False
         self._client.stop("training_completed")
-        self._client.collect_game_events()
+        for evt in self._client.collect_game_events():
+            evt_dict = evt.to_dict()
+            self._record_training_event(evt_dict)
+            self.last_game_event = evt_dict
+            self.game_event_count += 1
         sample = self._client.collect_behavior_sample().to_dict()
         view = self._client.build_game_view()
         now_ms = int(time.time()*1000)
@@ -259,7 +405,14 @@ class GuiLiveControlSource:
             "final_fi_avg":(sum(fi_vals)/len(fi_vals) if fi_vals else None),
             "final_sqi_avg":(sum(sqi_vals)/len(sqi_vals) if sqi_vals else None),
             "calibration_status":self._training_context.get("calibration_status","missing"),
+            "calibration_id":self._training_context.get("calibration_id",""),
+            "attention_baseline":(self._training_context.get("calibration_profile") or {}).get("attention_baseline"),
+            "attention_std":(self._training_context.get("calibration_profile") or {}).get("attention_std"),
             "profile_status":self._training_context.get("profile_status","missing"),
+            "fi_source_summary": self._summarize_field("fi_source", self._training_runtime),
+            "sqi_source_summary": self._summarize_field("sqi_source", self._training_runtime),
+            "control_state_summary": self._summarize_field("control_state", self._training_runtime),
+            "quality_state_summary": self._summarize_field("quality_state", self._training_runtime),
             "warning_count":sum(len(x.get("warning_flags",[])) for x in self._training_runtime),
             "error_count":sum(len(x.get("error_flags",[])) for x in self._training_runtime),
         }
@@ -278,12 +431,40 @@ class GuiLiveControlSource:
     def _write_training_log(self, log_path: str, sample: dict[str, Any], view: Any, total_duration_ms: int) -> None:
         path = Path(log_path)
         path.parent.mkdir(parents=True, exist_ok=True)
-        records = [
-            {"type": "session_context", "payload": dict(self._training_context)},
-            {"type": "runtime_summary", "payload": {"sample_count": len(self._training_runtime), "total_duration_ms": total_duration_ms}},
-            {"type": "behavior_sample", "payload": dict(sample or {})},
-            {"type": "game_view_summary", "payload": {"score": getattr(view, "score", None), "combo": getattr(view, "combo", None), "level": getattr(view, "level", None), "hud": getattr(view, "hud", {})}},
+
+        def rec(record_type: str, payload: dict[str, Any]) -> dict[str, Any]:
+            # Keep both keys: older tools used "type", replay/report tooling uses "event_type".
+            return {"type": record_type, "event_type": record_type, "payload": dict(payload or {})}
+
+        records: list[dict[str, Any]] = [
+            rec("session_context", dict(self._training_context)),
+            rec("runtime_summary", {
+                "sample_count": len(self._training_runtime),
+                "event_count": len(self._training_events),
+                "behavior_sample_count": len(self._training_samples),
+                "total_duration_ms": total_duration_ms,
+                "fi_source_summary": self._summarize_field("fi_source", self._training_runtime),
+                "sqi_source_summary": self._summarize_field("sqi_source", self._training_runtime),
+                "control_state_summary": self._summarize_field("control_state", self._training_runtime),
+                "quality_state_summary": self._summarize_field("quality_state", self._training_runtime),
+            }),
         ]
+        for idx, runtime_sample in enumerate(self._training_runtime):
+            payload = dict(runtime_sample)
+            payload.setdefault("sample_index", idx)
+            records.append(rec("runtime_sample", payload))
+        for idx, behavior_sample in enumerate(self._training_samples):
+            payload = dict(behavior_sample)
+            payload.setdefault("sample_index", idx)
+            records.append(rec("behavior_sample_snapshot", payload))
+        for idx, evt in enumerate(self._training_events):
+            payload = dict(evt)
+            payload.setdefault("sample_index", idx)
+            records.append(rec("game_event", payload))
+        records.extend([
+            rec("behavior_sample", dict(sample or {})),
+            rec("game_view_summary", {"score": getattr(view, "score", None), "combo": getattr(view, "combo", None), "level": getattr(view, "level", None), "hud": getattr(view, "hud", {})}),
+        ])
         with path.open("w", encoding="utf-8") as fh:
             for record in records:
                 fh.write(json.dumps(record, ensure_ascii=False) + "\n")
@@ -332,24 +513,29 @@ class GuiLiveControlSource:
         self._client.handle_input(ge)
         events = self._client.collect_game_events()
         result = "recorded_only"
+        public_event: dict[str, Any] | None = None
         for evt in events:
             evt_dict = evt.to_dict()
-            self.last_game_event = evt_dict
+            self._record_training_event(evt_dict)
             self.game_event_count += 1
             ep = evt.payload or {}
-            self.last_game_action_name = str(ep.get("action_name") or "")
-            ti = ep.get("target_index")
-            self.last_game_target_index = ti if isinstance(ti, int) else None
             print(
                 f"[GAME EVENT] event_type={evt.event_type} target_index={ep.get('target_index')} action={ep.get('action_name')} hit={ep.get('hit')}",
                 flush=True,
             )
+            if not evt.reportable:
+                # Keep target_spawn/score_update/target_omitted in the training
+                # log, but do not let them overwrite the user-action event shown
+                # to GUI tests or sent to the platform adapter.
+                continue
+            self._set_public_last_game_event(evt_dict)
+            public_event = evt_dict
             platform_res = self._platform_adapter.process_game_event(evt_dict, allow_mock=True)
             result = str(platform_res.get("platform_result") or result)
         self.last_game_view = asdict(self._client.build_game_view())
         if self.interaction_enabled and self.session_type == "training":
             self._training_samples.append(self._client.collect_behavior_sample().to_dict())
-        return {"result": result, "status": "accepted", "reason": result, "source": "live_control", "game_input": ge.to_dict(), "last_game_event": dict(self.last_game_event), "game_event_count": self.game_event_count, "platform_message_count": self._platform_adapter.platform_message_count, "last_platform_message": dict(self._platform_adapter.last_platform_message), "last_platform_result": self._platform_adapter.last_platform_result}
+        return {"result": result, "status": "accepted", "reason": result, "source": "live_control", "game_input": ge.to_dict(), "last_game_event": dict(public_event or self.last_game_event), "game_event_count": self.game_event_count, "platform_message_count": self._platform_adapter.platform_message_count, "last_platform_message": dict(self._platform_adapter.last_platform_message), "last_platform_result": self._platform_adapter.last_platform_result}
 
     def get_runtime_snapshot(self) -> dict[str, Any]:
         rt = self._live_source.get_runtime_snapshot()
