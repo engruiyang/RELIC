@@ -92,6 +92,7 @@ class TraceLockClient:
         self._snapshot: dict[str, Any] = {}
         self._level_change_count = 0
         self._debug_difficulty_level: int | None = None
+        self._external_training_control_enabled = False
         self._last_logged_movement_type = ""
 
     @property
@@ -334,6 +335,8 @@ class TraceLockClient:
             self._stable_focus_frames += 1
 
     def _maybe_adjust_difficulty(self) -> None:
+        if self._external_training_control_enabled:
+            return
         if self._debug_difficulty_level is not None:
             self._level = self._debug_difficulty_level
             return
@@ -375,6 +378,27 @@ class TraceLockClient:
         if self._started:
             self._spawn_target()
         logger.info("[TRACELOCK] debug_difficulty level=%s", clamped)
+
+    def set_external_training_control_enabled(self, enabled: bool) -> None:
+        self._external_training_control_enabled = bool(enabled)
+
+    def apply_training_control(self, decision: dict[str, Any]) -> dict[str, Any]:
+        action = str((decision or {}).get("action") or "hold")
+        reason = str((decision or {}).get("reason") or "fi_window_dda")
+        if action not in {"level_up", "level_down", "hold"}:
+            return {"applied": False, "from_level": self._level, "to_level": self._level, "reason": "invalid_action"}
+        old = int(self._level)
+        new = old
+        if action == "level_up":
+            new = min(5, old + 1)
+        elif action == "level_down":
+            new = max(1, old - 1)
+        applied = new != old
+        if applied:
+            self._level = new
+            self._last_level_change_ms = self._clock_ms
+            self._events.append(self._make_event("difficulty_changed", self._clock_ms, False, {"from_level": old, "to_level": new, "reason": reason, "source": "fi_window_dda", "window_index": decision.get("window_index"), "fi_window_avg": decision.get("fi_window_avg"), "sqi_window_avg": decision.get("sqi_window_avg"), "perf_window": decision.get("perf_window")}))
+        return {"applied": applied, "from_level": old, "to_level": new, "reason": reason}
 
     def _make_event(self, event_type: str, created_at_ms: int, reportable: bool, payload: dict[str, Any]) -> GameEvent:
         self._event_seq += 1

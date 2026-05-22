@@ -58,6 +58,9 @@ class GuiLiveControlSource:
         self._training_duration_ms = 180000
         self._live_debug_duration_ms = 60000
         self._training_window_ms = 5000
+        self._training_windows: list[dict[str, Any]] = []
+        self._difficulty_decisions: list[dict[str, Any]] = []
+        self._dda_state: dict[str, Any] = {}
 
     def start(self) -> None:
         self._live_source.start()
@@ -269,6 +272,7 @@ class GuiLiveControlSource:
                 self.last_game_view = asdict(view)
                 if self.interaction_enabled and self.session_type == "training":
                     self._training_runtime.append(self._normalize_training_runtime_sample(runtime))
+                    self._process_new_training_windows()
             time.sleep(self.poll_interval_sec)
 
     def _set_public_last_game_event(self, evt_dict: dict[str, Any]) -> None:
@@ -301,6 +305,8 @@ class GuiLiveControlSource:
         self._training_samples = []
         self._training_runtime = []
         self._training_events = []
+        self._training_windows = []
+        self._difficulty_decisions = []
         self._session_start_game_event_count = self.game_event_count
 
     def _start_game_client(self, session_id: str, user_id: str, duration_ms: int) -> None:
@@ -400,6 +406,9 @@ class GuiLiveControlSource:
             "selected_difficulty_level": default_difficulty,
             "game_duration_ms": duration_ms,
         })
+        self._dda_state = {"enabled": True, "last_decision_ms": 0, "cooldown_ms": 10000, "min_level": 1, "max_level": 5, "current_level": int(default_difficulty), "pending_up_count": 0, "pending_down_count": 0, "decision_events": [], "cooldown_block_count": 0, "conflict_hold_count": 0, "low_sqi_block_count": 0}
+        if hasattr(self._client, "set_external_training_control_enabled"):
+            self._client.set_external_training_control_enabled(True)
         self._start_game_client(sid, uid, duration_ms)
         self.interaction_enabled = True
         return {"command":"start_training_session","accepted":True,"status":"training_started","result":"training_started","session_id":sid,"session_context":dict(self._training_context),"source":"live_control"}
@@ -540,6 +549,61 @@ class GuiLiveControlSource:
             })
         return windows
 
+
+    def _process_window_decision(self, window: dict[str, Any], allow_apply: bool = True) -> dict[str, Any]:
+        now_ms = int(window.get("window_end_ms") or int(time.time()*1000))
+        st = self._dda_state or {}
+        mode = "manual" if self._difficulty_mode == "manual" else "auto"
+        requested = str(window.get("recommended_difficulty_action") or "hold")
+        current_level = int(st.get("current_level") or 1)
+        cooldown = int(st.get("cooldown_ms") or 10000)
+        last_ms = int(st.get("last_decision_ms") or 0)
+        cooldown_remaining = max(0, cooldown - max(0, now_ms - last_ms))
+        applied_action = "hold"
+        applied = False
+        reason = "hold"
+        if mode == "manual":
+            reason = "manual_mode_no_apply"
+        elif requested in {"blocked_by_low_sqi", "conflict_hold", "insufficient_samples"} or window.get("signal_gate_status") == "blocked":
+            applied_action = "blocked"
+            reason = "signal_quality_gate_blocked" if window.get("signal_gate_status") == "blocked" else requested
+            st["low_sqi_block_count"] = int(st.get("low_sqi_block_count", 0)) + (1 if window.get("signal_gate_status") == "blocked" else 0)
+            st["conflict_hold_count"] = int(st.get("conflict_hold_count", 0)) + (1 if requested == "conflict_hold" else 0)
+        else:
+            if requested == "suggest_level_up":
+                st["pending_up_count"] = int(st.get("pending_up_count", 0)) + 1
+                st["pending_down_count"] = 0
+            elif requested == "suggest_level_down":
+                st["pending_down_count"] = int(st.get("pending_down_count", 0)) + 1
+                st["pending_up_count"] = 0
+            else:
+                st["pending_up_count"] = 0; st["pending_down_count"] = 0
+            if cooldown_remaining > 0:
+                applied_action = "blocked"; reason = "blocked_by_cooldown"; st["cooldown_block_count"] = int(st.get("cooldown_block_count", 0)) + 1
+            elif requested == "suggest_level_up" and int(st.get("pending_up_count", 0)) >= 2 and current_level < int(st.get("max_level", 5)) and allow_apply:
+                res = self._client.apply_training_control({"action": "level_up", "reason": "two_consecutive_suggest_level_up", "window_index": window.get("window_index"), "fi_window_avg": window.get("fi_avg"), "sqi_window_avg": window.get("sqi_avg"), "perf_window": window.get("perf_window")}) if hasattr(self._client, "apply_training_control") else {"applied": False, "from_level": current_level, "to_level": current_level, "reason": "client_missing"}
+                applied = bool(res.get("applied")); applied_action = "level_up" if applied else "hold"; reason = str(res.get("reason")); st["current_level"] = int(res.get("to_level", current_level)); st["last_decision_ms"] = now_ms if applied else last_ms
+            elif requested == "suggest_level_down" and int(st.get("pending_down_count", 0)) >= 2 and current_level > int(st.get("min_level", 1)) and allow_apply:
+                res = self._client.apply_training_control({"action": "level_down", "reason": "two_consecutive_suggest_level_down", "window_index": window.get("window_index"), "fi_window_avg": window.get("fi_avg"), "sqi_window_avg": window.get("sqi_avg"), "perf_window": window.get("perf_window")}) if hasattr(self._client, "apply_training_control") else {"applied": False, "from_level": current_level, "to_level": current_level, "reason": "client_missing"}
+                applied = bool(res.get("applied")); applied_action = "level_down" if applied else "hold"; reason = str(res.get("reason")); st["current_level"] = int(res.get("to_level", current_level)); st["last_decision_ms"] = now_ms if applied else last_ms
+            else:
+                reason = "need_consecutive_windows_or_level_limit"
+        decision = {"window_index": window.get("window_index"), "decision_time_ms": now_ms, "mode": mode, "current_level": current_level, "requested_action": requested, "applied_action": applied_action, "from_level": current_level, "to_level": int(st.get("current_level", current_level)), "applied": applied, "reason": reason, "cooldown_remaining_ms": cooldown_remaining, "consecutive_up_count": int(st.get("pending_up_count", 0)), "consecutive_down_count": int(st.get("pending_down_count", 0)), "fi_window_avg": window.get("fi_avg"), "sqi_window_avg": window.get("sqi_avg"), "perf_window": window.get("perf_window"), "accuracy_window": window.get("accuracy_window"), "omission_window": window.get("omission_window"), "false_action_window": window.get("false_action_window"), "rt_stability_window": window.get("rt_stability_window"), "signal_gate_status": window.get("signal_gate_status"), "behavior_window_source": window.get("behavior_window_source"), "decision_confidence": window.get("decision_confidence")}
+        self._difficulty_decisions.append(decision)
+        self._dda_state = st
+        return decision
+
+    def _process_new_training_windows(self, final_behavior_sample: dict[str, Any] | None = None, flush_incomplete: bool = False) -> None:
+        windows = self._build_training_windows(self._training_runtime, self._training_samples, final_behavior_sample)
+        existing = len(self._training_windows)
+        step_ms = max(1, int(self.poll_interval_sec * 1000))
+        full_samples = max(1, int(self._training_window_ms / step_ms))
+        for w in windows[existing:]:
+            is_full = int(w.get("sample_count", 0)) >= full_samples
+            allow_apply = is_full or (flush_incomplete and int(w.get("sample_count", 0)) >= int(full_samples * 0.6))
+            self._training_windows.append(w)
+            self._process_window_decision(w, allow_apply=allow_apply)
+
     def end_training_session(self) -> dict[str, Any]:
         if not self.interaction_enabled or not self.training_session_id or self.session_type != "training":
             return {"command":"end_training_session","accepted":True,"status":"training_stopped","result":"noop","message":"no_active_training_session","source":"live_control"}
@@ -570,7 +634,8 @@ class GuiLiveControlSource:
         session_game_event_count = max(0, self.game_event_count - self._session_start_game_event_count)
         behavior_sample_count = max(len(self._training_samples), 1 if sample else 0)
         log_path = f"logs/sessions/{self.training_session_id}.jsonl"
-        training_windows = self._build_training_windows(self._training_runtime, self._training_samples, sample)
+        self._process_new_training_windows(final_behavior_sample=sample, flush_incomplete=True)
+        training_windows = list(self._training_windows)
         self._write_training_log(log_path, sample, view, total_duration_ms, training_windows)
         score_update_count = sum(1 for evt in self._training_events if ((evt.get("payload") or {}).get("event_type") == "score_update" or evt.get("event_type") == "score_update") )
         target_spawn_count = sum(1 for evt in self._training_events if ((evt.get("payload") or {}).get("event_type") == "target_spawn" or evt.get("event_type") == "target_spawn") )
@@ -665,6 +730,19 @@ class GuiLiveControlSource:
             "session_final_behavior_window_count": sum(1 for w in training_windows if w.get("behavior_window_source") == "session_final_summary"),
             "window_snapshot_behavior_window_count": sum(1 for w in training_windows if str(w.get("behavior_window_source", "")).startswith("window_snapshot")),
             "insufficient_behavior_window_count": sum(1 for w in training_windows if w.get("recommended_difficulty_action") == "insufficient_samples"),
+            "dda_enabled": True, "dda_mode": ("manual" if self._difficulty_mode == "manual" else "auto"),
+            "difficulty_decision_count": len(self._difficulty_decisions),
+            "difficulty_changed_count": sum(1 for d in self._difficulty_decisions if d.get("applied")),
+            "dda_applied_count": sum(1 for d in self._difficulty_decisions if d.get("applied")),
+            "dda_level_up_count": sum(1 for d in self._difficulty_decisions if d.get("applied_action") == "level_up"),
+            "dda_level_down_count": sum(1 for d in self._difficulty_decisions if d.get("applied_action") == "level_down"),
+            "dda_blocked_count": sum(1 for d in self._difficulty_decisions if d.get("applied_action") == "blocked"),
+            "dda_hold_count": sum(1 for d in self._difficulty_decisions if d.get("applied_action") == "hold"),
+            "dda_final_level": int((self._dda_state or {}).get("current_level", self._debug_difficulty_level if self._debug_difficulty_level is not None else view.level)),
+            "dda_decision_summary": self._summarize_field("applied_action", self._difficulty_decisions),
+            "dda_cooldown_block_count": int((self._dda_state or {}).get("cooldown_block_count", 0)),
+            "dda_conflict_hold_count": int((self._dda_state or {}).get("conflict_hold_count", 0)),
+            "dda_low_sqi_block_count": int((self._dda_state or {}).get("low_sqi_block_count", 0)),
         }
         report_path = write_session_report(summary, {"event_count": session_game_event_count, "behavior_sample_count": behavior_sample_count}, out_dir="reports/sessions")
         summary["report_path"]=report_path
@@ -711,6 +789,10 @@ class GuiLiveControlSource:
             payload = dict(behavior_sample)
             payload.setdefault("sample_index", idx)
             records.append(rec("behavior_sample_snapshot", payload))
+        for idx, decision in enumerate(self._difficulty_decisions):
+            payload = dict(decision)
+            payload.setdefault("sample_index", idx)
+            records.append(rec("difficulty_decision", payload))
         for idx, evt in enumerate(self._training_events):
             payload = dict(evt)
             payload.setdefault("sample_index", idx)
