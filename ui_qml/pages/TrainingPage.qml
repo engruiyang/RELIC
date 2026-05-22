@@ -408,8 +408,12 @@ Item {
     }
 
     function applyTraceLockDifficulty() {
-        selectedDifficultyMode = "manual"
-        dispatchDifficulty("manual", selectedDifficultyLevel, "Apply Difficulty manual level " + selectedDifficultyLevel)
+        var mode = selectedDifficultyMode === "auto" ? "auto" : "manual"
+        var level = mode === "manual" ? selectedDifficultyLevel : null
+        var label = mode === "auto"
+                ? "Apply Difficulty auto"
+                : "Apply Difficulty manual level " + selectedDifficultyLevel
+        dispatchDifficulty(mode, level, label)
     }
 
     function resetTraceLockAutoDifficulty() {
