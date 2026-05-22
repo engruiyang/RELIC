@@ -151,6 +151,25 @@ class GuiLiveControlSource:
         fi = self._clip(100.0 * (0.55 * s_eeg + 0.15 * s_imu + 0.30 * s_b))
         return {"fi": fi, "fi_source": fi_source, "fi_unavailable_reason": "" if placeholder_zero else "fi_missing_or_placeholder", "fi_valid": True, "fi_provisional": True}
 
+    def _derive_fi_from_runtime(
+        self,
+        runtime: dict[str, Any],
+        behavior_sample: dict[str, Any] | None = None,
+        calibration_profile: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Compatibility wrapper for the TASK26 training-pipeline contract.
+
+        TASK26-D2 moved the actual FI validity/placeholder-zero/provisional
+        estimation logic into _resolve_runtime_fi(...).  Older contract checks
+        and any older callers still look for _derive_fi_from_runtime, so keep
+        this thin alias instead of duplicating the FI algorithm.
+        """
+        return self._resolve_runtime_fi(
+            runtime,
+            behavior_sample=behavior_sample,
+            calibration_profile=calibration_profile,
+        )
+
     def _derive_sqi_from_runtime(self, runtime: dict[str, Any]) -> tuple[float | None, str, str]:
         for key in ("sqi", "signal_quality_index", "quality_score"):
             val = self._as_float_or_none(runtime.get(key))
