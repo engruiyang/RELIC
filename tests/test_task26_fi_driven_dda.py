@@ -32,9 +32,13 @@ def test_auto_two_consecutive_up_and_cooldown():
     d1 = s._process_window_decision(_win(0, 'suggest_level_up'))
     d2 = s._process_window_decision(_win(1, 'suggest_level_up'))
     assert d1['applied'] is False
-    assert d2['applied_action'] in {'level_up', 'hold', 'blocked'}
+    assert d2['applied'] is True
+    assert d2['applied_action'] == 'level_up'
+    assert d2['to_level'] == d2['from_level'] + 1 or d2['to_level'] == 2
+    assert d2['reason'] == 'consecutive_level_up'
     d3 = s._process_window_decision(_win(2, 'suggest_level_up'))
-    assert d3['applied_action'] in {'level_up', 'hold', 'blocked'}
+    assert d3['applied'] is False
+    assert d3['reason'] in {'cooldown_active', 'waiting_for_consecutive_windows', 'level_limit_reached', 'hold'}
 
 
 def test_down_block_conflict_insufficient_and_clamp():

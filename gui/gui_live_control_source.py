@@ -457,7 +457,8 @@ class GuiLiveControlSource:
             window_start_ms = int(rows[0].get("now_ms", 0))
             window_end_ms = int(rows[-1].get("now_ms", 0))
             behavior_rows = behavior_rows or []
-            in_window = [b for b in behavior_rows if isinstance(b, dict) and b.get("now_ms") is not None and window_start_ms <= int(b.get("now_ms")) <= window_end_ms]
+            grace_ms = 500
+            in_window = [b for b in behavior_rows if isinstance(b, dict) and b.get("now_ms") is not None and window_start_ms <= int(b.get("now_ms")) <= (window_end_ms + grace_ms)]
             prev_rows = [b for b in behavior_rows if isinstance(b, dict) and b.get("now_ms") is not None and int(b.get("now_ms")) < window_start_ms]
             chosen_behavior: dict[str, Any] | None = None
             behavior_source = "unavailable"
@@ -558,7 +559,7 @@ class GuiLiveControlSource:
         current_level = int(st.get("current_level") or 1)
         cooldown = int(st.get("cooldown_ms") or 10000)
         last_ms = int(st.get("last_decision_ms") or 0)
-        cooldown_remaining = max(0, cooldown - max(0, now_ms - last_ms))
+        cooldown_remaining = 0 if last_ms <= 0 else max(0, cooldown - max(0, now_ms - last_ms))
         applied_action = "hold"
         applied = False
         reason = "hold"
@@ -579,15 +580,20 @@ class GuiLiveControlSource:
             else:
                 st["pending_up_count"] = 0; st["pending_down_count"] = 0
             if cooldown_remaining > 0:
-                applied_action = "blocked"; reason = "blocked_by_cooldown"; st["cooldown_block_count"] = int(st.get("cooldown_block_count", 0)) + 1
+                applied_action = "blocked"; reason = "cooldown_active"; st["cooldown_block_count"] = int(st.get("cooldown_block_count", 0)) + 1
             elif requested == "suggest_level_up" and int(st.get("pending_up_count", 0)) >= 2 and current_level < int(st.get("max_level", 5)) and allow_apply:
-                res = self._client.apply_training_control({"action": "level_up", "reason": "two_consecutive_suggest_level_up", "window_index": window.get("window_index"), "fi_window_avg": window.get("fi_avg"), "sqi_window_avg": window.get("sqi_avg"), "perf_window": window.get("perf_window")}) if hasattr(self._client, "apply_training_control") else {"applied": False, "from_level": current_level, "to_level": current_level, "reason": "client_missing"}
+                res = self._client.apply_training_control({"action": "level_up", "reason": "consecutive_level_up", "window_index": window.get("window_index"), "fi_window_avg": window.get("fi_avg"), "sqi_window_avg": window.get("sqi_avg"), "perf_window": window.get("perf_window")}) if hasattr(self._client, "apply_training_control") else {"applied": False, "from_level": current_level, "to_level": current_level, "reason": "client_missing"}
                 applied = bool(res.get("applied")); applied_action = "level_up" if applied else "hold"; reason = str(res.get("reason")); st["current_level"] = int(res.get("to_level", current_level)); st["last_decision_ms"] = now_ms if applied else last_ms
             elif requested == "suggest_level_down" and int(st.get("pending_down_count", 0)) >= 2 and current_level > int(st.get("min_level", 1)) and allow_apply:
-                res = self._client.apply_training_control({"action": "level_down", "reason": "two_consecutive_suggest_level_down", "window_index": window.get("window_index"), "fi_window_avg": window.get("fi_avg"), "sqi_window_avg": window.get("sqi_avg"), "perf_window": window.get("perf_window")}) if hasattr(self._client, "apply_training_control") else {"applied": False, "from_level": current_level, "to_level": current_level, "reason": "client_missing"}
+                res = self._client.apply_training_control({"action": "level_down", "reason": "consecutive_level_down", "window_index": window.get("window_index"), "fi_window_avg": window.get("fi_avg"), "sqi_window_avg": window.get("sqi_avg"), "perf_window": window.get("perf_window")}) if hasattr(self._client, "apply_training_control") else {"applied": False, "from_level": current_level, "to_level": current_level, "reason": "client_missing"}
                 applied = bool(res.get("applied")); applied_action = "level_down" if applied else "hold"; reason = str(res.get("reason")); st["current_level"] = int(res.get("to_level", current_level)); st["last_decision_ms"] = now_ms if applied else last_ms
             else:
-                reason = "need_consecutive_windows_or_level_limit"
+                if requested in {"suggest_level_up", "suggest_level_down"} and ((requested == "suggest_level_up" and int(st.get("pending_up_count", 0)) < 2) or (requested == "suggest_level_down" and int(st.get("pending_down_count", 0)) < 2)):
+                    reason = "waiting_for_consecutive_windows"
+                elif (requested == "suggest_level_up" and current_level >= int(st.get("max_level", 5))) or (requested == "suggest_level_down" and current_level <= int(st.get("min_level", 1))):
+                    reason = "level_limit_reached"
+                else:
+                    reason = "hold"
         decision = {"window_index": window.get("window_index"), "decision_time_ms": now_ms, "mode": mode, "current_level": current_level, "requested_action": requested, "applied_action": applied_action, "from_level": current_level, "to_level": int(st.get("current_level", current_level)), "applied": applied, "reason": reason, "cooldown_remaining_ms": cooldown_remaining, "consecutive_up_count": int(st.get("pending_up_count", 0)), "consecutive_down_count": int(st.get("pending_down_count", 0)), "fi_window_avg": window.get("fi_avg"), "sqi_window_avg": window.get("sqi_avg"), "perf_window": window.get("perf_window"), "accuracy_window": window.get("accuracy_window"), "omission_window": window.get("omission_window"), "false_action_window": window.get("false_action_window"), "rt_stability_window": window.get("rt_stability_window"), "signal_gate_status": window.get("signal_gate_status"), "behavior_window_source": window.get("behavior_window_source"), "decision_confidence": window.get("decision_confidence")}
         self._difficulty_decisions.append(decision)
         self._dda_state = st
