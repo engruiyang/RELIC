@@ -57,6 +57,7 @@ class GuiLiveControlSource:
         self._session_start_game_event_count = 0
         self._training_duration_ms = 180000
         self._live_debug_duration_ms = 60000
+        self._training_window_ms = 5000
 
     def start(self) -> None:
         self._live_source.start()
@@ -162,25 +163,6 @@ class GuiLiveControlSource:
 
         fi = self._clip(100.0 * (0.55 * s_eeg + 0.15 * s_imu + 0.30 * s_b))
         return {"fi": fi, "fi_source": fi_source, "fi_unavailable_reason": "" if placeholder_zero_detected else "fi_missing_or_placeholder", "fi_valid": True, "fi_provisional": True, "fi_placeholder_zero_detected": placeholder_zero_detected, "fi_placeholder_zero_source": placeholder_zero_source}
-
-    def _derive_fi_from_runtime(
-        self,
-        runtime: dict[str, Any],
-        behavior_sample: dict[str, Any] | None = None,
-        calibration_profile: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
-        """Compatibility entry point for TASK26 FI derivation.
-
-        The current implementation keeps the real FI validity, placeholder-zero
-        detection, and provisional FI estimation in _resolve_runtime_fi(...).
-        This wrapper preserves the older contract name expected by
-        tests/test_task26_tracelock_pipeline_contract.py and any older callers.
-        """
-        return self._resolve_runtime_fi(
-            runtime,
-            behavior_sample=behavior_sample,
-            calibration_profile=calibration_profile,
-        )
 
     def _derive_sqi_from_runtime(self, runtime: dict[str, Any]) -> tuple[float | None, str, str]:
         for key in ("sqi", "signal_quality_index", "quality_score"):
@@ -422,6 +404,83 @@ class GuiLiveControlSource:
             return "unknown"
         return ",".join(f"{k}:{v}" for k, v in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0])))
 
+    def _build_training_windows(self, runtime_rows: list[dict[str, Any]], behavior_sample: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+        if not runtime_rows:
+            return []
+        step_ms = max(1, int(self.poll_interval_sec * 1000))
+        size = max(1, int(self._training_window_ms / step_ms))
+        windows: list[dict[str, Any]] = []
+        for idx, start in enumerate(range(0, len(runtime_rows), size)):
+            rows = runtime_rows[start:start + size]
+            fi_valid = [float(r["fi"]) for r in rows if r.get("fi_valid") and r.get("fi") is not None]
+            sqi_valid = [float(r["sqi"]) for r in rows if r.get("sqi_valid") and r.get("sqi") is not None]
+            fi_sources = self._summarize_field("fi_source", rows)
+            control_summary = self._summarize_field("control_state", rows)
+            quality_summary = self._summarize_field("quality_state", rows)
+            quality_counts: dict[str, int] = {}
+            for r in rows:
+                q = str(r.get("quality_state") or "unknown").lower()
+                quality_counts[q] = quality_counts.get(q, 0) + 1
+            low_sqi_count = sum(1 for r in rows if r.get("sqi") is not None and float(r["sqi"]) < 0.5)
+            sqi_valid_ratio = (len(sqi_valid) / len(rows)) if rows else 0.0
+            sqi_avg = (sum(sqi_valid) / len(sqi_valid)) if sqi_valid else None
+            blocked = (sqi_avg is None or sqi_avg < 0.50 or sqi_valid_ratio < 0.60 or (quality_counts.get("error", 0) + quality_counts.get("unreliable", 0)) > (len(rows) / 2.0))
+            signal_gate_status = "blocked" if blocked else "open"
+            behavior_ok = behavior_sample is not None and all(behavior_sample.get(k) is not None for k in ("accuracy", "omission", "false_action", "rt_stability"))
+            accuracy = float(behavior_sample["accuracy"]) if behavior_ok else None
+            omission = float(behavior_sample["omission"]) if behavior_ok else None
+            false_action = float(behavior_sample["false_action"]) if behavior_ok else None
+            rt_stability = float(behavior_sample["rt_stability"]) if behavior_ok else None
+            perf = (0.40 * accuracy + 0.25 * rt_stability + 0.20 * (1.0 - omission) + 0.15 * (1.0 - false_action)) if behavior_ok else None
+            fi_avg = (sum(fi_valid) / len(fi_valid)) if fi_valid else None
+            stable_count = sum(1 for r in rows if r.get("control_state") == "STABLE_FOCUS")
+            high_count = sum(1 for r in rows if r.get("control_state") == "HIGH_FOCUS")
+            distracted_count = sum(1 for r in rows if r.get("control_state") == "DISTRACTED")
+            fatigued_count = sum(1 for r in rows if r.get("control_state") == "FATIGUED")
+            stable_ms = (stable_count + high_count) * step_ms
+            if not behavior_ok:
+                action, reason = "insufficient_samples", "insufficient_behavior_samples"
+            elif blocked:
+                action, reason = "blocked_by_low_sqi", "signal_quality_gate_blocked"
+            elif fi_avg is not None and perf is not None and ((fi_avg >= 65 and perf < 0.60) or (fi_avg < 45 and perf >= 0.72)):
+                action, reason = "conflict_hold", "fi_perf_conflict"
+            elif fi_avg is not None and perf is not None and sqi_avg is not None and sqi_avg >= 0.70 and fi_avg >= 65 and (stable_count + high_count) > (len(rows) / 2.0) and perf >= 0.72:
+                action, reason = "suggest_level_up", "high_fi_high_perf"
+            elif fi_avg is not None and perf is not None and sqi_avg is not None and sqi_avg >= 0.50 and ((fi_avg < 40 and perf < 0.60) or perf < 0.45 or (omission is not None and omission > 0.45) or (false_action is not None and false_action > 0.35) or (rt_stability is not None and rt_stability < 0.45)):
+                action, reason = "suggest_level_down", "low_fi_or_poor_perf"
+            else:
+                action, reason = "hold", "within_stable_band"
+            if signal_gate_status == "blocked":
+                feedback = "signal_check"
+            elif fi_avg is not None and perf is not None and fi_avg >= 65 and perf >= 0.72:
+                feedback = "reward"
+            elif fi_avg is not None and perf is not None and ((fi_avg < 40 and perf < 0.55) or fatigued_count > len(rows) / 2.0):
+                feedback = "protect"
+            elif fi_avg is not None and perf is not None and (fi_avg < 55 or perf < 0.60):
+                feedback = "assist"
+            else:
+                feedback = "maintain"
+            windows.append({
+                "window_index": idx, "window_start_ms": int(rows[0].get("now_ms", 0)), "window_end_ms": int(rows[-1].get("now_ms", 0)),
+                "duration_ms": max(0, int(rows[-1].get("now_ms", 0)) - int(rows[0].get("now_ms", 0))), "sample_count": len(rows),
+                "fi_avg": fi_avg, "fi_min": min(fi_valid) if fi_valid else None, "fi_max": max(fi_valid) if fi_valid else None, "fi_last": fi_valid[-1] if fi_valid else None,
+                "fi_trend": ((fi_valid[-1] - fi_valid[0]) if len(fi_valid) >= 2 else 0.0) if fi_valid else None, "fi_valid_ratio": (len(fi_valid) / len(rows)) if rows else 0.0,
+                "fi_provisional_ratio": (sum(1 for r in rows if r.get("fi_valid") and r.get("fi_provisional")) / len(fi_valid)) if fi_valid else 0.0,
+                "fi_source_summary": fi_sources, "control_state_summary": control_summary, "stable_focus_sample_count": stable_count, "high_focus_sample_count": high_count,
+                "distracted_sample_count": distracted_count, "fatigued_sample_count": fatigued_count, "sqi_avg": sqi_avg, "sqi_min": min(sqi_valid) if sqi_valid else None,
+                "sqi_valid_ratio": sqi_valid_ratio, "low_sqi_sample_count": low_sqi_count, "quality_state_summary": quality_summary, "signal_gate_status": signal_gate_status,
+                "accuracy_window": accuracy, "omission_window": omission, "false_action_window": false_action, "rt_stability_window": rt_stability,
+                "target_count_window": behavior_sample.get("target_count") if behavior_sample else None, "correct_count_window": behavior_sample.get("correct_count") if behavior_sample else None,
+                "omission_count_window": behavior_sample.get("omission_count") if behavior_sample else None, "false_action_count_window": behavior_sample.get("false_action_count") if behavior_sample else None,
+                "perf_window": perf, "stable_focus_duration_ms": stable_ms, "recommended_difficulty_action": action, "recommended_feedback_mode": feedback,
+                "decision_reason": reason, "decision_confidence": (0.9 if action in {"suggest_level_up", "suggest_level_down", "blocked_by_low_sqi"} else 0.7),
+                "neural_state_evidence": {"fi_avg": fi_avg, "fi_source_summary": fi_sources, "control_state_summary": control_summary},
+                "signal_quality_evidence": {"sqi_avg": sqi_avg, "sqi_valid_ratio": sqi_valid_ratio, "signal_gate_status": signal_gate_status},
+                "behavior_evidence": {"perf_window": perf, "accuracy_window": accuracy, "omission_window": omission, "false_action_window": false_action, "rt_stability_window": rt_stability},
+                "adaptation_evidence": {"recommended_difficulty_action": action, "recommended_feedback_mode": feedback, "decision_reason": reason},
+            })
+        return windows
+
     def end_training_session(self) -> dict[str, Any]:
         if not self.interaction_enabled or not self.training_session_id or self.session_type != "training":
             return {"command":"end_training_session","accepted":True,"status":"training_stopped","result":"noop","message":"no_active_training_session","source":"live_control"}
@@ -452,7 +511,8 @@ class GuiLiveControlSource:
         session_game_event_count = max(0, self.game_event_count - self._session_start_game_event_count)
         behavior_sample_count = max(len(self._training_samples), 1 if sample else 0)
         log_path = f"logs/sessions/{self.training_session_id}.jsonl"
-        self._write_training_log(log_path, sample, view, total_duration_ms)
+        training_windows = self._build_training_windows(self._training_runtime, sample)
+        self._write_training_log(log_path, sample, view, total_duration_ms, training_windows)
         score_update_count = sum(1 for evt in self._training_events if ((evt.get("payload") or {}).get("event_type") == "score_update" or evt.get("event_type") == "score_update") )
         target_spawn_count = sum(1 for evt in self._training_events if ((evt.get("payload") or {}).get("event_type") == "target_spawn" or evt.get("event_type") == "target_spawn") )
         target_click_count = sum(1 for evt in self._training_events if ((evt.get("payload") or {}).get("event_type") == "target_click" or evt.get("event_type") == "target_click") )
@@ -527,6 +587,20 @@ class GuiLiveControlSource:
             "quality_state_summary": self._summarize_field("quality_state", self._training_runtime),
             "warning_count":sum(len(x.get("warning_flags",[])) for x in self._training_runtime),
             "error_count":sum(len(x.get("error_flags",[])) for x in self._training_runtime),
+            "training_window_count": len(training_windows),
+            "fi_window_avg": (sum(w["fi_avg"] for w in training_windows if w.get("fi_avg") is not None) / len([w for w in training_windows if w.get("fi_avg") is not None]) if any(w.get("fi_avg") is not None for w in training_windows) else None),
+            "fi_window_min": (min(w["fi_min"] for w in training_windows if w.get("fi_min") is not None) if any(w.get("fi_min") is not None for w in training_windows) else None),
+            "fi_window_max": (max(w["fi_max"] for w in training_windows if w.get("fi_max") is not None) if any(w.get("fi_max") is not None for w in training_windows) else None),
+            "perf_window_avg": (sum(w["perf_window"] for w in training_windows if w.get("perf_window") is not None) / len([w for w in training_windows if w.get("perf_window") is not None]) if any(w.get("perf_window") is not None for w in training_windows) else None),
+            "sqi_window_avg": (sum(w["sqi_avg"] for w in training_windows if w.get("sqi_avg") is not None) / len([w for w in training_windows if w.get("sqi_avg") is not None]) if any(w.get("sqi_avg") is not None for w in training_windows) else None),
+            "low_sqi_window_count": sum(1 for w in training_windows if w.get("signal_gate_status") == "blocked"),
+            "stable_focus_window_count": sum(1 for w in training_windows if (w.get("stable_focus_sample_count", 0) + w.get("high_focus_sample_count", 0)) > (w.get("sample_count", 0) / 2.0)),
+            "high_focus_window_count": sum(1 for w in training_windows if w.get("high_focus_sample_count", 0) > (w.get("sample_count", 0) / 2.0)),
+            "stable_focus_total_ms": sum(int(w.get("stable_focus_duration_ms") or 0) for w in training_windows),
+            "difficulty_suggestion_summary": self._summarize_field("recommended_difficulty_action", training_windows),
+            "feedback_mode_summary": self._summarize_field("recommended_feedback_mode", training_windows),
+            "conflict_hold_count": sum(1 for w in training_windows if w.get("recommended_difficulty_action") == "conflict_hold"),
+            "signal_check_count": sum(1 for w in training_windows if w.get("recommended_feedback_mode") == "signal_check"),
         }
         report_path = write_session_report(summary, {"event_count": session_game_event_count, "behavior_sample_count": behavior_sample_count}, out_dir="reports/sessions")
         summary["report_path"]=report_path
@@ -540,7 +614,7 @@ class GuiLiveControlSource:
         return {"command":"end_training_session","accepted":True,"status":"training_completed","result":"training_completed","report_path":report_path,"session_id":self.training_session_id,"source":"live_control"}
 
 
-    def _write_training_log(self, log_path: str, sample: dict[str, Any], view: Any, total_duration_ms: int) -> None:
+    def _write_training_log(self, log_path: str, sample: dict[str, Any], view: Any, total_duration_ms: int, training_windows: list[dict[str, Any]] | None = None) -> None:
         path = Path(log_path)
         path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -565,6 +639,10 @@ class GuiLiveControlSource:
             payload = dict(runtime_sample)
             payload.setdefault("sample_index", idx)
             records.append(rec("runtime_sample", payload))
+        for idx, window in enumerate(training_windows or []):
+            payload = dict(window)
+            payload.setdefault("window_index", idx)
+            records.append(rec("training_window", payload))
         for idx, behavior_sample in enumerate(self._training_samples):
             payload = dict(behavior_sample)
             payload.setdefault("sample_index", idx)
