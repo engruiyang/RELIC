@@ -108,19 +108,31 @@ class GuiLiveControlSource:
         sqi = self._as_float_or_none(runtime.get("sqi"))
 
         candidate_order = ("fi_smoothed", "focus_index", "fi_raw", "fi")
-        placeholder_zero = False
+        placeholder_zero_detected = False
+        placeholder_zero_source = ""
+
         for key in candidate_order:
             val = self._as_float_or_none(runtime.get(key))
             if val is None:
                 continue
-            if val == 0.0 and key in {"fi", "fi_raw"}:
-                placeholder_zero = (attention is not None and (attention_fresh or (attention_age_ms is not None and attention_age_ms <= 1500)) and stream_alive and (quality_state in {"ok", "warning", "valid"} or (sqi is not None and sqi >= 0.5)) and not error_flags)
-                if placeholder_zero:
+            if val == 0.0:
+                looks_placeholder = (
+                    attention is not None
+                    and (attention_fresh or (attention_age_ms is not None and attention_age_ms <= 1500))
+                    and stream_alive
+                    and not error_flags
+                    and ((sqi is not None and sqi >= 0.5) or quality_state in {"ok", "warning", "valid"} or attention_fresh)
+                )
+                if looks_placeholder:
+                    placeholder_zero_detected = True
+                    placeholder_zero_source = key
                     continue
-            return {"fi": self._clip(val), "fi_source": key, "fi_unavailable_reason": "", "fi_valid": True, "fi_provisional": False}
+                if attention is None or not stream_alive or error_flags:
+                    continue
+            return {"fi": self._clip(val), "fi_source": key, "fi_unavailable_reason": "", "fi_valid": True, "fi_provisional": False, "fi_placeholder_zero_detected": placeholder_zero_detected, "fi_placeholder_zero_source": placeholder_zero_source}
 
-        if attention is None:
-            return {"fi": None, "fi_source": "unavailable", "fi_unavailable_reason": "attention_missing", "fi_valid": False, "fi_provisional": False}
+        if attention is None or not stream_alive or error_flags:
+            return {"fi": None, "fi_source": "unavailable", "fi_unavailable_reason": "attention_or_stream_invalid", "fi_valid": False, "fi_provisional": False, "fi_placeholder_zero_detected": placeholder_zero_detected, "fi_placeholder_zero_source": placeholder_zero_source}
 
         calib = calibration_profile if isinstance(calibration_profile, dict) else self._current_calibration_profile()
         baseline = self._as_float_or_none(calib.get("attention_baseline")) if isinstance(calib, dict) else None
@@ -149,26 +161,7 @@ class GuiLiveControlSource:
             s_b = 0.35 * max(0.0, min(1.0, acc)) + 0.20 * (1.0 - max(0.0, min(1.0, omission))) + 0.15 * (1.0 - max(0.0, min(1.0, false_action))) + 0.30 * max(0.0, min(1.0, rt_stability))
 
         fi = self._clip(100.0 * (0.55 * s_eeg + 0.15 * s_imu + 0.30 * s_b))
-        return {"fi": fi, "fi_source": fi_source, "fi_unavailable_reason": "" if placeholder_zero else "fi_missing_or_placeholder", "fi_valid": True, "fi_provisional": True}
-
-    def _derive_fi_from_runtime(
-        self,
-        runtime: dict[str, Any],
-        behavior_sample: dict[str, Any] | None = None,
-        calibration_profile: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
-        """Compatibility wrapper for the TASK26 training-pipeline contract.
-
-        TASK26-D2 moved the actual FI validity/placeholder-zero/provisional
-        estimation logic into _resolve_runtime_fi(...).  Older contract checks
-        and any older callers still look for _derive_fi_from_runtime, so keep
-        this thin alias instead of duplicating the FI algorithm.
-        """
-        return self._resolve_runtime_fi(
-            runtime,
-            behavior_sample=behavior_sample,
-            calibration_profile=calibration_profile,
-        )
+        return {"fi": fi, "fi_source": fi_source, "fi_unavailable_reason": "" if placeholder_zero_detected else "fi_missing_or_placeholder", "fi_valid": True, "fi_provisional": True, "fi_placeholder_zero_detected": placeholder_zero_detected, "fi_placeholder_zero_source": placeholder_zero_source}
 
     def _derive_sqi_from_runtime(self, runtime: dict[str, Any]) -> tuple[float | None, str, str]:
         for key in ("sqi", "signal_quality_index", "quality_score"):
@@ -196,11 +189,9 @@ class GuiLiveControlSource:
         return None, "unavailable", "no_attention_or_stream"
 
     def _normalize_training_runtime_sample(self, runtime: dict[str, Any]) -> dict[str, Any]:
-        fi_resolved = self._resolve_runtime_fi(runtime, behavior_sample=(self._training_samples[-1] if self._training_samples else None), calibration_profile=self._current_calibration_profile())
-        fi_value, fi_source, fi_reason = fi_resolved["fi"], fi_resolved["fi_source"], fi_resolved["fi_unavailable_reason"]
-        sqi_value, sqi_source, sqi_reason = self._derive_sqi_from_runtime(runtime)
         warning_flags = list(runtime.get("warning_flags") or [])
         error_flags = list(runtime.get("error_flags") or [])
+        sqi_value, sqi_source, sqi_reason = self._derive_sqi_from_runtime(runtime)
         quality_state = runtime.get("quality_state")
         if quality_state is None:
             if error_flags:
@@ -211,6 +202,11 @@ class GuiLiveControlSource:
                 quality_state = "ok"
             else:
                 quality_state = "unknown"
+        enriched_runtime = dict(runtime)
+        enriched_runtime.setdefault("sqi", sqi_value)
+        enriched_runtime.setdefault("quality_state", quality_state)
+        fi_resolved = self._resolve_runtime_fi(enriched_runtime, behavior_sample=(self._training_samples[-1] if self._training_samples else None), calibration_profile=self._current_calibration_profile())
+        fi_value, fi_source, fi_reason = fi_resolved["fi"], fi_resolved["fi_source"], fi_resolved["fi_unavailable_reason"]
         raw_control_state = runtime.get("control_state") or "UNKNOWN"
         control_state = self._derive_control_state_from_fi(fi_value) if fi_value is not None else raw_control_state
         return {
@@ -225,6 +221,12 @@ class GuiLiveControlSource:
             "sqi_unavailable_reason": sqi_reason,
             "sqi_valid": sqi_value is not None,
             "raw_control_state": raw_control_state,
+            "raw_fi": runtime.get("fi"),
+            "raw_fi_raw": runtime.get("fi_raw"),
+            "raw_fi_smoothed": runtime.get("fi_smoothed"),
+            "raw_focus_index": runtime.get("focus_index"),
+            "fi_placeholder_zero_detected": bool(fi_resolved.get("fi_placeholder_zero_detected")),
+            "fi_placeholder_zero_source": fi_resolved.get("fi_placeholder_zero_source", ""),
             "attention": runtime.get("attention", runtime.get("last_runtime_attention")),
             "attention_age_ms": runtime.get("attention_age_ms"),
             "attention_fresh": bool(runtime.get("attention_fresh", runtime.get("last_runtime_attention_fresh", runtime.get("attention") is not None))),
