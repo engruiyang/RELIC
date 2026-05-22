@@ -733,7 +733,19 @@ class GuiFacade:
         item.setdefault("report_path", item.get("latest_report_path", item.get("report_file", "")) or "")
         item.setdefault("log_path", item.get("session_log_path", item.get("log_path", "")) or "")
         item.setdefault("created_at", item.get("started_at", item.get("start_time", item.get("ended_at", "n/a"))) or "n/a")
-        item.setdefault("duration_sec", item.get("duration_sec", item.get("elapsed_sec", "n/a")) or "n/a")
+        duration_sec = item.get("duration_sec")
+        if duration_sec in (None, "", "n/a"):
+            total_ms = item.get("total_duration_ms")
+            valid_ms = item.get("valid_duration_ms")
+            base_ms = total_ms if total_ms not in (None, "") else valid_ms
+            if base_ms not in (None, ""):
+                try:
+                    duration_sec = round(float(base_ms) / 1000.0, 1)
+                except (TypeError, ValueError):
+                    duration_sec = "n/a"
+            else:
+                duration_sec = item.get("elapsed_sec", "n/a")
+        item.setdefault("duration_sec", duration_sec or "n/a")
         item.setdefault("behavior_sample_count", item.get("behavior_count", item.get("behavior_sample_count", 0)) or 0)
         item.setdefault("game_event_count", item.get("game_event_count", item.get("event_count", 0)) or 0)
         item.setdefault("warning_count", item.get("warning_count", 0) or 0)
@@ -755,7 +767,7 @@ class GuiFacade:
             "report_path": str(report_path or ""),
             "log_path": str(session.get("log_path") or ""),
             "created_at": str(session.get("started_at") or session.get("created_at") or "n/a"),
-            "duration_sec": session.get("duration_sec", session.get("session_elapsed_ms", "n/a")),
+            "duration_sec": session.get("duration_sec", round(float(session.get("total_duration_ms", session.get("valid_duration_ms", 0))) / 1000.0, 1) if session.get("total_duration_ms", session.get("valid_duration_ms")) not in (None, "") else session.get("session_elapsed_ms", "n/a")),
             "behavior_sample_count": session.get("behavior_sample_count", 0) or 0,
             "game_event_count": session.get("game_event_count", 0) or 0,
             "warning_count": session.get("warning_count", 0) or 0,
