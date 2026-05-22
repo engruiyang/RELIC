@@ -164,6 +164,18 @@ class GuiLiveControlSource:
         fi = self._clip(100.0 * (0.55 * s_eeg + 0.15 * s_imu + 0.30 * s_b))
         return {"fi": fi, "fi_source": fi_source, "fi_unavailable_reason": "" if placeholder_zero_detected else "fi_missing_or_placeholder", "fi_valid": True, "fi_provisional": True, "fi_placeholder_zero_detected": placeholder_zero_detected, "fi_placeholder_zero_source": placeholder_zero_source}
 
+    def _derive_fi_from_runtime(
+        self,
+        runtime: dict[str, Any],
+        behavior_sample: dict[str, Any] | None = None,
+        calibration_profile: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        return self._resolve_runtime_fi(
+            runtime,
+            behavior_sample=behavior_sample,
+            calibration_profile=calibration_profile,
+        )
+
     def _derive_sqi_from_runtime(self, runtime: dict[str, Any]) -> tuple[float | None, str, str]:
         for key in ("sqi", "signal_quality_index", "quality_score"):
             val = self._as_float_or_none(runtime.get(key))
@@ -404,7 +416,14 @@ class GuiLiveControlSource:
             return "unknown"
         return ",".join(f"{k}:{v}" for k, v in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0])))
 
-    def _build_training_windows(self, runtime_rows: list[dict[str, Any]], behavior_sample: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+    def _snapshot_behavior_sample(self, reason: str = "periodic_or_input") -> dict[str, Any]:
+        sample = self._client.collect_behavior_sample().to_dict()
+        sample["now_ms"] = int(time.time() * 1000)
+        sample["sample_index"] = len(self._training_samples)
+        sample["behavior_source"] = reason
+        return sample
+
+    def _build_training_windows(self, runtime_rows: list[dict[str, Any]], behavior_rows: list[dict[str, Any]] | None = None, final_behavior_sample: dict[str, Any] | None = None) -> list[dict[str, Any]]:
         if not runtime_rows:
             return []
         step_ms = max(1, int(self.poll_interval_sec * 1000))
@@ -426,11 +445,42 @@ class GuiLiveControlSource:
             sqi_avg = (sum(sqi_valid) / len(sqi_valid)) if sqi_valid else None
             blocked = (sqi_avg is None or sqi_avg < 0.50 or sqi_valid_ratio < 0.60 or (quality_counts.get("error", 0) + quality_counts.get("unreliable", 0)) > (len(rows) / 2.0))
             signal_gate_status = "blocked" if blocked else "open"
-            behavior_ok = behavior_sample is not None and all(behavior_sample.get(k) is not None for k in ("accuracy", "omission", "false_action", "rt_stability"))
-            accuracy = float(behavior_sample["accuracy"]) if behavior_ok else None
-            omission = float(behavior_sample["omission"]) if behavior_ok else None
-            false_action = float(behavior_sample["false_action"]) if behavior_ok else None
-            rt_stability = float(behavior_sample["rt_stability"]) if behavior_ok else None
+            window_start_ms = int(rows[0].get("now_ms", 0))
+            window_end_ms = int(rows[-1].get("now_ms", 0))
+            behavior_rows = behavior_rows or []
+            in_window = [b for b in behavior_rows if isinstance(b, dict) and b.get("now_ms") is not None and window_start_ms <= int(b.get("now_ms")) <= window_end_ms]
+            prev_rows = [b for b in behavior_rows if isinstance(b, dict) and b.get("now_ms") is not None and int(b.get("now_ms")) < window_start_ms]
+            chosen_behavior: dict[str, Any] | None = None
+            behavior_source = "unavailable"
+            if in_window:
+                chosen_behavior = in_window[-1]
+                behavior_source = "window_snapshot"
+            elif prev_rows:
+                chosen_behavior = prev_rows[-1]
+                behavior_source = "carried_forward"
+            elif final_behavior_sample:
+                chosen_behavior = dict(final_behavior_sample)
+                behavior_source = "session_final_summary"
+            behavior_ok = chosen_behavior is not None and all(chosen_behavior.get(k) is not None for k in ("accuracy", "omission", "false_action", "rt_stability"))
+            accuracy = float(chosen_behavior["accuracy"]) if behavior_ok else None
+            omission = float(chosen_behavior["omission"]) if behavior_ok else None
+            false_action = float(chosen_behavior["false_action"]) if behavior_ok else None
+            rt_stability = float(chosen_behavior["rt_stability"]) if behavior_ok else None
+            rt_stability_source = "snapshot_last" if rt_stability is not None else "unavailable"
+            delta_target = delta_correct = delta_omission = delta_false = None
+            if len(in_window) >= 2:
+                first = in_window[0]
+                last = in_window[-1]
+                try:
+                    delta_target = max(0, int(last.get("target_count", 0)) - int(first.get("target_count", 0)))
+                    delta_correct = max(0, int(last.get("correct_count", 0)) - int(first.get("correct_count", 0)))
+                    delta_omission = max(0, int(last.get("omission_count", 0)) - int(first.get("omission_count", 0)))
+                    delta_false = max(0, int(last.get("false_action_count", 0)) - int(first.get("false_action_count", 0)))
+                    accuracy = delta_correct / max(delta_target, 1)
+                    omission = delta_omission / max(delta_target, 1)
+                    false_action = delta_false / max(delta_correct + delta_false, 1)
+                except (TypeError, ValueError):
+                    behavior_source = "window_snapshot_cumulative_fallback"
             perf = (0.40 * accuracy + 0.25 * rt_stability + 0.20 * (1.0 - omission) + 0.15 * (1.0 - false_action)) if behavior_ok else None
             fi_avg = (sum(fi_valid) / len(fi_valid)) if fi_valid else None
             stable_count = sum(1 for r in rows if r.get("control_state") == "STABLE_FOCUS")
@@ -461,8 +511,8 @@ class GuiLiveControlSource:
             else:
                 feedback = "maintain"
             windows.append({
-                "window_index": idx, "window_start_ms": int(rows[0].get("now_ms", 0)), "window_end_ms": int(rows[-1].get("now_ms", 0)),
-                "duration_ms": max(0, int(rows[-1].get("now_ms", 0)) - int(rows[0].get("now_ms", 0))), "sample_count": len(rows),
+                "window_index": idx, "window_start_ms": window_start_ms, "window_end_ms": window_end_ms,
+                "duration_ms": max(0, window_end_ms - window_start_ms), "sample_count": len(rows),
                 "fi_avg": fi_avg, "fi_min": min(fi_valid) if fi_valid else None, "fi_max": max(fi_valid) if fi_valid else None, "fi_last": fi_valid[-1] if fi_valid else None,
                 "fi_trend": ((fi_valid[-1] - fi_valid[0]) if len(fi_valid) >= 2 else 0.0) if fi_valid else None, "fi_valid_ratio": (len(fi_valid) / len(rows)) if rows else 0.0,
                 "fi_provisional_ratio": (sum(1 for r in rows if r.get("fi_valid") and r.get("fi_provisional")) / len(fi_valid)) if fi_valid else 0.0,
@@ -470,10 +520,19 @@ class GuiLiveControlSource:
                 "distracted_sample_count": distracted_count, "fatigued_sample_count": fatigued_count, "sqi_avg": sqi_avg, "sqi_min": min(sqi_valid) if sqi_valid else None,
                 "sqi_valid_ratio": sqi_valid_ratio, "low_sqi_sample_count": low_sqi_count, "quality_state_summary": quality_summary, "signal_gate_status": signal_gate_status,
                 "accuracy_window": accuracy, "omission_window": omission, "false_action_window": false_action, "rt_stability_window": rt_stability,
-                "target_count_window": behavior_sample.get("target_count") if behavior_sample else None, "correct_count_window": behavior_sample.get("correct_count") if behavior_sample else None,
-                "omission_count_window": behavior_sample.get("omission_count") if behavior_sample else None, "false_action_count_window": behavior_sample.get("false_action_count") if behavior_sample else None,
+                "target_count_window": chosen_behavior.get("target_count") if chosen_behavior else None, "correct_count_window": chosen_behavior.get("correct_count") if chosen_behavior else None,
+                "omission_count_window": chosen_behavior.get("omission_count") if chosen_behavior else None, "false_action_count_window": chosen_behavior.get("false_action_count") if chosen_behavior else None,
                 "perf_window": perf, "stable_focus_duration_ms": stable_ms, "recommended_difficulty_action": action, "recommended_feedback_mode": feedback,
                 "decision_reason": reason, "decision_confidence": (0.9 if action in {"suggest_level_up", "suggest_level_down", "blocked_by_low_sqi"} else 0.7),
+                "behavior_window_source": behavior_source,
+                "behavior_window_sample_count": len(in_window),
+                "behavior_window_first_index": in_window[0].get("sample_index") if in_window else None,
+                "behavior_window_last_index": in_window[-1].get("sample_index") if in_window else None,
+                "behavior_window_delta_target_count": delta_target,
+                "behavior_window_delta_correct_count": delta_correct,
+                "behavior_window_delta_omission_count": delta_omission,
+                "behavior_window_delta_false_action_count": delta_false,
+                "rt_stability_source": rt_stability_source,
                 "neural_state_evidence": {"fi_avg": fi_avg, "fi_source_summary": fi_sources, "control_state_summary": control_summary},
                 "signal_quality_evidence": {"sqi_avg": sqi_avg, "sqi_valid_ratio": sqi_valid_ratio, "signal_gate_status": signal_gate_status},
                 "behavior_evidence": {"perf_window": perf, "accuracy_window": accuracy, "omission_window": omission, "false_action_window": false_action, "rt_stability_window": rt_stability},
@@ -511,7 +570,7 @@ class GuiLiveControlSource:
         session_game_event_count = max(0, self.game_event_count - self._session_start_game_event_count)
         behavior_sample_count = max(len(self._training_samples), 1 if sample else 0)
         log_path = f"logs/sessions/{self.training_session_id}.jsonl"
-        training_windows = self._build_training_windows(self._training_runtime, sample)
+        training_windows = self._build_training_windows(self._training_runtime, self._training_samples, sample)
         self._write_training_log(log_path, sample, view, total_duration_ms, training_windows)
         score_update_count = sum(1 for evt in self._training_events if ((evt.get("payload") or {}).get("event_type") == "score_update" or evt.get("event_type") == "score_update") )
         target_spawn_count = sum(1 for evt in self._training_events if ((evt.get("payload") or {}).get("event_type") == "target_spawn" or evt.get("event_type") == "target_spawn") )
@@ -601,6 +660,11 @@ class GuiLiveControlSource:
             "feedback_mode_summary": self._summarize_field("recommended_feedback_mode", training_windows),
             "conflict_hold_count": sum(1 for w in training_windows if w.get("recommended_difficulty_action") == "conflict_hold"),
             "signal_check_count": sum(1 for w in training_windows if w.get("recommended_feedback_mode") == "signal_check"),
+            "behavior_window_source_summary": self._summarize_field("behavior_window_source", training_windows),
+            "carried_forward_window_count": sum(1 for w in training_windows if w.get("behavior_window_source") == "carried_forward"),
+            "session_final_behavior_window_count": sum(1 for w in training_windows if w.get("behavior_window_source") == "session_final_summary"),
+            "window_snapshot_behavior_window_count": sum(1 for w in training_windows if str(w.get("behavior_window_source", "")).startswith("window_snapshot")),
+            "insufficient_behavior_window_count": sum(1 for w in training_windows if w.get("recommended_difficulty_action") == "insufficient_samples"),
         }
         report_path = write_session_report(summary, {"event_count": session_game_event_count, "behavior_sample_count": behavior_sample_count}, out_dir="reports/sessions")
         summary["report_path"]=report_path
@@ -724,7 +788,7 @@ class GuiLiveControlSource:
             result = str(platform_res.get("platform_result") or result)
         self.last_game_view = asdict(self._client.build_game_view())
         if self.interaction_enabled and self.session_type == "training":
-            self._training_samples.append(self._client.collect_behavior_sample().to_dict())
+            self._training_samples.append(self._snapshot_behavior_sample("pointer_click"))
         return {"result": result, "status": "accepted", "reason": result, "source": "live_control", "game_input": ge.to_dict(), "last_game_event": dict(public_event or self.last_game_event), "game_event_count": self.game_event_count, "platform_message_count": self._platform_adapter.platform_message_count, "last_platform_message": dict(self._platform_adapter.last_platform_message), "last_platform_result": self._platform_adapter.last_platform_result}
 
     def get_runtime_snapshot(self) -> dict[str, Any]:
@@ -758,7 +822,7 @@ class GuiLiveControlSource:
         self._client.set_debug_difficulty(self._debug_difficulty_level)
         self.last_game_view = asdict(self._client.build_game_view())
         if self.interaction_enabled and self.session_type == "training":
-            self._training_samples.append(self._client.collect_behavior_sample().to_dict())
+            self._training_samples.append(self._snapshot_behavior_sample("set_debug_difficulty"))
         hud = dict(self.last_game_view.get("hud") or {})
         print(
             f"[GAME DIFFICULTY] mode={self._difficulty_mode} debug_difficulty={self._debug_difficulty_level if self._debug_difficulty_level is not None else 'auto'} effective_level={hud.get('effective_level', hud.get('level'))} running={self.interaction_enabled}",
