@@ -595,15 +595,15 @@ class GuiLiveControlSource:
                 applied = bool(res.get("applied")); applied_action = "level_up" if applied else "hold"; reason = str(res.get("reason")); st["current_level"] = int(res.get("to_level", current_level)); st["last_decision_ms"] = now_ms if applied else last_ms
                 if applied:
                     self._drain_game_events()
-                    self.last_game_view = asdict(self._client.build_game_view())
             elif requested == "suggest_level_down" and int(st.get("pending_down_count", 0)) >= 2 and current_level > int(st.get("min_level", 1)) and allow_apply:
                 res = self._client.apply_training_control({"action": "level_down", "reason": "consecutive_level_down", "window_index": window.get("window_index"), "fi_window_avg": window.get("fi_avg"), "sqi_window_avg": window.get("sqi_avg"), "perf_window": window.get("perf_window")}) if hasattr(self._client, "apply_training_control") else {"applied": False, "from_level": current_level, "to_level": current_level, "reason": "client_missing"}
                 applied = bool(res.get("applied")); applied_action = "level_down" if applied else "hold"; reason = str(res.get("reason")); st["current_level"] = int(res.get("to_level", current_level)); st["last_decision_ms"] = now_ms if applied else last_ms
                 if applied:
                     self._drain_game_events()
-                    self.last_game_view = asdict(self._client.build_game_view())
             else:
-                if requested in {"suggest_level_up", "suggest_level_down"} and ((requested == "suggest_level_up" and int(st.get("pending_up_count", 0)) < 2) or (requested == "suggest_level_down" and int(st.get("pending_down_count", 0)) < 2)):
+                if requested in {"suggest_level_up", "suggest_level_down"} and not allow_apply:
+                    reason = "incomplete_window_no_apply"
+                elif requested in {"suggest_level_up", "suggest_level_down"} and ((requested == "suggest_level_up" and int(st.get("pending_up_count", 0)) < 2) or (requested == "suggest_level_down" and int(st.get("pending_down_count", 0)) < 2)):
                     reason = "waiting_for_consecutive_windows"
                 elif (requested == "suggest_level_up" and current_level >= int(st.get("max_level", 5))) or (requested == "suggest_level_down" and current_level <= int(st.get("min_level", 1))):
                     reason = "level_limit_reached"
@@ -615,12 +615,14 @@ class GuiLiveControlSource:
         return decision
 
     def _process_new_training_windows(self, final_behavior_sample: dict[str, Any] | None = None, flush_incomplete: bool = False) -> None:
-        """Build/process only completed online windows.
+        """Build and process only completed training windows during live play.
 
-        _build_training_windows(...) always includes the current trailing partial
-        chunk.  Online DDA must not append that partial chunk every tick; doing
-        so creates duration_ms=0/sample_count=1 windows and shifts the processed
-        window index ahead of real five-second windows.
+        The previous online implementation appended the current partial window
+        on every tick. That produced sample_count=1/duration_ms=0 windows, then
+        skipped the later completed version because len(_training_windows) had
+        already advanced. DDA decisions must be based on complete windows. At
+        session end, the final incomplete window may be appended for reporting,
+        but only windows with enough samples may mutate difficulty.
         """
         windows = self._build_training_windows(
             self._training_runtime,
@@ -632,20 +634,20 @@ class GuiLiveControlSource:
         full_samples = max(1, int(self._training_window_ms / step_ms))
         min_flush_samples = max(1, int(full_samples * 0.6))
 
-        for w in windows[existing:]:
-            sample_count = int(w.get("sample_count", 0) or 0)
+        eligible: list[tuple[dict[str, Any], bool]] = []
+        last_index = len(windows) - 1
+        for idx, window in enumerate(windows):
+            sample_count = int(window.get("sample_count") or 0)
             is_full = sample_count >= full_samples
-            is_flush_partial = bool(flush_incomplete and sample_count >= min_flush_samples)
+            is_final_partial = bool(flush_incomplete and idx == last_index and sample_count > 0)
+            if not is_full and not is_final_partial:
+                continue
+            allow_apply = is_full or bool(flush_incomplete and sample_count >= min_flush_samples)
+            eligible.append((window, allow_apply))
 
-            if not is_full and not flush_incomplete:
-                break
-
-            self._training_windows.append(w)
-
-            if is_full:
-                self._process_window_decision(w, allow_apply=True)
-            elif is_flush_partial:
-                self._process_window_decision(w, allow_apply=False)
+        for window, allow_apply in eligible[existing:]:
+            self._training_windows.append(window)
+            self._process_window_decision(window, allow_apply=allow_apply)
 
 
     def end_training_session(self) -> dict[str, Any]:
@@ -945,40 +947,32 @@ class GuiLiveControlSource:
         view["hud"] = hud
         return view
 
-    def _normalize_debug_difficulty_level(self, level: Any) -> int | None:
-        """Normalize difficulty payloads from QML/action/command paths."""
-        if level is None:
-            return None
-        if isinstance(level, str):
-            normalized = level.strip().lower()
-            if normalized in {"", "auto", "dynamic", "none", "null", "nan"}:
-                return None
-            level = normalized
-        return max(1, min(5, int(level)))
-
-    def set_debug_difficulty(self, level: Any | None) -> dict[str, Any]:
+    def set_debug_difficulty(self, level: Any = None) -> dict[str, Any]:
         if self.game_id != "trace_lock":
             return {"command": "set_debug_difficulty", "accepted": True, "status": "unsupported_game", "message": "unsupported_game", "result": "noop", "source": "live_control"}
         if not hasattr(self._client, "set_debug_difficulty"):
             return {"command": "set_debug_difficulty", "accepted": False, "status": "rejected", "message": "unsupported_client", "result": "rejected", "source": "live_control"}
-        try:
-            self._debug_difficulty_level = self._normalize_debug_difficulty_level(level)
-        except (TypeError, ValueError):
-            return {"command": "set_debug_difficulty", "accepted": False, "status": "rejected", "message": "invalid_difficulty_level", "result": "rejected", "source": "live_control", "raw_level": level}
+        raw_level = level
+        is_auto = raw_level is None
+        if isinstance(raw_level, dict):
+            mode_text = str(raw_level.get("difficulty_mode") or raw_level.get("mode") or "").strip().lower()
+            raw_level = raw_level.get("level", raw_level.get("difficulty_level", raw_level.get("debug_difficulty")))
+            is_auto = mode_text == "auto" or raw_level is None
+        if isinstance(raw_level, str):
+            is_auto = raw_level.strip().lower() in {"", "auto", "none", "null", "dynamic"}
+        if is_auto:
+            self._debug_difficulty_level = None
+        else:
+            try:
+                self._debug_difficulty_level = max(1, min(5, int(raw_level)))
+            except (TypeError, ValueError):
+                self._debug_difficulty_level = None
         self._difficulty_mode = "auto" if self._debug_difficulty_level is None else "manual"
         self._client.set_debug_difficulty(self._debug_difficulty_level)
         self.last_game_view = asdict(self._client.build_game_view())
         if self.interaction_enabled and self.session_type == "training":
             self._training_samples.append(self._snapshot_behavior_sample("set_debug_difficulty"))
         hud = dict(self.last_game_view.get("hud") or {})
-        hud["difficulty_mode"] = self._difficulty_mode
-        hud["debug_difficulty"] = self._debug_difficulty_level if self._debug_difficulty_level is not None else "auto"
-        hud["dynamic_difficulty_enabled"] = self._debug_difficulty_level is None
-        hud["dda_enabled"] = bool((self._dda_state or {}).get("enabled", True))
-        hud["external_training_control_enabled"] = bool(getattr(self._client, "_external_training_control_enabled", False))
-        view = dict(self.last_game_view)
-        view["hud"] = hud
-        self.last_game_view = view
         print(
             f"[GAME DIFFICULTY] mode={self._difficulty_mode} debug_difficulty={self._debug_difficulty_level if self._debug_difficulty_level is not None else 'auto'} effective_level={hud.get('effective_level', hud.get('level'))} running={self.interaction_enabled}",
             flush=True,
@@ -997,5 +991,4 @@ class GuiLiveControlSource:
             "effective_level": hud.get("effective_level", hud.get("level")),
             "dda_enabled": bool((self._dda_state or {}).get("enabled", True)),
             "game_hud": hud,
-            "raw_level": level,
         }

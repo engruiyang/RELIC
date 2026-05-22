@@ -190,11 +190,10 @@ class GuiFacade:
             elif command == "end_session":
                 self.last_command_result = self._live_control_source.end_training_session() if self._live_control_source.session_type == "training" else self._live_control_source.end_live_debug_session()
             elif command == "set_debug_difficulty":
-                raw_mode = str(args.get("mode", args.get("difficulty_mode", ""))).strip().lower()
-                raw_level = args.get("level", args.get("difficulty_level", args.get("debug_difficulty", args.get("selected_difficulty_level"))))
-                if raw_mode == "auto":
-                    raw_level = None
-                elif raw_level is None and str(args.get("debug_difficulty", "")).strip().lower() in {"auto", "dynamic"}:
+                raw_level = args.get("level", args.get("difficulty_level", args.get("debug_difficulty")))
+                raw_mode = str(args.get("difficulty_mode", args.get("mode", ""))).strip().lower()
+                raw_level_text = str(raw_level).strip().lower() if raw_level is not None else ""
+                if raw_mode == "auto" or raw_level_text in {"", "auto", "none", "null", "dynamic"}:
                     raw_level = None
                 self.last_command_result = self._live_control_source.set_debug_difficulty(raw_level)
             elif command == "open_last_report":
@@ -985,20 +984,15 @@ class GuiFacade:
                 "supported_game_ids": ["trace_lock"],
             }
 
-        raw_mode = str(mode or "").strip().lower()
-        raw_level_text = str(level).strip().lower() if level is not None else ""
-        auto_like_level = level is None or raw_level_text in {"", "auto", "dynamic", "none", "null", "nan"}
-
-        # Some UI paths may send AUTO through the level/debug field while mode
-        # is empty or stale.  Prefer explicit AUTO tokens over stale defaults.
-        if raw_mode in {"auto", "dynamic"} or (raw_mode not in {"manual"} and auto_like_level):
-            mode = "auto"
-        elif raw_mode == "manual":
-            mode = "manual"
-        elif auto_like_level:
-            mode = "auto"
-        else:
-            mode = "manual"
+        mode = str(mode or "auto").strip().lower()
+        if mode not in {"auto", "manual"}:
+            return {
+                "status": "invalid_mode",
+                "message": "difficulty_mode_must_be_auto_or_manual",
+                "accepted": False,
+                "game_id": game_id,
+                "difficulty_mode": mode,
+            }
 
         debug_level: int | None
         if mode == "auto":
@@ -1013,8 +1007,6 @@ class GuiFacade:
                     "accepted": False,
                     "game_id": game_id,
                     "difficulty_mode": mode,
-                    "raw_mode": raw_mode,
-                    "raw_level": level,
                 }
 
         previous_game_id = str(self.get_app_state().get("current_game_id") or self.get_game_hud().get("game_id") or "")
@@ -1308,15 +1300,10 @@ class GuiFacade:
                 "detail": summary,
             }
         elif action_id == "game.difficulty":
-            raw_mode = payload.get("mode", payload.get("difficulty_mode", payload.get("debug_difficulty", payload.get("selected_difficulty_mode"))))
-            raw_level = payload.get(
-                "level",
-                payload.get("difficulty_level", payload.get("debug_difficulty", payload.get("selected_difficulty_level"))),
-            )
             summary = self._set_game_difficulty_summary(
                 str(payload.get("game_id") or ""),
-                raw_mode,
-                raw_level,
+                str(payload.get("mode") or payload.get("difficulty_mode") or "auto"),
+                payload.get("level", payload.get("difficulty_level")),
             )
             result = {
                 "action_id": action_id,
