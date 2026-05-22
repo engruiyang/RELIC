@@ -56,3 +56,15 @@ def test_no_difficulty_mutation_from_aggregator():
     runtime = [{"now_ms": 1_000_000 + i * 100, "fi": 60, "fi_valid": True, "fi_provisional": True, "fi_source": "x", "sqi": 1.0, "sqi_valid": True, "quality_state": "ok", "control_state": "STABLE_FOCUS"} for i in range(10)]
     src._build_training_windows(runtime, [], None)
     assert src._debug_difficulty_level == before
+
+
+def test_periodic_behavior_snapshot_recorded() -> None:
+    src = GuiLiveControlSource(game_id="trace_lock")
+    src.interaction_enabled = True
+    src.session_type = "training"
+    src._last_behavior_snapshot_ms = 0
+    src._behavior_snapshot_interval_ms = 1
+    before = len(src._training_samples)
+    src._training_samples.append(src._snapshot_behavior_sample("periodic"))
+    assert len(src._training_samples) == before + 1
+    assert src._training_samples[-1]["behavior_source"] == "periodic"

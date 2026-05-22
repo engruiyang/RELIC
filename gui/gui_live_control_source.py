@@ -61,6 +61,8 @@ class GuiLiveControlSource:
         self._training_windows: list[dict[str, Any]] = []
         self._difficulty_decisions: list[dict[str, Any]] = []
         self._dda_state: dict[str, Any] = {}
+        self._last_behavior_snapshot_ms = 0
+        self._behavior_snapshot_interval_ms = 1000
 
     def start(self) -> None:
         self._live_source.start()
@@ -272,6 +274,10 @@ class GuiLiveControlSource:
                 self.last_game_view = asdict(view)
                 if self.interaction_enabled and self.session_type == "training":
                     self._training_runtime.append(self._normalize_training_runtime_sample(runtime))
+                    now_ms = int(time.time() * 1000)
+                    if now_ms - int(self._last_behavior_snapshot_ms) >= int(self._behavior_snapshot_interval_ms):
+                        self._training_samples.append(self._snapshot_behavior_sample("periodic"))
+                        self._last_behavior_snapshot_ms = now_ms
                     self._process_new_training_windows()
             time.sleep(self.poll_interval_sec)
 
@@ -405,6 +411,9 @@ class GuiLiveControlSource:
             "debug_difficulty": self._debug_difficulty_level if self._debug_difficulty_level is not None else "auto",
             "selected_difficulty_level": default_difficulty,
             "game_duration_ms": duration_ms,
+            "dynamic_difficulty_enabled": self._debug_difficulty_level is None,
+            "dda_enabled": True,
+            "dda_mode": ("manual" if self._difficulty_mode == "manual" else "auto"),
         })
         self._dda_state = {"enabled": True, "last_decision_ms": 0, "cooldown_ms": 10000, "min_level": 1, "max_level": 5, "current_level": int(default_difficulty), "pending_up_count": 0, "pending_down_count": 0, "decision_events": [], "cooldown_block_count": 0, "conflict_hold_count": 0, "low_sqi_block_count": 0}
         if hasattr(self._client, "set_external_training_control_enabled"):
@@ -895,10 +904,17 @@ class GuiLiveControlSource:
         report_path = self._training_context.get("report_path") or self.last_report_path or ""
         log_path = f"logs/sessions/{sid}.jsonl" if sid else ""
         hud = self._current_game_hud()
-        return {"session_id": sid, "session_type": self.session_type or "none", "training_status": self.last_training_status, "latest_session_id": self.last_session_id, "latest_report_path": report_path, "user_id": self.user_id, "game_id": self.game_id, "session_active": self.interaction_enabled, "score": self.last_game_view.get("score", 0), "warning_count": 0, "error_count": 0, "log_path": log_path, "report_path": report_path, "platform_report_status": "mock_only", "source": "live_control", "difficulty_mode": self._difficulty_mode, "debug_difficulty": self._debug_difficulty_level if self._debug_difficulty_level is not None else "auto", "effective_level": hud.get("effective_level", hud.get("level")), "dynamic_difficulty_enabled": hud.get("dynamic_difficulty_enabled"), "game_duration_ms": hud.get("game_duration_ms"), "elapsed_ms": hud.get("elapsed_ms"), "time_left_ms": hud.get("time_left_ms"), "game_completed": hud.get("game_completed")}
+        latest_decision = self._difficulty_decisions[-1] if self._difficulty_decisions else {}
+        latest_changed = next((d for d in reversed(self._difficulty_decisions) if d.get("applied")), {})
+        return {"session_id": sid, "session_type": self.session_type or "none", "training_status": self.last_training_status, "latest_session_id": self.last_session_id, "latest_report_path": report_path, "user_id": self.user_id, "game_id": self.game_id, "session_active": self.interaction_enabled, "score": self.last_game_view.get("score", 0), "warning_count": 0, "error_count": 0, "log_path": log_path, "report_path": report_path, "platform_report_status": "mock_only", "source": "live_control", "difficulty_mode": self._difficulty_mode, "debug_difficulty": self._debug_difficulty_level if self._debug_difficulty_level is not None else "auto", "effective_level": hud.get("effective_level", hud.get("level")), "dynamic_difficulty_enabled": hud.get("dynamic_difficulty_enabled"), "dda_enabled": bool((self._dda_state or {}).get("enabled", True)), "dda_mode": ("manual" if self._difficulty_mode == "manual" else "auto"), "latest_difficulty_decision": latest_decision, "latest_difficulty_changed": latest_changed, "dda_applied_count": sum(1 for d in self._difficulty_decisions if d.get("applied")), "game_duration_ms": hud.get("game_duration_ms"), "elapsed_ms": hud.get("elapsed_ms"), "time_left_ms": hud.get("time_left_ms"), "game_completed": hud.get("game_completed")}
 
     def get_game_view(self) -> dict[str, Any]:
-        return dict(self.last_game_view)
+        view = dict(self.last_game_view)
+        hud = dict(view.get("hud") or {})
+        hud["dda_enabled"] = bool((self._dda_state or {}).get("enabled", True))
+        hud["external_training_control_enabled"] = bool(getattr(self._client, "_external_training_control_enabled", False))
+        view["hud"] = hud
+        return view
 
     def set_debug_difficulty(self, level: int | None) -> dict[str, Any]:
         if self.game_id != "trace_lock":
@@ -927,5 +943,7 @@ class GuiLiveControlSource:
             "difficulty_mode": self._difficulty_mode,
             "debug_difficulty": self._debug_difficulty_level if self._debug_difficulty_level is not None else "auto",
             "dynamic_difficulty_enabled": self._debug_difficulty_level is None,
+            "effective_level": hud.get("effective_level", hud.get("level")),
+            "dda_enabled": bool((self._dda_state or {}).get("enabled", True)),
             "game_hud": hud,
         }
