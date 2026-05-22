@@ -180,7 +180,8 @@ class TraceLockClient:
             self._correct_count += 1
             self._trace_seal_count += 1
             self._rt_samples_ms.append(rt_ms)
-            self._events.append(self._make_event("target_click", game_input_event.created_at_ms, True, {"target_index": 0, "action_name": "target_primary", "hit": True, "reaction_time_ms": rt_ms, "combo": self._combo, "max_combo": self._max_combo, "score_delta": score_delta, "target_id": target.target_id, "target_type": target.target_type, "trace_sealed": True}))
+            self._events.append(self._make_event("target_click", game_input_event.created_at_ms, True, {"target_index": 0, "action_name": "target_primary", "hit": True, "reaction_time_ms": rt_ms, "combo": self._combo, "max_combo": self._max_combo, "score_delta": score_delta, "score": self._score, "target_id": target.target_id, "target_type": target.target_type, "trace_sealed": True}))
+            self._events.append(self._make_event("score_update", game_input_event.created_at_ms, False, {"score": self._score, "score_delta": score_delta, "combo": self._combo, "max_combo": self._max_combo, "accuracy": self.collect_behavior_sample().accuracy}))
             self._visual_events.append(self._make_fx("trace_seal", target, "tracelock.effect.trace_seal"))
             self._spawn_target()
             return
@@ -257,6 +258,17 @@ class TraceLockClient:
             vy = -vy
         self._active_target = _Target(target_id=f"trace_{self._target_seq}", target_type=target_type, x=max(0.1, min(0.9, x)), y=max(0.12, min(0.9, y)), radius=cfg.target_radius, spawned_at_ms=self._clock_ms, expires_at_ms=self._clock_ms + cfg.target_lifetime_ms, vx=vx, vy=vy, movement_type=movement_type)
         self._target_count += 1
+        self._events.append(self._make_event("target_spawn", self._clock_ms, False, {
+            "target_id": self._active_target.target_id,
+            "target_type": self._active_target.target_type,
+            "level": self._level,
+            "movement_type": movement_type,
+            "x": self._active_target.x,
+            "y": self._active_target.y,
+            "radius": self._active_target.radius,
+            "expires_at_ms": self._active_target.expires_at_ms,
+            "target_lifetime_ms": cfg.target_lifetime_ms,
+        }))
         logger.info("[TRACELOCK] spawn target_id=%s level=%s movement=%s type=%s x=%.3f y=%.3f vx=%.5f vy=%.5f lifetime_ms=%s", self._active_target.target_id, self._level, movement_type, target_type, self._active_target.x, self._active_target.y, self._active_target.vx, self._active_target.vy, cfg.target_lifetime_ms)
         if movement_type != self._last_logged_movement_type:
             logger.info("[TRACELOCK] movement_changed old=%s new=%s level=%s", self._last_logged_movement_type or "n/a", movement_type, self._level)

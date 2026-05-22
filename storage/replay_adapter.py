@@ -23,7 +23,7 @@ class ReplayAdapter:
 
     def iter_events(self, log_path: str, event_types: set[str] | None = None):
         for e in self.load_events(log_path):
-            et = e.get("event_type")
+            et = e.get("event_type") or e.get("type") or "unknown"
             if event_types and et not in event_types:
                 continue
             yield e
@@ -42,7 +42,7 @@ class ReplayAdapter:
             if ts is not None:
                 last_ts = ts
             count += 1
-            et = e.get("event_type", "unknown")
+            et = e.get("event_type") or e.get("type") or "unknown"
             by_type[et] = by_type.get(et, 0) + 1
             if on_event:
                 on_event(e)
@@ -52,6 +52,6 @@ class ReplayAdapter:
         events = self.load_events(log_path)
         by_type: dict[str, int] = {}
         for e in events:
-            et = e.get("event_type", "unknown")
+            et = e.get("event_type") or e.get("type") or "unknown"
             by_type[et] = by_type.get(et, 0) + 1
         return {"event_count": len(events), "event_type_counts": by_type}
