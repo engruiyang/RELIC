@@ -1,4 +1,4 @@
-# TASK26 Checker Contract（TASK26C）
+# TASK26 Checker Contract（TASK26C-2）
 
 ## 为什么 TASK26C 先做 Python checker
 - TASK26 当前仍处于“配置与迁移前置阶段”，优先建立离线校验，能在不改运行 GUI 的前提下验证配置质量。
@@ -16,14 +16,36 @@
 - `live.safe_stop` 当前是壳层安全动作，未作为 registry 条目统一登记。
 - 因此 checker 需支持“registry + native whitelist”双来源校验。
 
-## 当前 coverage 规则（宽松）
-- 对 mandatory pipeline：`required_cards/required_fields/required_buttons` 均采用“至少命中一个”的宽松规则。
-- 该规则用于 TASK26C 快速落地，避免早期配置演进被过严规则阻塞。
+## strict 与 non-strict coverage
+- `non-strict`（默认）：mandatory pipeline 的 `required_cards/required_fields/required_buttons` 各自“至少命中一个”即可。
+- `strict`：mandatory pipeline 的 required 项需要全部命中（空 required 列表则跳过该类）。
 
-## 后续严格化计划
-- TASK26D/E 可升级为“全部 required 项都必须覆盖”的严格模式。
-- 增加字段映射真实性校验（与 guiBridge 实际字段契约联动）。
-- 增加 asset_id 与 manifest/pack 的一致性约束。
+## 为什么默认仍使用 non-strict
+- TASK26 仍处于迁移早期，配置还在演进；默认 non-strict 可降低早期阻塞。
+- 但在 TASK26D 前，推荐 `--strict` 也能通过，确保配置质量。
+
+## source root whitelist
+- 仅允许以下 source 根对象：
+  - `appState`
+  - `runtimeSnapshot`
+  - `sessionState`
+  - `controlState`
+  - `controlStateJson`
+  - `gameHud`
+  - `gameHudJson`
+  - `gameView`
+  - `gameViewJson`
+  - `renderResources`
+  - `renderResourcesJson`
+- 禁止 source 中出现脚本或注入倾向 token（如 `()`, `;`, `=`, `javascript:`, `eval` 等）。
+
+## asset_id 校验策略
+- checker 会收集 example JSON 中 asset_id，并与 `assets/manifest.json` / `assets/packs/default/pack.json` 的已知资产集合做交叉校验。
+- 允许临时前缀：`placeholder_` / `preview_`。
+
+## placeholder / preview 规则
+- 迁移早期允许 `placeholder_` / `preview_` 资产占位通过。
+- 在真实页面接入前，应逐步减少占位资产并替换为 manifest/pack 正式资产。
 
 ## TASK26D 前边界
 - 在 TASK26D 前，不接入真实页面，不替换 legacy GUI。

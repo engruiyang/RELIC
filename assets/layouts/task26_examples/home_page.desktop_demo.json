@@ -206,7 +206,7 @@
           "type": "image",
           "id": "identity_image",
           "label": "Identity",
-          "source": "asset:ui.logo.main",
+          "source": "renderResourcesJson.assets.ui.logo.main",
           "fallback": "asset:background.home.main",
           "format": "asset",
           "unit": "",

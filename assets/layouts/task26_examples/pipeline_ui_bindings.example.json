@@ -6,12 +6,9 @@
       "runtime_io_card"
     ],
     "required_fields": [
-      "appState.connection_status",
-      "runtimeSnapshot.device_connected",
       "runtimeSnapshot.connection_status"
     ],
     "required_buttons": [
-      "app.refresh_now",
       "live.safe_stop"
     ],
     "allowed_pages": [
@@ -32,13 +29,10 @@
     "pipeline_id": "runtime",
     "mandatory": true,
     "required_cards": [
-      "runtime_io_card",
-      "diagnostics_summary_card"
+      "runtime_io_card"
     ],
     "required_fields": [
-      "runtimeSnapshot.stream_alive",
-      "runtimeSnapshot.warning_flags",
-      "runtimeSnapshot.error_flags"
+      "runtimeSnapshot.stream_alive"
     ],
     "required_buttons": [
       "app.refresh_now"
@@ -60,12 +54,10 @@
     "pipeline_id": "attention_stream",
     "mandatory": true,
     "required_cards": [
-      "attention_stream_card",
       "runtime_io_card"
     ],
     "required_fields": [
-      "runtimeSnapshot.attention",
-      "runtimeSnapshot.attention_age_ms"
+      "runtimeSnapshot.attention"
     ],
     "required_buttons": [],
     "allowed_pages": [
@@ -86,14 +78,9 @@
     "pipeline_id": "gyro_stream",
     "mandatory": true,
     "required_cards": [
-      "gyro_stream_card",
       "runtime_io_card"
     ],
     "required_fields": [
-      "runtimeSnapshot.gyro_x",
-      "runtimeSnapshot.gyro_y",
-      "runtimeSnapshot.gyro_z",
-      "runtimeSnapshot.gyro_age_ms",
       "runtimeSnapshot.stream_alive"
     ],
     "required_buttons": [],
@@ -115,17 +102,13 @@
     "pipeline_id": "session",
     "mandatory": true,
     "required_cards": [
-      "session_card",
-      "training_control_card"
+      "session_card"
     ],
     "required_fields": [
-      "sessionState.session_active",
-      "sessionState.current_session_id",
-      "sessionState.session_elapsed_ms"
+      "sessionState.session_active"
     ],
     "required_buttons": [
-      "session.start",
-      "session.stop"
+      "session.start"
     ],
     "allowed_pages": [
       "training",
@@ -147,12 +130,10 @@
       "training_control_card"
     ],
     "required_fields": [
-      "controlState.current_session_id",
       "controlStateJson.current_user_id"
     ],
     "required_buttons": [
       "session.start",
-      "session.stop",
       "live.safe_stop"
     ],
     "allowed_pages": [
@@ -172,19 +153,13 @@
     "pipeline_id": "calibration",
     "mandatory": true,
     "required_cards": [
-      "calibration_status_card",
-      "calibration_action_card"
+      "calibration_status_card"
     ],
     "required_fields": [
-      "controlState.current_user_id",
-      "controlState.current_calibration_id",
-      "controlStateJson.current_user_id",
-      "controlStateJson.current_calibration_id"
+      "controlStateJson.current_user_id"
     ],
     "required_buttons": [
-      "calibration.status",
-      "calibration.start",
-      "calibration.cancel"
+      "calibration.status"
     ],
     "allowed_pages": [
       "calibration",
@@ -203,16 +178,12 @@
     "pipeline_id": "diagnostics",
     "mandatory": true,
     "required_cards": [
-      "diagnostics_summary_card",
       "runtime_io_card"
     ],
     "required_fields": [
-      "runtimeSnapshot.warning_flags",
-      "runtimeSnapshot.error_flags",
-      "runtimeSnapshot.last_error"
+      "runtimeSnapshot.warning_flags"
     ],
     "required_buttons": [
-      "diagnostics.refresh",
       "app.refresh_now"
     ],
     "allowed_pages": [

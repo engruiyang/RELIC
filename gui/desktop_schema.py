@@ -5,6 +5,21 @@ from pathlib import Path
 from typing import Any
 
 _BANNED = ["function", "eval", "script", "javascript:", "=>", "onclicked", "qt.calllater"]
+_SOURCE_BANNED = ["..", "/", "\\n", "(", ")", ";", "=", "=>", "javascript:", "eval", "function", "onclicked", "qt.calllater"]
+
+ALLOWED_SOURCE_ROOTS: set[str] = {
+    "appState",
+    "runtimeSnapshot",
+    "sessionState",
+    "controlState",
+    "controlStateJson",
+    "gameHud",
+    "gameHudJson",
+    "gameView",
+    "gameViewJson",
+    "renderResources",
+    "renderResourcesJson",
+}
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -37,6 +52,9 @@ def reject_script_like_values(obj: object, path: str = "$") -> None:
         return
     if isinstance(obj, str):
         _check_text(obj, path)
+
+
+validate_no_script_like_json = reject_script_like_values
 
 
 def validate_desktop_config(config: dict[str, Any]) -> None:
@@ -144,3 +162,36 @@ def collect_asset_ids_from_obj(obj: object) -> set[str]:
 
     _walk(obj)
     return out
+
+
+def collect_sources_from_obj(obj: object) -> set[str]:
+    sources: set[str] = set()
+
+    def _walk(node: object) -> None:
+        if isinstance(node, dict):
+            src = node.get("source")
+            if isinstance(src, str):
+                sources.add(src)
+            for v in node.values():
+                _walk(v)
+        elif isinstance(node, list):
+            for item in node:
+                _walk(item)
+
+    _walk(obj)
+    return sources
+
+
+def validate_source_roots(sources: set[str]) -> None:
+    if not sources:
+        return
+    for src in sources:
+        if not isinstance(src, str):
+            raise ValueError(f"source must be string: {src!r}")
+        low = src.lower()
+        for token in _SOURCE_BANNED:
+            if token in low:
+                raise ValueError(f"invalid source token in '{src}'")
+        root = src.split(".", 1)[0]
+        if root not in ALLOWED_SOURCE_ROOTS:
+            raise ValueError(f"invalid source root in '{src}'")

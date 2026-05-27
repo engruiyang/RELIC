@@ -79,16 +79,16 @@ def collect_cards_fields_buttons_from_pages(page_configs: list[dict[str, Any]], 
     return {"cards": cards, "fields": fields, "buttons": buttons}
 
 
-def validate_pipeline_coverage(bindings: list[dict[str, Any]], inventory: dict[str, set[str]]) -> None:
+def validate_pipeline_coverage(bindings: list[dict[str, Any]], inventory: dict[str, set[str]], strict: bool = False) -> None:
     errors: list[str] = []
     for item in bindings:
         if item.get("mandatory") is not True:
             continue
         pid = str(item.get("pipeline_id") or "unknown")
 
-        req_cards = item.get("required_cards") or []
-        req_fields = item.get("required_fields") or []
-        req_buttons = item.get("required_buttons") or []
+        req_cards = [str(x) for x in (item.get("required_cards") or []) if isinstance(x, str)]
+        req_fields = [str(x) for x in (item.get("required_fields") or []) if isinstance(x, str)]
+        req_buttons = [str(x) for x in (item.get("required_buttons") or []) if isinstance(x, str)]
         allowed_pages = item.get("allowed_pages")
 
         if not isinstance(allowed_pages, list) or not allowed_pages:
@@ -98,12 +98,23 @@ def validate_pipeline_coverage(bindings: list[dict[str, Any]], inventory: dict[s
         if not isinstance(item.get("coverage_policy"), dict):
             errors.append(f"{pid}: coverage_policy missing")
 
-        if req_cards and not any(c in inventory["cards"] for c in req_cards):
-            errors.append(f"{pid}: missing required_cards any-of {req_cards}")
-        if req_fields and not any(f in inventory["fields"] for f in req_fields):
-            errors.append(f"{pid}: missing required_fields any-of {req_fields}")
-        if req_buttons and not any(b in inventory["buttons"] for b in req_buttons):
-            errors.append(f"{pid}: missing required_buttons any-of {req_buttons}")
+        if strict:
+            miss_cards = [c for c in req_cards if c not in inventory["cards"]]
+            miss_fields = [f for f in req_fields if f not in inventory["fields"]]
+            miss_buttons = [b for b in req_buttons if b not in inventory["buttons"]]
+            if miss_cards:
+                errors.append(f"{pid}: strict missing required_cards {miss_cards}")
+            if miss_fields:
+                errors.append(f"{pid}: strict missing required_fields {miss_fields}")
+            if miss_buttons:
+                errors.append(f"{pid}: strict missing required_buttons {miss_buttons}")
+        else:
+            if req_cards and not any(c in inventory["cards"] for c in req_cards):
+                errors.append(f"{pid}: missing required_cards any-of {req_cards}")
+            if req_fields and not any(f in inventory["fields"] for f in req_fields):
+                errors.append(f"{pid}: missing required_fields any-of {req_fields}")
+            if req_buttons and not any(b in inventory["buttons"] for b in req_buttons):
+                errors.append(f"{pid}: missing required_buttons any-of {req_buttons}")
 
     if errors:
         raise ValueError("pipeline coverage failed: " + " | ".join(errors))
@@ -112,3 +123,54 @@ def validate_pipeline_coverage(bindings: list[dict[str, Any]], inventory: dict[s
 def validate_safe_stop_accessible(inventory: dict[str, set[str]]) -> None:
     if "live.safe_stop" not in inventory.get("buttons", set()):
         raise ValueError("live.safe_stop is not accessible")
+
+
+def load_known_asset_ids(manifest_path: Path, pack_path: Path) -> set[str]:
+    known: set[str] = set()
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    pack = json.loads(pack_path.read_text(encoding="utf-8"))
+
+    common = manifest.get("common_assets") or {}
+    if isinstance(common, dict):
+        known.update(str(k) for k in common.keys())
+        for desc in common.values():
+            if isinstance(desc, dict):
+                url = desc.get("url")
+                if isinstance(url, str) and url:
+                    known.add(Path(url).stem)
+
+    def _scan(node: object) -> None:
+        if isinstance(node, dict):
+            for k, v in node.items():
+                lk = str(k).lower()
+                if "asset" in lk or "slot" in lk:
+                    known.add(str(k))
+                    if isinstance(v, str):
+                        known.add(v)
+                    elif isinstance(v, list):
+                        for item in v:
+                            if isinstance(item, str):
+                                known.add(item)
+                    elif isinstance(v, dict):
+                        known.update(str(x) for x in v.keys())
+                _scan(v)
+        elif isinstance(node, list):
+            for item in node:
+                _scan(item)
+
+    _scan(manifest)
+    _scan(pack)
+    return {x for x in known if x}
+
+
+def validate_asset_ids(asset_ids: set[str], known_asset_ids: set[str]) -> None:
+    if not asset_ids:
+        return
+    unknown: list[str] = []
+    for aid in sorted(asset_ids):
+        if aid.startswith("preview_") or aid.startswith("placeholder_"):
+            continue
+        if aid not in known_asset_ids:
+            unknown.append(aid)
+    if unknown:
+        raise ValueError(f"unknown asset_id(s): {', '.join(unknown)}")

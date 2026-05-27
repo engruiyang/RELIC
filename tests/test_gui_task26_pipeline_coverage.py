@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -43,9 +44,14 @@ def test_validate_safe_stop_accessible_pass() -> None:
     validate_safe_stop_accessible(_inventory())
 
 
-def test_validate_pipeline_coverage_pass_on_examples() -> None:
+def test_validate_pipeline_coverage_non_strict_pass_on_examples() -> None:
     bindings = load_pipeline_bindings(EXAMPLES / "pipeline_ui_bindings.example.json")
-    validate_pipeline_coverage(bindings, _inventory())
+    validate_pipeline_coverage(bindings, _inventory(), strict=False)
+
+
+def test_validate_pipeline_coverage_strict_pass_on_examples() -> None:
+    bindings = load_pipeline_bindings(EXAMPLES / "pipeline_ui_bindings.example.json")
+    validate_pipeline_coverage(bindings, _inventory(), strict=True)
 
 
 def test_validate_safe_stop_accessible_fail_when_missing() -> None:
@@ -55,11 +61,30 @@ def test_validate_safe_stop_accessible_fail_when_missing() -> None:
         validate_safe_stop_accessible(inv)
 
 
-def test_validate_pipeline_coverage_fail_when_missing_mandatory_items() -> None:
+def test_validate_pipeline_coverage_strict_fail_when_missing_card() -> None:
     bindings = load_pipeline_bindings(EXAMPLES / "pipeline_ui_bindings.example.json")
     inv = _inventory()
-    inv["cards"] = set()
-    inv["fields"] = set()
-    inv["buttons"] = set()
+    inv["cards"] = set(inv["cards"]) - {"runtime_io_card"}
     with pytest.raises(ValueError):
-        validate_pipeline_coverage(bindings, inv)
+        validate_pipeline_coverage(bindings, inv, strict=True)
+
+
+def test_validate_pipeline_coverage_strict_fail_when_missing_field() -> None:
+    bindings = load_pipeline_bindings(EXAMPLES / "pipeline_ui_bindings.example.json")
+    inv = _inventory()
+    inv["fields"] = set(inv["fields"]) - {"runtimeSnapshot.stream_alive"}
+    with pytest.raises(ValueError):
+        validate_pipeline_coverage(bindings, inv, strict=True)
+
+
+def test_validate_pipeline_coverage_strict_fail_when_missing_button() -> None:
+    bindings = load_pipeline_bindings(EXAMPLES / "pipeline_ui_bindings.example.json")
+    inv = _inventory()
+    inv["buttons"] = set(inv["buttons"]) - {"app.refresh_now"}
+    with pytest.raises(ValueError):
+        validate_pipeline_coverage(bindings, inv, strict=True)
+
+
+def test_cli_strict_mode_passes() -> None:
+    result = subprocess.run(["python", "tools/check_gui_pipeline_coverage.py", "--strict"], check=True, capture_output=True, text=True)
+    assert "TASK26 pipeline coverage strict ok" in result.stdout
