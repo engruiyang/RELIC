@@ -4,6 +4,7 @@ import "../components"
 
 Item {
     id: root
+    property var guiBridge: null
     property var designThemeObj: ({})
     property var pageStyleObj: ({})
     property var componentStyleObj: ({})
@@ -62,6 +63,37 @@ Item {
                 DesignButton { buttonStyleObj: root.componentStyleObj.button || ({}); themeObj: root.designThemeObj; renderResourcesObj: root.renderResourcesObj; text: "developer.task6b_evaluate"; onClicked: pick("developer.task6b_evaluate", "active", "copy_only", "python -m ui_cli.evaluate_task6b ...") }
                 DesignButton { buttonStyleObj: root.componentStyleObj.button || ({}); themeObj: root.designThemeObj; renderResourcesObj: root.renderResourcesObj; text: "developer.task6b_tune"; onClicked: pick("developer.task6b_tune", "active", "copy_only", "python -m ui_cli.tune_task6b ...") }
                 DesignButton { buttonStyleObj: root.componentStyleObj.button || ({}); themeObj: root.designThemeObj; renderResourcesObj: root.renderResourcesObj; text: "developer.task6b_calibrate"; onClicked: pick("developer.task6b_calibrate", "active", "copy_only", "python -m ui_cli.calibrate_task6b ...") }
+            }
+        }
+
+        GroupBox {
+            title: "TASK26 Desktop Card Preview"
+
+            CardHostPreview {
+                id: task26CardPreview
+                width: parent.width
+                height: 420
+                guiBridge: root.guiBridge
+            }
+        }
+
+
+
+        GroupBox {
+            title: "TASK26 Home Render Model Preview"
+
+            HomeRenderModelPreview {
+                id: task26HomeRenderModelPreview
+                width: parent.width
+                height: 360
+                pageId: "home"
+                cardCount: 4
+                widgetCount: 10
+                requiredCardCount: 2
+                lockedCardCount: 2
+                actionsText: "app.refresh_now, live.safe_stop"
+                sourceRootsText: "gameHudJson, renderResourcesJson, runtimeSnapshot, sessionState"
+                cardIdsText: "runtime_io_card, quick_actions_card, recent_session_card, relic_identity_card"
             }
         }
 
