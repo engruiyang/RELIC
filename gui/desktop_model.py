@@ -5,6 +5,28 @@ from pathlib import Path
 from typing import Any
 
 
+HOME_SLOT_INJECTION_FIELDS: tuple[str, ...] = (
+    "slot_count",
+    *(
+        f"slot{i}_{suffix}"
+        for i in range(1, 5)
+        for suffix in (
+            "card_id",
+            "card_type",
+            "title",
+            "subtitle",
+            "required",
+            "locked",
+            "rect_text",
+            "widget_count",
+            "action_ids_text",
+            "source_roots_text",
+            "first_widget_labels_text",
+        )
+    ),
+)
+
+
 def _as_pos_int(value: Any, *, field: str, card_id: str) -> int:
     if not isinstance(value, int) or value <= 0:
         raise ValueError(f"card {card_id}: {field} must be positive integer")
@@ -283,6 +305,51 @@ def build_home_card_slots_injection_payload(slots: list[dict]) -> dict:
 def build_home_card_slots_injection_payload_from_examples(example_root: Path) -> dict:
     slots = build_home_card_slots_from_examples(example_root, max_slots=4)
     return build_home_card_slots_injection_payload(slots)
+
+
+def expected_home_slot_injection_fields() -> set[str]:
+    return set(HOME_SLOT_INJECTION_FIELDS)
+
+
+def validate_home_slot_injection_payload(payload: dict) -> None:
+    if not isinstance(payload, dict):
+        raise ValueError("payload must be dict")
+
+    required_fields = expected_home_slot_injection_fields()
+    missing = sorted(required_fields - set(payload.keys()))
+    if missing:
+        raise ValueError(f"missing injection field: {missing[0]}")
+
+    if not isinstance(payload.get("slot_count"), int):
+        raise ValueError("slot_count must be int")
+
+    string_suffixes = {
+        "card_id",
+        "card_type",
+        "title",
+        "subtitle",
+        "rect_text",
+        "action_ids_text",
+        "source_roots_text",
+        "first_widget_labels_text",
+    }
+
+    for i in range(1, 5):
+        for suffix in string_suffixes:
+            key = f"slot{i}_{suffix}"
+            if not isinstance(payload.get(key), str):
+                raise ValueError(f"{key} must be string")
+
+        for suffix in ("required", "locked"):
+            key = f"slot{i}_{suffix}"
+            if not isinstance(payload.get(key), bool):
+                raise ValueError(f"{key} must be bool")
+
+        key = f"slot{i}_widget_count"
+        if not isinstance(payload.get(key), int):
+            raise ValueError(f"{key} must be int")
+
+    # Unknown extra fields are intentionally allowed in TASK26E-3B.
 
 
 def write_render_model(model: dict, output_path: Path) -> None:

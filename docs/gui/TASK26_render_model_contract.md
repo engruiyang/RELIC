@@ -46,3 +46,16 @@
 - 仍不使用 `Repeater`，保持固定 4 槽位结构，确保可预测与可测试。
 - E-3 只是未来 `CardHost` 的过渡层，不替代 `CardHost`。
 - 未来 E-4 可考虑由 Python/bridge 提供受控 render model 属性注入，但仍需 checker 先行。
+
+## E-3B 字段一致性合同检查
+- E-3B 的目标是确保 Python 生成的 injection payload 字段，与 `HomeCardSlotsPreview.qml` 的属性定义保持一致。
+- Python 侧字段使用 snake_case（如 `slot1_card_id`），QML 侧属性使用 camelCase（如 `slot1CardId`）。
+- 必须维持一一映射：
+  - `slotN_card_id` -> `slotNCardId`
+  - `slotN_card_type` -> `slotNCardType`
+  - `slotN_rect_text` -> `slotNRectText`
+  - `slotN_action_ids_text` -> `slotNActionIdsText`
+  - `slotN_source_roots_text` -> `slotNSourceRootsText`
+  - `slotN_first_widget_labels_text` -> `slotNFirstWidgetLabelsText`
+- 在 E-4 前先建立自动一致性检查，可降低字段漂移导致的 UI 绑定失效风险。
+- 当前仍不接 bridge、不接 HomePage、不实现真实 CardHost，仅做 DeveloperLab 原型校验。

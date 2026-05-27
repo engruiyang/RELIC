@@ -14,6 +14,8 @@ from gui.desktop_model import (
     build_home_render_model_summary,
     build_page_render_model,
     build_render_model_summary,
+    expected_home_slot_injection_fields,
+    validate_home_slot_injection_payload,
     write_render_model,
 )
 
@@ -170,6 +172,8 @@ def test_build_injection_payload_basic() -> None:
     assert payload["slot_count"] == 4
     assert payload["slot1_card_id"] == "runtime_io_card"
     assert "slot1_rect_text" in payload
+    assert expected_home_slot_injection_fields().issubset(set(payload.keys()))
+    validate_home_slot_injection_payload(payload)
 
 
 def test_build_injection_payload_empty_action_ids_as_na() -> None:
@@ -208,3 +212,4 @@ def test_write_injection_json_readable(tmp_path: Path) -> None:
     write_render_model(payload, out)
     loaded = json.loads(out.read_text(encoding="utf-8"))
     assert loaded["slot1_card_id"] == "runtime_io_card"
+    validate_home_slot_injection_payload(loaded)
