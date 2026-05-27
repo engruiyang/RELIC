@@ -6,7 +6,16 @@ from pathlib import Path
 
 import pytest
 
-from gui.desktop_model import build_home_card_slots, build_home_card_slots_from_examples, build_home_render_model, build_home_render_model_summary, build_page_render_model, build_render_model_summary, write_render_model
+from gui.desktop_model import (
+    build_home_card_slots,
+    build_home_card_slots_from_examples,
+    build_home_card_slots_injection_payload,
+    build_home_render_model,
+    build_home_render_model_summary,
+    build_page_render_model,
+    build_render_model_summary,
+    write_render_model,
+)
 
 EXAMPLES = Path("assets/layouts/task26_examples")
 
@@ -153,3 +162,49 @@ def test_write_slots_json_readable(tmp_path: Path) -> None:
     write_render_model(payload, out)
     loaded = json.loads(out.read_text(encoding="utf-8"))
     assert len(loaded["slots"]) == len(slots)
+
+
+def test_build_injection_payload_basic() -> None:
+    slots = build_home_card_slots_from_examples(Path("."), max_slots=4)
+    payload = build_home_card_slots_injection_payload(slots)
+    assert payload["slot_count"] == 4
+    assert payload["slot1_card_id"] == "runtime_io_card"
+    assert "slot1_rect_text" in payload
+
+
+def test_build_injection_payload_empty_action_ids_as_na() -> None:
+    payload = build_home_card_slots_injection_payload(
+        [
+            {
+                "card_id": "demo",
+                "card_type": "demo",
+                "title": "Demo",
+                "subtitle": "Demo",
+                "required": False,
+                "locked": False,
+                "x": 0,
+                "y": 0,
+                "width": 1,
+                "height": 1,
+                "widget_count": 0,
+                "action_ids": [],
+                "source_roots": [],
+                "first_widget_labels": [],
+            }
+        ]
+    )
+    assert payload["slot1_action_ids_text"] == "n/a"
+
+
+def test_build_injection_payload_not_list_raises() -> None:
+    with pytest.raises(ValueError):
+        build_home_card_slots_injection_payload({})  # type: ignore[arg-type]
+
+
+def test_write_injection_json_readable(tmp_path: Path) -> None:
+    slots = build_home_card_slots_from_examples(Path("."), max_slots=4)
+    payload = build_home_card_slots_injection_payload(slots)
+    out = tmp_path / "injection.json"
+    write_render_model(payload, out)
+    loaded = json.loads(out.read_text(encoding="utf-8"))
+    assert loaded["slot1_card_id"] == "runtime_io_card"

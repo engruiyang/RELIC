@@ -10,6 +10,7 @@ if str(ROOT) not in sys.path:
 
 from gui.desktop_model import (
     build_home_card_slots_from_examples,
+    build_home_card_slots_injection_payload_from_examples,
     build_home_render_model,
     build_home_render_model_summary,
     build_page_render_model,
@@ -29,6 +30,7 @@ def main() -> None:
     )
     parser.add_argument("--summary", action="store_true")
     parser.add_argument("--slots", action="store_true")
+    parser.add_argument("--injection", action="store_true")
     args = parser.parse_args()
 
     if args.page != "home":
@@ -57,6 +59,12 @@ def main() -> None:
         slots_output = ROOT / "assets/layouts/task26_examples/home_desktop_render_model_slots.example.json"
         write_render_model(slots_payload, slots_output)
         print("TASK26 render model slots written: assets/layouts/task26_examples/home_desktop_render_model_slots.example.json")
+
+    if args.injection:
+        injection = build_home_card_slots_injection_payload_from_examples(example_root)
+        injection_output = ROOT / "assets/layouts/task26_examples/home_desktop_render_model_slots_injection.example.json"
+        write_render_model(injection, injection_output)
+        print("TASK26 render model slots injection written: assets/layouts/task26_examples/home_desktop_render_model_slots_injection.example.json")
 
 
 if __name__ == "__main__":

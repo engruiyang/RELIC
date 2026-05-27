@@ -38,3 +38,11 @@
 - 该方案仍不接管 `HomePage`，仅在 `DeveloperLab` 做隔离验证。
 - E-2 是通向未来 `CardHost` 的中间阶段：先验证槽位映射，再推进动态渲染。
 - 预计 E-3 才考虑通过 Python/bridge 传入动态 slots（仍需保持安全边界）。
+
+## E-3 受控注入 payload
+- E-3 的目标是把 slots 数据整理为“扁平注入属性”，便于 QML 预览组件直接绑定。
+- 采用扁平字段（如 `slot1_card_id`、`slot1_rect_text`）是为了减少 QML 侧结构解析复杂度。
+- 仍禁止 QML 直接读取 JSON 文件，避免引入文件 I/O 与解析逻辑。
+- 仍不使用 `Repeater`，保持固定 4 槽位结构，确保可预测与可测试。
+- E-3 只是未来 `CardHost` 的过渡层，不替代 `CardHost`。
+- 未来 E-4 可考虑由 Python/bridge 提供受控 render model 属性注入，但仍需 checker 先行。

@@ -248,6 +248,43 @@ def build_home_card_slots_from_examples(example_root: Path, *, max_slots: int = 
     return build_home_card_slots(build_home_render_model(example_root), max_slots=max_slots)
 
 
+def build_home_card_slots_injection_payload(slots: list[dict]) -> dict:
+    if not isinstance(slots, list):
+        raise ValueError("slots must be list")
+
+    payload: dict[str, Any] = {"slot_count": min(len(slots), 4)}
+
+    for idx in range(1, 5):
+        slot = slots[idx - 1] if idx - 1 < len(slots) and isinstance(slots[idx - 1], dict) else {}
+        action_ids = slot.get("action_ids") if isinstance(slot.get("action_ids"), list) else []
+        source_roots = slot.get("source_roots") if isinstance(slot.get("source_roots"), list) else []
+        first_widget_labels = slot.get("first_widget_labels") if isinstance(slot.get("first_widget_labels"), list) else []
+
+        payload[f"slot{idx}_card_id"] = str(slot.get("card_id", "")) if slot else ""
+        payload[f"slot{idx}_card_type"] = str(slot.get("card_type", "")) if slot else ""
+        payload[f"slot{idx}_title"] = str(slot.get("title", "")) if slot else ""
+        payload[f"slot{idx}_subtitle"] = str(slot.get("subtitle", "")) if slot else ""
+        payload[f"slot{idx}_required"] = bool(slot.get("required", False)) if slot else False
+        payload[f"slot{idx}_locked"] = bool(slot.get("locked", False)) if slot else False
+
+        x = slot.get("x", 0) if slot else 0
+        y = slot.get("y", 0) if slot else 0
+        width = slot.get("width", 0) if slot else 0
+        height = slot.get("height", 0) if slot else 0
+        payload[f"slot{idx}_rect_text"] = f"x={x}, y={y}, w={width}, h={height}"
+        payload[f"slot{idx}_widget_count"] = int(slot.get("widget_count", 0)) if slot else 0
+        payload[f"slot{idx}_action_ids_text"] = ", ".join(str(x) for x in action_ids) if action_ids else "n/a"
+        payload[f"slot{idx}_source_roots_text"] = ", ".join(str(x) for x in source_roots) if source_roots else "n/a"
+        payload[f"slot{idx}_first_widget_labels_text"] = ", ".join(str(x) for x in first_widget_labels) if first_widget_labels else "n/a"
+
+    return payload
+
+
+def build_home_card_slots_injection_payload_from_examples(example_root: Path) -> dict:
+    slots = build_home_card_slots_from_examples(example_root, max_slots=4)
+    return build_home_card_slots_injection_payload(slots)
+
+
 def write_render_model(model: dict, output_path: Path) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w", encoding="utf-8") as f:

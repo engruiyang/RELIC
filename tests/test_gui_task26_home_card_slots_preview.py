@@ -43,6 +43,21 @@ def test_home_card_slots_preview_tokens() -> None:
         assert token in text
 
 
+def test_home_card_slots_preview_injection_property_tokens() -> None:
+    text = Path("ui_qml/components/HomeCardSlotsPreview.qml").read_text(encoding="utf-8")
+    for token in [
+        "slot1CardId",
+        "slot2CardId",
+        "slot3CardId",
+        "slot4CardId",
+        "slot1RectText",
+        "slot1ActionIdsText",
+        "slot1SourceRootsText",
+        "slot1FirstWidgetLabelsText",
+    ]:
+        assert token in text
+
+
 def test_home_slot_components_banned_tokens_absent() -> None:
     for f in ["ui_qml/components/HomeCardSlotPreview.qml", "ui_qml/components/HomeCardSlotsPreview.qml"]:
         text = Path(f).read_text(encoding="utf-8")
@@ -56,6 +71,12 @@ def test_developer_lab_contains_slot_preview_tokens() -> None:
         assert token in text
 
 
+def test_developer_lab_passes_slot_card_ids_explicitly() -> None:
+    text = Path("ui_qml/pages/DeveloperLabPage.qml").read_text(encoding="utf-8")
+    for token in ["slot1CardId", "slot2CardId", "slot3CardId", "slot4CardId"]:
+        assert token in text
+
+
 def test_developer_lab_keeps_existing_previews() -> None:
     text = Path("ui_qml/pages/DeveloperLabPage.qml").read_text(encoding="utf-8")
     for token in ["TASK26 Desktop Card Preview", "TASK26 Home Render Model Preview", "CardHostPreview", "HomeRenderModelPreview"]:
@@ -63,8 +84,9 @@ def test_developer_lab_keeps_existing_previews() -> None:
 
 
 def test_build_tool_generates_slots_json() -> None:
-    subprocess.run(["python", "tools/build_task26_render_model.py", "--summary", "--slots"], check=True)
+    subprocess.run(["python", "tools/build_task26_render_model.py", "--summary", "--slots", "--injection"], check=True)
     assert Path("assets/layouts/task26_examples/home_desktop_render_model_slots.example.json").exists()
+    assert Path("assets/layouts/task26_examples/home_desktop_render_model_slots_injection.example.json").exists()
 
 
 def test_slots_json_contract() -> None:
@@ -77,3 +99,23 @@ def test_slots_json_contract() -> None:
     for s in data["slots"]:
         for k in ["x", "y", "width", "height", "widget_count"]:
             assert k in s
+
+
+def test_injection_json_contract() -> None:
+    data = json.loads(
+        Path("assets/layouts/task26_examples/home_desktop_render_model_slots_injection.example.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    for key in [
+        "slot_count",
+        "slot1_card_id",
+        "slot2_card_id",
+        "slot3_card_id",
+        "slot4_card_id",
+        "slot1_rect_text",
+        "slot1_action_ids_text",
+        "slot1_source_roots_text",
+    ]:
+        assert key in data
+    assert data["slot1_card_id"] == "runtime_io_card"
