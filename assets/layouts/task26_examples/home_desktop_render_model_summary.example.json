@@ -1,0 +1,31 @@
+{
+  "page_id": "home",
+  "card_count": 4,
+  "widget_count": 10,
+  "required_card_count": 2,
+  "locked_card_count": 2,
+  "action_ids": [
+    "app.refresh_now",
+    "live.safe_stop"
+  ],
+  "source_roots": [
+    "gameHudJson",
+    "renderResourcesJson",
+    "runtimeSnapshot",
+    "sessionState"
+  ],
+  "card_ids": [
+    "runtime_io_card",
+    "quick_actions_card",
+    "recent_session_card",
+    "relic_identity_card"
+  ],
+  "preview_lines": [
+    "Page: home",
+    "Cards: 4",
+    "Widgets: 10",
+    "Required cards: 2",
+    "Locked cards: 2",
+    "Actions: app.refresh_now, live.safe_stop"
+  ]
+}
