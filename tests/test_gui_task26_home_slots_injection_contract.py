@@ -8,6 +8,7 @@ import pytest
 from gui.desktop_model import (
     build_home_card_slots_injection_payload_from_examples,
     expected_home_slot_injection_fields,
+    expected_home_slot_qml_properties,
     validate_home_slot_injection_payload,
 )
 
@@ -69,6 +70,13 @@ def test_qml_property_mapping_tokens_exist_for_slot1_to_slot4() -> None:
             assert token in qml
 
 
+def test_expected_qml_properties_exist_in_home_card_slots_preview() -> None:
+    qml = Path("ui_qml/components/HomeCardSlotsPreview.qml").read_text(encoding="utf-8")
+    expected = expected_home_slot_qml_properties()
+    for token in expected:
+        assert token in qml
+
+
 def test_developer_lab_passes_key_slot_props() -> None:
     qml = Path("ui_qml/pages/DeveloperLabPage.qml").read_text(encoding="utf-8")
     for token in [
@@ -78,6 +86,8 @@ def test_developer_lab_passes_key_slot_props() -> None:
         "slot4CardId",
         "slot1RectText",
         "slot1ActionIdsText",
+        "slot1SourceRootsText",
+        "slot1FirstWidgetLabelsText",
     ]:
         assert token in qml
 

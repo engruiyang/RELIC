@@ -59,3 +59,11 @@
   - `slotN_first_widget_labels_text` -> `slotNFirstWidgetLabelsText`
 - 在 E-4 前先建立自动一致性检查，可降低字段漂移导致的 UI 绑定失效风险。
 - 当前仍不接 bridge、不接 HomePage、不实现真实 CardHost，仅做 DeveloperLab 原型校验。
+
+## E-3C Unified Injection Contract Gate
+- E-3C 的目标是把 TASK26 关键合同检查统一到 `tools/check_task26_contracts.py`，避免分散脚本漏检。
+- 该工具负责一次性检查：example JSON 可解析/脚本风险、pipeline coverage（默认与 strict）、home render model、home slots、home slots injection payload、payload↔QML property 映射一致性、DeveloperLab 显式传参关键字段。
+- `--strict` 用于开启严格 coverage 规则，确保 mandatory pipeline 的覆盖要求按 strict 方式验证。
+- `--show-diff` 用于输出 Python payload 字段、QML property、DeveloperLab 传参三者差异摘要，便于定位合同漂移。
+- 在 E-4 前先建立 gate 可显著降低“字段改动后 UI 静默失效”的风险。
+- 当前仍不接 bridge，仍不接 HomePage，仍不实现真实 CardHost。

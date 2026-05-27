@@ -311,6 +311,37 @@ def expected_home_slot_injection_fields() -> set[str]:
     return set(HOME_SLOT_INJECTION_FIELDS)
 
 
+def snake_to_qml_camel(name: str) -> str:
+    parts = name.split("_")
+    if not parts:
+        return name
+    return parts[0] + "".join(p[:1].upper() + p[1:] for p in parts[1:])
+
+
+def expected_home_slot_qml_properties() -> set[str]:
+    return {snake_to_qml_camel(field) for field in expected_home_slot_injection_fields()}
+
+
+def diff_home_slot_injection_contract(
+    payload_fields: set[str],
+    qml_properties: set[str],
+    developer_lab_properties: set[str],
+) -> dict:
+    payload_camel = {snake_to_qml_camel(name) for name in payload_fields}
+
+    missing_in_qml = sorted(payload_camel - qml_properties)
+    missing_in_developer_lab = sorted(payload_camel - developer_lab_properties)
+    extra_in_qml = sorted(qml_properties - payload_camel)
+    extra_in_developer_lab = sorted(developer_lab_properties - payload_camel)
+
+    return {
+        "missing_in_qml": missing_in_qml,
+        "missing_in_developer_lab": missing_in_developer_lab,
+        "extra_in_qml": extra_in_qml,
+        "extra_in_developer_lab": extra_in_developer_lab,
+    }
+
+
 def validate_home_slot_injection_payload(payload: dict) -> None:
     if not isinstance(payload, dict):
         raise ValueError("payload must be dict")
