@@ -9,6 +9,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from gui.desktop_model import (
+    build_home_card_slots_from_examples,
     build_home_render_model,
     build_home_render_model_summary,
     build_page_render_model,
@@ -27,6 +28,7 @@ def main() -> None:
         default="assets/layouts/task26_examples/home_desktop_render_model.example.json",
     )
     parser.add_argument("--summary", action="store_true")
+    parser.add_argument("--slots", action="store_true")
     args = parser.parse_args()
 
     if args.page != "home":
@@ -48,6 +50,13 @@ def main() -> None:
         summary_output = ROOT / "assets/layouts/task26_examples/home_desktop_render_model_summary.example.json"
         write_render_model(summary, summary_output)
         print("TASK26 render model summary written: assets/layouts/task26_examples/home_desktop_render_model_summary.example.json")
+
+    if args.slots:
+        slots = build_home_card_slots_from_examples(example_root, max_slots=4)
+        slots_payload = {"page_id": "home", "max_slots": 4, "slots": slots}
+        slots_output = ROOT / "assets/layouts/task26_examples/home_desktop_render_model_slots.example.json"
+        write_render_model(slots_payload, slots_output)
+        print("TASK26 render model slots written: assets/layouts/task26_examples/home_desktop_render_model_slots.example.json")
 
 
 if __name__ == "__main__":

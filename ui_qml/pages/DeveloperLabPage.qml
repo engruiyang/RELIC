@@ -97,6 +97,18 @@ Item {
             }
         }
 
+
+
+        GroupBox {
+            title: "TASK26 Home Card Slots Preview"
+
+            HomeCardSlotsPreview {
+                id: task26HomeCardSlotsPreview
+                width: parent.width
+                height: 520
+            }
+        }
+
         GroupBox {
             title: "Metadata"
             Column {

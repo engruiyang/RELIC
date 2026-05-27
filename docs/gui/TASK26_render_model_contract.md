@@ -30,3 +30,11 @@
 ## 后续阶段
 - TASK26E-1 再考虑让 QML 预览层读取 render model。
 - 本阶段不实现 `CardHost.qml` / `DesktopHost.qml` / `WidgetRenderer.qml`。
+
+## Home card slots（TASK26E-2）
+- E-2 新增 Home card slots 的目标是验证“render model -> 固定 UI 槽位摘要”的映射可视化。
+- 当前采用固定 4 槽位（对应 home demo 的前 4 张卡片），便于稳定验证与测试。
+- 预览组件不使用 `Repeater`，避免在本阶段引入额外动态渲染复杂度。
+- 该方案仍不接管 `HomePage`，仅在 `DeveloperLab` 做隔离验证。
+- E-2 是通向未来 `CardHost` 的中间阶段：先验证槽位映射，再推进动态渲染。
+- 预计 E-3 才考虑通过 Python/bridge 传入动态 slots（仍需保持安全边界）。

@@ -183,6 +183,54 @@ def build_render_model_summary(model: dict) -> dict:
     }
 
 
+def build_home_card_slots(model: dict, *, max_slots: int = 4) -> list[dict]:
+    if not isinstance(max_slots, int) or max_slots <= 0:
+        raise ValueError("max_slots must be positive integer")
+    cards = model.get("cards")
+    if not isinstance(cards, list):
+        raise ValueError("render model cards must be list")
+
+    out: list[dict[str, Any]] = []
+    for i, c in enumerate(cards[:max_slots], start=1):
+        card_id = str(c.get("id", ""))
+        widgets = c.get("widgets") or []
+        if not isinstance(widgets, list):
+            widgets = []
+        action_ids = sorted({w.get("action_id") for w in widgets if isinstance(w, dict) and isinstance(w.get("action_id"), str) and w.get("action_id")})
+        source_roots = sorted({str(w.get("source")).split(".", 1)[0] for w in widgets if isinstance(w, dict) and isinstance(w.get("source"), str) and w.get("source")})
+        labels: list[str] = []
+        for w in widgets[:3]:
+            if not isinstance(w, dict):
+                continue
+            label = w.get("label")
+            if isinstance(label, str) and label:
+                labels.append(label)
+            elif isinstance(w.get("id"), str) and w.get("id"):
+                labels.append(w["id"])
+            else:
+                labels.append(str(w.get("type", "unknown")))
+        out.append(
+            {
+                "slot_index": i,
+                "card_id": card_id,
+                "card_type": c.get("type", ""),
+                "title": c.get("title", ""),
+                "subtitle": c.get("subtitle", ""),
+                "required": bool(c.get("required", False)),
+                "locked": bool(c.get("locked", False)),
+                "x": c.get("x", 0),
+                "y": c.get("y", 0),
+                "width": c.get("width", 0),
+                "height": c.get("height", 0),
+                "widget_count": len(widgets),
+                "action_ids": action_ids,
+                "source_roots": source_roots,
+                "first_widget_labels": labels,
+            }
+        )
+    return out
+
+
 def build_home_render_model(example_root: Path) -> dict:
     page_path = example_root / "assets" / "layouts" / "task26_examples" / "home_page.desktop_demo.json"
     with page_path.open("r", encoding="utf-8") as f:
@@ -194,6 +242,10 @@ def build_home_render_model(example_root: Path) -> dict:
 
 def build_home_render_model_summary(example_root: Path) -> dict:
     return build_render_model_summary(build_home_render_model(example_root))
+
+
+def build_home_card_slots_from_examples(example_root: Path, *, max_slots: int = 4) -> list[dict]:
+    return build_home_card_slots(build_home_render_model(example_root), max_slots=max_slots)
 
 
 def write_render_model(model: dict, output_path: Path) -> None:

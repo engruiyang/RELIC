@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from gui.desktop_model import build_home_render_model, build_home_render_model_summary, build_page_render_model, build_render_model_summary, write_render_model
+from gui.desktop_model import build_home_card_slots, build_home_card_slots_from_examples, build_home_render_model, build_home_render_model_summary, build_page_render_model, build_render_model_summary, write_render_model
 
 EXAMPLES = Path("assets/layouts/task26_examples")
 
@@ -118,3 +118,38 @@ def test_summary_has_no_script_like_tokens() -> None:
     text = json.dumps(summary, ensure_ascii=False).lower()
     for token in ["function", "eval", "script", "javascript:", "=>", "onclicked", "qt.calllater"]:
         assert token not in text
+
+
+def test_build_home_card_slots_basic() -> None:
+    model = build_page_render_model(_home_cfg())
+    slots = build_home_card_slots(model, max_slots=4)
+    assert len(slots) <= 4
+    assert slots[0]["slot_index"] == 1
+    assert any(s["card_id"] == "runtime_io_card" for s in slots)
+
+
+def test_build_home_card_slots_invalid_max_slots() -> None:
+    model = build_page_render_model(_home_cfg())
+    with pytest.raises(ValueError):
+        build_home_card_slots(model, max_slots=0)
+
+
+def test_build_home_card_slots_cards_not_list_raises() -> None:
+    with pytest.raises(ValueError):
+        build_home_card_slots({"cards": {}}, max_slots=4)
+
+
+def test_slots_action_ids_and_source_roots_are_lists() -> None:
+    slots = build_home_card_slots_from_examples(Path("."), max_slots=4)
+    for s in slots:
+        assert isinstance(s["action_ids"], list)
+        assert isinstance(s["source_roots"], list)
+
+
+def test_write_slots_json_readable(tmp_path: Path) -> None:
+    slots = build_home_card_slots_from_examples(Path("."), max_slots=4)
+    payload = {"page_id": "home", "max_slots": 4, "slots": slots}
+    out = tmp_path / "slots.json"
+    write_render_model(payload, out)
+    loaded = json.loads(out.read_text(encoding="utf-8"))
+    assert len(loaded["slots"]) == len(slots)
