@@ -1,0 +1,62 @@
+{
+  "metric_default": {
+    "type": "metric",
+    "size": "m",
+    "style": {"value_color": "#e6edf5", "label_color": "#9aacbd", "value_size": 22, "label_size": 12}
+  },
+  "metric_warning": {
+    "type": "metric",
+    "size": "m",
+    "style": {"value_color": "#ffcc00", "label_color": "#e6edf5", "value_size": 22, "label_size": 12}
+  },
+  "metric_danger": {
+    "type": "metric",
+    "size": "m",
+    "style": {"value_color": "#ff4d4f", "label_color": "#ffd7d7", "value_size": 22, "label_size": 12}
+  },
+  "button_primary": {
+    "type": "button",
+    "layout_hint": "fill_width",
+    "style": {"background": "#67d5ff", "text": "#0f1720", "radius": 8}
+  },
+  "button_secondary": {
+    "type": "button",
+    "layout_hint": "fill_width",
+    "style": {"background": "#223140", "text": "#e6edf5", "radius": 8}
+  },
+  "button_danger": {
+    "type": "button",
+    "layout_hint": "fill_width",
+    "style": {"background": "#ff4d4f", "text": "#ffffff", "radius": 8}
+  },
+  "text_body": {
+    "type": "text",
+    "layout_hint": "auto_height",
+    "style": {"color": "#c9d6e2", "size": 13, "line_height": 1.4}
+  },
+  "image_deco": {
+    "type": "image",
+    "layout_hint": "cover",
+    "style": {"fit": "cover", "opacity": 0.9, "radius": 8}
+  },
+  "hud_compact": {
+    "type": "hud",
+    "layout_hint": "grid_2x2",
+    "style": {"compact": true, "label_size": 11, "value_size": 16}
+  },
+  "divider": {
+    "type": "divider",
+    "layout_hint": "full_width",
+    "style": {"color": "#2f4253", "thickness": 1}
+  },
+  "spacer": {
+    "type": "spacer",
+    "layout_hint": "fixed",
+    "style": {"height": 8}
+  },
+  "status_light": {
+    "type": "status_light",
+    "layout_hint": "inline",
+    "style": {"ok": "#34c759", "warn": "#ffcc00", "error": "#ff4d4f", "radius": 6}
+  }
+}
