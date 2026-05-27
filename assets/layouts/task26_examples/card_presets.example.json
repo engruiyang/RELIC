@@ -1,0 +1,58 @@
+{
+  "normal_card": {
+    "shape": "rounded_rect",
+    "background": {"color": "#172330", "opacity": 0.94},
+    "border": {"color": "#2f4253", "width": 1},
+    "padding": 12,
+    "title_style": {"size": 16, "color": "#e6edf5", "weight": "bold"},
+    "body_style": {"size": 13, "color": "#c9d6e2"}
+  },
+  "glass_card": {
+    "shape": "rounded_rect",
+    "background": {"color": "#1b2a3a", "opacity": 0.72},
+    "border": {"color": "#67d5ff", "width": 1},
+    "padding": 12,
+    "title_style": {"size": 16, "color": "#e6edf5", "weight": "bold"},
+    "body_style": {"size": 13, "color": "#d9e6f2"}
+  },
+  "danger_card": {
+    "shape": "rounded_rect",
+    "background": {"color": "#3a1e24", "opacity": 0.95},
+    "border": {"color": "#ff4d4f", "width": 1},
+    "padding": 12,
+    "title_style": {"size": 16, "color": "#ffd7d7", "weight": "bold"},
+    "body_style": {"size": 13, "color": "#ffd7d7"}
+  },
+  "image_card": {
+    "shape": "image_frame",
+    "background": {"asset_id": "ui.panel.frame", "opacity": 1.0},
+    "border": {"color": "#2f4253", "width": 0},
+    "padding": 10,
+    "title_style": {"size": 15, "color": "#e6edf5", "weight": "bold"},
+    "body_style": {"size": 13, "color": "#c9d6e2"}
+  },
+  "hud_card": {
+    "shape": "pill",
+    "background": {"color": "#0f1720", "opacity": 0.92},
+    "border": {"color": "#70e0ff", "width": 1},
+    "padding": 10,
+    "title_style": {"size": 14, "color": "#e6edf5", "weight": "bold"},
+    "body_style": {"size": 12, "color": "#9aacbd"}
+  },
+  "cut_corner_card": {
+    "shape": "cut_corner",
+    "background": {"color": "#1a2532", "opacity": 0.95},
+    "border": {"color": "#4f6578", "width": 1},
+    "padding": 12,
+    "title_style": {"size": 15, "color": "#e6edf5", "weight": "bold"},
+    "body_style": {"size": 13, "color": "#c9d6e2"}
+  },
+  "game_card": {
+    "shape": "rect",
+    "background": {"color": "#020617", "opacity": 1.0},
+    "border": {"color": "#22d3ee", "width": 1},
+    "padding": 8,
+    "title_style": {"size": 14, "color": "#f8fafc", "weight": "bold"},
+    "body_style": {"size": 12, "color": "#cbd5e1"}
+  }
+}
