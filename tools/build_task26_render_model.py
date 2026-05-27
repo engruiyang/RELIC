@@ -8,7 +8,12 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from gui.desktop_model import build_home_render_model, build_page_render_model, write_render_model
+from gui.desktop_model import (
+    build_home_render_model,
+    build_home_render_model_summary,
+    build_page_render_model,
+    write_render_model,
+)
 from gui.desktop_schema import load_json
 
 
@@ -21,6 +26,7 @@ def main() -> None:
         "--output",
         default="assets/layouts/task26_examples/home_desktop_render_model.example.json",
     )
+    parser.add_argument("--summary", action="store_true")
     args = parser.parse_args()
 
     if args.page != "home":
@@ -36,6 +42,12 @@ def main() -> None:
     out_path = ROOT / args.output
     write_render_model(model, out_path)
     print(f"TASK26 render model written: {args.output}")
+
+    if args.summary:
+        summary = build_home_render_model_summary(example_root)
+        summary_output = ROOT / "assets/layouts/task26_examples/home_desktop_render_model_summary.example.json"
+        write_render_model(summary, summary_output)
+        print("TASK26 render model summary written: assets/layouts/task26_examples/home_desktop_render_model_summary.example.json")
 
 
 if __name__ == "__main__":

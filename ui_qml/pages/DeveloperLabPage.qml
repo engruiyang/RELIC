@@ -77,6 +77,26 @@ Item {
             }
         }
 
+
+
+        GroupBox {
+            title: "TASK26 Home Render Model Preview"
+
+            HomeRenderModelPreview {
+                id: task26HomeRenderModelPreview
+                width: parent.width
+                height: 360
+                pageId: "home"
+                cardCount: 4
+                widgetCount: 10
+                requiredCardCount: 2
+                lockedCardCount: 2
+                actionsText: "app.refresh_now, live.safe_stop"
+                sourceRootsText: "gameHudJson, renderResourcesJson, runtimeSnapshot, sessionState"
+                cardIdsText: "runtime_io_card, quick_actions_card, recent_session_card, relic_identity_card"
+            }
+        }
+
         GroupBox {
             title: "Metadata"
             Column {

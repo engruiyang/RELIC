@@ -130,6 +130,59 @@ def build_page_render_model(page_config: dict, *, page_width: int = 1200, page_h
     }
 
 
+def build_render_model_summary(model: dict) -> dict:
+    cards = model.get("cards")
+    if not isinstance(cards, list):
+        raise ValueError("render model cards must be list")
+
+    card_ids = [str(c.get("id", "")) for c in cards]
+    card_count = len(cards)
+    required_card_count = sum(1 for c in cards if bool(c.get("required", False)))
+    locked_card_count = sum(1 for c in cards if bool(c.get("locked", False)))
+
+    widget_count = 0
+    action_ids: set[str] = set()
+    source_roots: set[str] = set()
+
+    for c in cards:
+        widgets = c.get("widgets") or []
+        if not isinstance(widgets, list):
+            continue
+        widget_count += len(widgets)
+        for w in widgets:
+            if not isinstance(w, dict):
+                continue
+            aid = w.get("action_id")
+            if isinstance(aid, str) and aid:
+                action_ids.add(aid)
+            src = w.get("source")
+            if isinstance(src, str) and src:
+                source_roots.add(src.split(".", 1)[0])
+
+    action_ids_sorted = sorted(action_ids)
+    source_roots_sorted = sorted(source_roots)
+    preview_lines = [
+        f"Page: {model.get('page_id', 'n/a')}",
+        f"Cards: {card_count}",
+        f"Widgets: {widget_count}",
+        f"Required cards: {required_card_count}",
+        f"Locked cards: {locked_card_count}",
+        f"Actions: {', '.join(action_ids_sorted) if action_ids_sorted else 'n/a'}",
+    ]
+
+    return {
+        "page_id": model.get("page_id", ""),
+        "card_count": card_count,
+        "widget_count": widget_count,
+        "required_card_count": required_card_count,
+        "locked_card_count": locked_card_count,
+        "action_ids": action_ids_sorted,
+        "source_roots": source_roots_sorted,
+        "card_ids": card_ids,
+        "preview_lines": preview_lines,
+    }
+
+
 def build_home_render_model(example_root: Path) -> dict:
     page_path = example_root / "assets" / "layouts" / "task26_examples" / "home_page.desktop_demo.json"
     with page_path.open("r", encoding="utf-8") as f:
@@ -137,6 +190,10 @@ def build_home_render_model(example_root: Path) -> dict:
     if not isinstance(config, dict):
         raise ValueError("home_page.desktop_demo.json must be object")
     return build_page_render_model(config)
+
+
+def build_home_render_model_summary(example_root: Path) -> dict:
+    return build_render_model_summary(build_home_render_model(example_root))
 
 
 def write_render_model(model: dict, output_path: Path) -> None:

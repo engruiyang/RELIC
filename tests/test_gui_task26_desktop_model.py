@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from gui.desktop_model import build_home_render_model, build_page_render_model, write_render_model
+from gui.desktop_model import build_home_render_model, build_home_render_model_summary, build_page_render_model, build_render_model_summary, write_render_model
 
 EXAMPLES = Path("assets/layouts/task26_examples")
 
@@ -94,5 +94,27 @@ def test_generated_render_model_has_no_script_tokens(tmp_path: Path) -> None:
     out = tmp_path / "home_desktop_render_model.example.json"
     write_render_model(model, out)
     text = out.read_text(encoding="utf-8").lower()
+    for token in ["function", "eval", "script", "javascript:", "=>", "onclicked", "qt.calllater"]:
+        assert token not in text
+
+
+def test_build_render_model_summary_basic() -> None:
+    model = build_page_render_model(_home_cfg())
+    summary = build_render_model_summary(model)
+    assert summary["page_id"] == "home"
+    assert summary["card_count"] == len(model["cards"])
+    assert summary["widget_count"] > 0
+    assert summary["preview_lines"]
+
+
+def test_build_home_render_model_summary_has_expected_cards() -> None:
+    summary = build_home_render_model_summary(Path("."))
+    assert "runtime_io_card" in summary["card_ids"]
+    assert "quick_actions_card" in summary["card_ids"]
+
+
+def test_summary_has_no_script_like_tokens() -> None:
+    summary = build_home_render_model_summary(Path("."))
+    text = json.dumps(summary, ensure_ascii=False).lower()
     for token in ["function", "eval", "script", "javascript:", "=>", "onclicked", "qt.calllater"]:
         assert token not in text
