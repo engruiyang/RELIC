@@ -1,0 +1,236 @@
+{
+  "page_id": "home",
+  "title": "Home Desktop",
+  "subtitle": "TASK26A Desktop Demo",
+  "layout": {
+    "mode": "grid",
+    "columns": 12,
+    "rows": 8,
+    "gap": 8.0,
+    "padding": 10.0,
+    "page_width": 1200,
+    "page_height": 800,
+    "cell_width": 91.0,
+    "cell_height": 90.5
+  },
+  "cards": [
+    {
+      "id": "runtime_io_card",
+      "type": "runtime",
+      "title": "Runtime I/O",
+      "subtitle": "Connection and stream health",
+      "required": true,
+      "locked": true,
+      "x": 10.0,
+      "y": 10.0,
+      "width": 388.0,
+      "height": 287.5,
+      "preset": "normal_card",
+      "style": {},
+      "widgets": [
+        {
+          "id": "runtime_text",
+          "type": "text",
+          "label": "Runtime",
+          "value": null,
+          "source": "runtimeSnapshot.connection_status",
+          "fallback": "unknown",
+          "unit": "",
+          "action_id": null,
+          "variant": "",
+          "required": false,
+          "style": {},
+          "enabled_when": null,
+          "visible_when": "always"
+        },
+        {
+          "id": "stream_alive",
+          "type": "metric",
+          "label": "Stream",
+          "value": null,
+          "source": "runtimeSnapshot.stream_alive",
+          "fallback": "false",
+          "unit": "",
+          "action_id": null,
+          "variant": "",
+          "required": false,
+          "style": {},
+          "enabled_when": null,
+          "visible_when": "always"
+        },
+        {
+          "id": "attention_metric",
+          "type": "metric",
+          "label": "Attention",
+          "value": null,
+          "source": "runtimeSnapshot.attention",
+          "fallback": "n/a",
+          "unit": "",
+          "action_id": null,
+          "variant": "",
+          "required": false,
+          "style": {},
+          "enabled_when": null,
+          "visible_when": "always"
+        }
+      ]
+    },
+    {
+      "id": "quick_actions_card",
+      "type": "actions",
+      "title": "Quick Actions",
+      "subtitle": "Safety and refresh",
+      "required": true,
+      "locked": true,
+      "x": 406.0,
+      "y": 10.0,
+      "width": 388.0,
+      "height": 287.5,
+      "preset": "danger_card",
+      "style": {},
+      "widgets": [
+        {
+          "id": "refresh_btn",
+          "type": "button",
+          "label": "Refresh",
+          "value": null,
+          "source": "",
+          "fallback": "",
+          "unit": "",
+          "action_id": "app.refresh_now",
+          "variant": "primary",
+          "required": true,
+          "style": {
+            "preset": "button_primary"
+          },
+          "enabled_when": "always",
+          "visible_when": null
+        },
+        {
+          "id": "safe_stop_btn",
+          "type": "button",
+          "label": "Safe Stop",
+          "value": null,
+          "source": "",
+          "fallback": "",
+          "unit": "",
+          "action_id": "live.safe_stop",
+          "variant": "danger",
+          "required": true,
+          "style": {
+            "preset": "button_danger"
+          },
+          "enabled_when": "always",
+          "visible_when": null
+        }
+      ]
+    },
+    {
+      "id": "recent_session_card",
+      "type": "session",
+      "title": "Recent Session",
+      "subtitle": "Session summary",
+      "required": false,
+      "locked": false,
+      "x": 10.0,
+      "y": 305.5,
+      "width": 586.0,
+      "height": 287.5,
+      "preset": "glass_card",
+      "style": {},
+      "widgets": [
+        {
+          "id": "session_active",
+          "type": "metric",
+          "label": "Active",
+          "value": null,
+          "source": "sessionState.session_active",
+          "fallback": "false",
+          "unit": "",
+          "action_id": null,
+          "variant": "",
+          "required": false,
+          "style": {},
+          "enabled_when": null,
+          "visible_when": "always"
+        },
+        {
+          "id": "session_id",
+          "type": "metric",
+          "label": "Session ID",
+          "value": null,
+          "source": "sessionState.current_session_id",
+          "fallback": "none",
+          "unit": "",
+          "action_id": null,
+          "variant": "",
+          "required": false,
+          "style": {},
+          "enabled_when": null,
+          "visible_when": "always"
+        },
+        {
+          "id": "hud_inline",
+          "type": "hud",
+          "label": "HUD",
+          "value": null,
+          "source": "gameHudJson",
+          "fallback": "{}",
+          "unit": "",
+          "action_id": null,
+          "variant": "",
+          "required": false,
+          "style": {},
+          "enabled_when": null,
+          "visible_when": "always"
+        }
+      ]
+    },
+    {
+      "id": "relic_identity_card",
+      "type": "identity",
+      "title": "RELIC Identity",
+      "subtitle": "Brand and visual",
+      "required": false,
+      "locked": false,
+      "x": 802.0,
+      "y": 10.0,
+      "width": 388.0,
+      "height": 583.0,
+      "preset": "image_card",
+      "style": {},
+      "widgets": [
+        {
+          "id": "identity_image",
+          "type": "image",
+          "label": "Identity",
+          "value": null,
+          "source": "renderResourcesJson.assets.ui.logo.main",
+          "fallback": "asset:background.home.main",
+          "unit": "",
+          "action_id": null,
+          "variant": "",
+          "required": false,
+          "style": {},
+          "enabled_when": null,
+          "visible_when": "always"
+        },
+        {
+          "id": "identity_text",
+          "type": "text",
+          "label": "Tagline",
+          "value": "RELIC / 意念玩家",
+          "source": "",
+          "fallback": "RELIC",
+          "unit": "",
+          "action_id": null,
+          "variant": "",
+          "required": false,
+          "style": {},
+          "enabled_when": null,
+          "visible_when": "always"
+        }
+      ]
+    }
+  ]
+}
