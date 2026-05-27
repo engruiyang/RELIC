@@ -2,10 +2,23 @@
   {
     "pipeline_id": "live_connection",
     "mandatory": true,
-    "required_cards": ["runtime_io_card"],
-    "required_fields": ["appState.connection_status", "runtimeSnapshot.device_connected"],
-    "required_buttons": ["app.refresh_now", "live.safe_stop"],
-    "allowed_pages": ["home", "training", "diagnostics"],
+    "required_cards": [
+      "runtime_io_card"
+    ],
+    "required_fields": [
+      "appState.connection_status",
+      "runtimeSnapshot.device_connected",
+      "runtimeSnapshot.connection_status"
+    ],
+    "required_buttons": [
+      "app.refresh_now",
+      "live.safe_stop"
+    ],
+    "allowed_pages": [
+      "home",
+      "training",
+      "diagnostics"
+    ],
     "fallback_card": "connection_status_card",
     "coverage_policy": {
       "visibility": "always",
@@ -18,111 +31,300 @@
   {
     "pipeline_id": "runtime",
     "mandatory": true,
-    "required_cards": ["runtime_io_card", "diagnostics_summary_card"],
-    "required_fields": ["runtimeSnapshot.stream_alive", "runtimeSnapshot.warning_flags", "runtimeSnapshot.error_flags"],
-    "required_buttons": ["app.refresh_now"],
-    "allowed_pages": ["home", "diagnostics"],
+    "required_cards": [
+      "runtime_io_card",
+      "diagnostics_summary_card"
+    ],
+    "required_fields": [
+      "runtimeSnapshot.stream_alive",
+      "runtimeSnapshot.warning_flags",
+      "runtimeSnapshot.error_flags"
+    ],
+    "required_buttons": [
+      "app.refresh_now"
+    ],
+    "allowed_pages": [
+      "home",
+      "diagnostics"
+    ],
     "fallback_card": "runtime_io_card",
-    "coverage_policy": {"visibility": "always", "always_accessible": true, "fallback_location": "home", "allow_hide": false, "allow_collapse": true}
+    "coverage_policy": {
+      "visibility": "always",
+      "always_accessible": true,
+      "fallback_location": "home",
+      "allow_hide": false,
+      "allow_collapse": true
+    }
   },
   {
     "pipeline_id": "attention_stream",
     "mandatory": true,
-    "required_cards": ["attention_stream_card"],
-    "required_fields": ["runtimeSnapshot.attention", "runtimeSnapshot.attention_age_ms"],
+    "required_cards": [
+      "attention_stream_card",
+      "runtime_io_card"
+    ],
+    "required_fields": [
+      "runtimeSnapshot.attention",
+      "runtimeSnapshot.attention_age_ms"
+    ],
     "required_buttons": [],
-    "allowed_pages": ["home", "training", "diagnostics"],
+    "allowed_pages": [
+      "home",
+      "training",
+      "diagnostics"
+    ],
     "fallback_card": "runtime_io_card",
-    "coverage_policy": {"visibility": "always", "always_accessible": true, "fallback_location": "home", "allow_hide": false, "allow_collapse": true}
+    "coverage_policy": {
+      "visibility": "always",
+      "always_accessible": true,
+      "fallback_location": "home",
+      "allow_hide": false,
+      "allow_collapse": true
+    }
   },
   {
     "pipeline_id": "gyro_stream",
     "mandatory": true,
-    "required_cards": ["gyro_stream_card"],
-    "required_fields": ["runtimeSnapshot.gyro_x", "runtimeSnapshot.gyro_y", "runtimeSnapshot.gyro_z", "runtimeSnapshot.gyro_age_ms"],
+    "required_cards": [
+      "gyro_stream_card",
+      "runtime_io_card"
+    ],
+    "required_fields": [
+      "runtimeSnapshot.gyro_x",
+      "runtimeSnapshot.gyro_y",
+      "runtimeSnapshot.gyro_z",
+      "runtimeSnapshot.gyro_age_ms",
+      "runtimeSnapshot.stream_alive"
+    ],
     "required_buttons": [],
-    "allowed_pages": ["home", "training", "diagnostics"],
+    "allowed_pages": [
+      "home",
+      "training",
+      "diagnostics"
+    ],
     "fallback_card": "runtime_io_card",
-    "coverage_policy": {"visibility": "always", "always_accessible": true, "fallback_location": "home", "allow_hide": false, "allow_collapse": true}
+    "coverage_policy": {
+      "visibility": "always",
+      "always_accessible": true,
+      "fallback_location": "home",
+      "allow_hide": false,
+      "allow_collapse": true
+    }
   },
   {
     "pipeline_id": "session",
     "mandatory": true,
-    "required_cards": ["session_card", "training_control_card"],
-    "required_fields": ["sessionState.session_active", "sessionState.current_session_id", "sessionState.session_elapsed_ms"],
-    "required_buttons": ["session.start", "session.stop"],
-    "allowed_pages": ["training", "home"],
+    "required_cards": [
+      "session_card",
+      "training_control_card"
+    ],
+    "required_fields": [
+      "sessionState.session_active",
+      "sessionState.current_session_id",
+      "sessionState.session_elapsed_ms"
+    ],
+    "required_buttons": [
+      "session.start",
+      "session.stop"
+    ],
+    "allowed_pages": [
+      "training",
+      "home"
+    ],
     "fallback_card": "session_card",
-    "coverage_policy": {"visibility": "always", "always_accessible": true, "fallback_location": "training", "allow_hide": false, "allow_collapse": true}
+    "coverage_policy": {
+      "visibility": "always",
+      "always_accessible": true,
+      "fallback_location": "training",
+      "allow_hide": false,
+      "allow_collapse": true
+    }
   },
   {
     "pipeline_id": "training",
     "mandatory": true,
-    "required_cards": ["training_control_card"],
-    "required_fields": ["controlState.current_session_id"],
-    "required_buttons": ["session.start", "session.stop", "live.safe_stop"],
-    "allowed_pages": ["training", "home"],
+    "required_cards": [
+      "training_control_card"
+    ],
+    "required_fields": [
+      "controlState.current_session_id",
+      "controlStateJson.current_user_id"
+    ],
+    "required_buttons": [
+      "session.start",
+      "session.stop",
+      "live.safe_stop"
+    ],
+    "allowed_pages": [
+      "training",
+      "home"
+    ],
     "fallback_card": "training_control_card",
-    "coverage_policy": {"visibility": "always", "always_accessible": true, "fallback_location": "training", "allow_hide": false, "allow_collapse": false}
+    "coverage_policy": {
+      "visibility": "always",
+      "always_accessible": true,
+      "fallback_location": "training",
+      "allow_hide": false,
+      "allow_collapse": false
+    }
   },
   {
     "pipeline_id": "calibration",
     "mandatory": true,
-    "required_cards": ["calibration_status_card", "calibration_action_card"],
-    "required_fields": ["controlState.current_user_id", "controlState.current_calibration_id"],
-    "required_buttons": ["calibration.status", "calibration.start", "calibration.cancel"],
-    "allowed_pages": ["calibration", "training"],
+    "required_cards": [
+      "calibration_status_card",
+      "calibration_action_card"
+    ],
+    "required_fields": [
+      "controlState.current_user_id",
+      "controlState.current_calibration_id",
+      "controlStateJson.current_user_id",
+      "controlStateJson.current_calibration_id"
+    ],
+    "required_buttons": [
+      "calibration.status",
+      "calibration.start",
+      "calibration.cancel"
+    ],
+    "allowed_pages": [
+      "calibration",
+      "training"
+    ],
     "fallback_card": "calibration_status_card",
-    "coverage_policy": {"visibility": "always", "always_accessible": true, "fallback_location": "calibration", "allow_hide": false, "allow_collapse": true}
+    "coverage_policy": {
+      "visibility": "always",
+      "always_accessible": true,
+      "fallback_location": "calibration",
+      "allow_hide": false,
+      "allow_collapse": true
+    }
   },
   {
     "pipeline_id": "diagnostics",
     "mandatory": true,
-    "required_cards": ["diagnostics_summary_card"],
-    "required_fields": ["runtimeSnapshot.warning_flags", "runtimeSnapshot.error_flags", "runtimeSnapshot.last_error"],
-    "required_buttons": ["diagnostics.refresh"],
-    "allowed_pages": ["diagnostics", "home"],
+    "required_cards": [
+      "diagnostics_summary_card",
+      "runtime_io_card"
+    ],
+    "required_fields": [
+      "runtimeSnapshot.warning_flags",
+      "runtimeSnapshot.error_flags",
+      "runtimeSnapshot.last_error"
+    ],
+    "required_buttons": [
+      "diagnostics.refresh",
+      "app.refresh_now"
+    ],
+    "allowed_pages": [
+      "diagnostics",
+      "home"
+    ],
     "fallback_card": "diagnostics_summary_card",
-    "coverage_policy": {"visibility": "always", "always_accessible": true, "fallback_location": "diagnostics", "allow_hide": false, "allow_collapse": true}
+    "coverage_policy": {
+      "visibility": "always",
+      "always_accessible": true,
+      "fallback_location": "diagnostics",
+      "allow_hide": false,
+      "allow_collapse": true
+    }
   },
   {
     "pipeline_id": "game",
     "mandatory": false,
-    "required_cards": ["game_hud_card", "game_canvas_card"],
-    "required_fields": ["gameHudJson.score", "gameHudJson.combo", "gameViewJson.entities"],
-    "required_buttons": ["game.status"],
-    "allowed_pages": ["training"],
+    "required_cards": [
+      "game_hud_card",
+      "game_canvas_card"
+    ],
+    "required_fields": [
+      "gameHudJson.score",
+      "gameHudJson.combo",
+      "gameViewJson.entities"
+    ],
+    "required_buttons": [
+      "game.status"
+    ],
+    "allowed_pages": [
+      "training"
+    ],
     "fallback_card": "game_hud_card",
-    "coverage_policy": {"visibility": "conditional", "always_accessible": false, "fallback_location": "training", "allow_hide": true, "allow_collapse": true}
+    "coverage_policy": {
+      "visibility": "conditional",
+      "always_accessible": false,
+      "fallback_location": "training",
+      "allow_hide": true,
+      "allow_collapse": true
+    }
   },
   {
     "pipeline_id": "report",
     "mandatory": false,
-    "required_cards": ["report_entry_card"],
-    "required_fields": ["sessionState.latest_report_path"],
+    "required_cards": [
+      "report_entry_card"
+    ],
+    "required_fields": [
+      "sessionState.latest_report_path"
+    ],
     "required_buttons": [],
-    "allowed_pages": ["report", "home"],
+    "allowed_pages": [
+      "report",
+      "home"
+    ],
     "fallback_card": "report_entry_card",
-    "coverage_policy": {"visibility": "conditional", "always_accessible": false, "fallback_location": "report", "allow_hide": true, "allow_collapse": true}
+    "coverage_policy": {
+      "visibility": "conditional",
+      "always_accessible": false,
+      "fallback_location": "report",
+      "allow_hide": true,
+      "allow_collapse": true
+    }
   },
   {
     "pipeline_id": "user",
     "mandatory": false,
-    "required_cards": ["user_profile_card"],
-    "required_fields": ["controlState.current_user_id"],
-    "required_buttons": ["user.show_profile"],
-    "allowed_pages": ["user", "home"],
+    "required_cards": [
+      "user_profile_card"
+    ],
+    "required_fields": [
+      "controlState.current_user_id"
+    ],
+    "required_buttons": [
+      "user.show_profile"
+    ],
+    "allowed_pages": [
+      "user",
+      "home"
+    ],
     "fallback_card": "user_profile_card",
-    "coverage_policy": {"visibility": "conditional", "always_accessible": false, "fallback_location": "home", "allow_hide": true, "allow_collapse": true}
+    "coverage_policy": {
+      "visibility": "conditional",
+      "always_accessible": false,
+      "fallback_location": "home",
+      "allow_hide": true,
+      "allow_collapse": true
+    }
   },
   {
     "pipeline_id": "decoration",
     "mandatory": false,
-    "required_cards": ["relic_identity_card"],
+    "required_cards": [
+      "relic_identity_card"
+    ],
     "required_fields": [],
     "required_buttons": [],
-    "allowed_pages": ["home", "training", "report", "diagnostics", "developer"],
+    "allowed_pages": [
+      "home",
+      "training",
+      "report",
+      "diagnostics",
+      "developer"
+    ],
     "fallback_card": "relic_identity_card",
-    "coverage_policy": {"visibility": "conditional", "always_accessible": false, "fallback_location": "home", "allow_hide": true, "allow_collapse": true}
+    "coverage_policy": {
+      "visibility": "conditional",
+      "always_accessible": false,
+      "fallback_location": "home",
+      "allow_hide": true,
+      "allow_collapse": true
+    }
   }
 ]

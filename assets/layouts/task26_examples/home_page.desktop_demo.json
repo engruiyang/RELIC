@@ -18,15 +18,58 @@
       "required": true,
       "locked": true,
       "preset": "normal_card",
-      "position": {"col": 1, "row": 1, "col_span": 4, "row_span": 3},
+      "position": {
+        "col": 1,
+        "row": 1,
+        "col_span": 4,
+        "row_span": 3
+      },
       "shape": "rounded_rect",
       "style": {},
       "widgets": [
-        {"type": "text", "id": "runtime_text", "label": "Runtime", "source": "runtimeSnapshot.connection_status", "fallback": "unknown", "format": "plain", "unit": "", "preset": "text_body", "style": {}, "visible_when": "always"},
-        {"type": "metric", "id": "stream_alive", "label": "Stream", "source": "runtimeSnapshot.stream_alive", "fallback": "false", "format": "bool", "unit": "", "preset": "metric_default", "style": {}, "visible_when": "always"},
-        {"type": "metric", "id": "attention_metric", "label": "Attention", "source": "runtimeSnapshot.attention", "fallback": "n/a", "format": "float_2", "unit": "", "preset": "metric_default", "style": {}, "visible_when": "always"}
+        {
+          "type": "text",
+          "id": "runtime_text",
+          "label": "Runtime",
+          "source": "runtimeSnapshot.connection_status",
+          "fallback": "unknown",
+          "format": "plain",
+          "unit": "",
+          "preset": "text_body",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "metric",
+          "id": "stream_alive",
+          "label": "Stream",
+          "source": "runtimeSnapshot.stream_alive",
+          "fallback": "false",
+          "format": "bool",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "metric",
+          "id": "attention_metric",
+          "label": "Attention",
+          "source": "runtimeSnapshot.attention",
+          "fallback": "n/a",
+          "format": "float_2",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        }
       ],
-      "card_policy": {"allow_move": true, "allow_resize": true, "allow_remove": false, "allow_collapse": true}
+      "card_policy": {
+        "allow_move": true,
+        "allow_resize": true,
+        "allow_remove": false,
+        "allow_collapse": true
+      }
     },
     {
       "id": "quick_actions_card",
@@ -34,16 +77,52 @@
       "title": "Quick Actions",
       "subtitle": "Safety and refresh",
       "required": true,
-      "locked": false,
+      "locked": true,
       "preset": "danger_card",
-      "position": {"col": 5, "row": 1, "col_span": 4, "row_span": 3},
+      "position": {
+        "col": 5,
+        "row": 1,
+        "col_span": 4,
+        "row_span": 3
+      },
       "shape": "rounded_rect",
       "style": {},
       "widgets": [
-        {"type": "button", "id": "refresh_btn", "label": "Refresh", "action_id": "app.refresh_now", "args": {}, "variant": "primary", "required": true, "enabled_when": "always", "confirm": false, "style": {"preset": "button_primary"}},
-        {"type": "button", "id": "safe_stop_btn", "label": "Safe Stop", "action_id": "live.safe_stop", "args": {}, "variant": "danger", "required": true, "enabled_when": "always", "confirm": true, "style": {"preset": "button_danger"}}
+        {
+          "type": "button",
+          "id": "refresh_btn",
+          "label": "Refresh",
+          "action_id": "app.refresh_now",
+          "args": {},
+          "variant": "primary",
+          "required": true,
+          "enabled_when": "always",
+          "confirm": false,
+          "style": {
+            "preset": "button_primary"
+          }
+        },
+        {
+          "type": "button",
+          "id": "safe_stop_btn",
+          "label": "Safe Stop",
+          "action_id": "live.safe_stop",
+          "args": {},
+          "variant": "danger",
+          "required": true,
+          "enabled_when": "always",
+          "confirm": true,
+          "style": {
+            "preset": "button_danger"
+          }
+        }
       ],
-      "card_policy": {"allow_move": true, "allow_resize": true, "allow_remove": false, "allow_collapse": true}
+      "card_policy": {
+        "allow_move": true,
+        "allow_resize": true,
+        "allow_remove": false,
+        "allow_collapse": true
+      }
     },
     {
       "id": "recent_session_card",
@@ -53,15 +132,58 @@
       "required": false,
       "locked": false,
       "preset": "glass_card",
-      "position": {"col": 1, "row": 4, "col_span": 6, "row_span": 3},
+      "position": {
+        "col": 1,
+        "row": 4,
+        "col_span": 6,
+        "row_span": 3
+      },
       "shape": "rounded_rect",
       "style": {},
       "widgets": [
-        {"type": "metric", "id": "session_active", "label": "Active", "source": "sessionState.session_active", "fallback": "false", "format": "bool", "unit": "", "preset": "metric_default", "style": {}, "visible_when": "always"},
-        {"type": "metric", "id": "session_id", "label": "Session ID", "source": "sessionState.current_session_id", "fallback": "none", "format": "plain", "unit": "", "preset": "metric_default", "style": {}, "visible_when": "always"},
-        {"type": "hud", "id": "hud_inline", "label": "HUD", "source": "gameHudJson", "fallback": "{}", "format": "object", "unit": "", "preset": "hud_compact", "style": {}, "visible_when": "always"}
+        {
+          "type": "metric",
+          "id": "session_active",
+          "label": "Active",
+          "source": "sessionState.session_active",
+          "fallback": "false",
+          "format": "bool",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "metric",
+          "id": "session_id",
+          "label": "Session ID",
+          "source": "sessionState.current_session_id",
+          "fallback": "none",
+          "format": "plain",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "hud",
+          "id": "hud_inline",
+          "label": "HUD",
+          "source": "gameHudJson",
+          "fallback": "{}",
+          "format": "object",
+          "unit": "",
+          "preset": "hud_compact",
+          "style": {},
+          "visible_when": "always"
+        }
       ],
-      "card_policy": {"allow_move": true, "allow_resize": true, "allow_remove": true, "allow_collapse": true}
+      "card_policy": {
+        "allow_move": true,
+        "allow_resize": true,
+        "allow_remove": true,
+        "allow_collapse": true
+      }
     },
     {
       "id": "relic_identity_card",
@@ -71,14 +193,46 @@
       "required": false,
       "locked": false,
       "preset": "image_card",
-      "position": {"col": 9, "row": 1, "col_span": 4, "row_span": 6},
+      "position": {
+        "col": 9,
+        "row": 1,
+        "col_span": 4,
+        "row_span": 6
+      },
       "shape": "image_frame",
       "style": {},
       "widgets": [
-        {"type": "image", "id": "identity_image", "label": "Identity", "source": "asset:ui.logo.main", "fallback": "asset:background.home.main", "format": "asset", "unit": "", "preset": "image_deco", "style": {}, "visible_when": "always"},
-        {"type": "text", "id": "identity_text", "label": "Tagline", "value": "RELIC / 意念玩家", "fallback": "RELIC", "format": "plain", "unit": "", "preset": "text_body", "style": {}, "visible_when": "always"}
+        {
+          "type": "image",
+          "id": "identity_image",
+          "label": "Identity",
+          "source": "asset:ui.logo.main",
+          "fallback": "asset:background.home.main",
+          "format": "asset",
+          "unit": "",
+          "preset": "image_deco",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "text",
+          "id": "identity_text",
+          "label": "Tagline",
+          "value": "RELIC / 意念玩家",
+          "fallback": "RELIC",
+          "format": "plain",
+          "unit": "",
+          "preset": "text_body",
+          "style": {},
+          "visible_when": "always"
+        }
       ],
-      "card_policy": {"allow_move": true, "allow_resize": true, "allow_remove": true, "allow_collapse": true}
+      "card_policy": {
+        "allow_move": true,
+        "allow_resize": true,
+        "allow_remove": true,
+        "allow_collapse": true
+      }
     }
   ]
 }

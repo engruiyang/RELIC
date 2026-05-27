@@ -18,15 +18,64 @@
       "required": true,
       "locked": true,
       "preset": "danger_card",
-      "position": {"col": 1, "row": 1, "col_span": 4, "row_span": 3},
+      "position": {
+        "col": 1,
+        "row": 1,
+        "col_span": 4,
+        "row_span": 3
+      },
       "shape": "rounded_rect",
       "style": {},
       "widgets": [
-        {"type": "button", "id": "start_training", "label": "Start Training", "action_id": "session.start", "args": {}, "variant": "primary", "required": true, "enabled_when": "controlStateJson.current_user_id!=null", "confirm": false, "style": {"preset": "button_primary"}},
-        {"type": "button", "id": "stop_training", "label": "Stop Training", "action_id": "session.stop", "args": {}, "variant": "secondary", "required": true, "enabled_when": "sessionState.session_active==true", "confirm": true, "style": {"preset": "button_secondary"}},
-        {"type": "button", "id": "safe_stop_training", "label": "Safe Stop", "action_id": "live.safe_stop", "args": {}, "variant": "danger", "required": true, "enabled_when": "always", "confirm": true, "style": {"preset": "button_danger"}}
+        {
+          "type": "button",
+          "id": "start_training",
+          "label": "Start Training",
+          "action_id": "session.start",
+          "args": {},
+          "variant": "primary",
+          "required": true,
+          "enabled_when": "controlStateJson.current_user_id!=null",
+          "confirm": false,
+          "style": {
+            "preset": "button_primary"
+          }
+        },
+        {
+          "type": "button",
+          "id": "stop_training",
+          "label": "Stop Training",
+          "action_id": "session.stop",
+          "args": {},
+          "variant": "secondary",
+          "required": true,
+          "enabled_when": "sessionState.session_active==true",
+          "confirm": true,
+          "style": {
+            "preset": "button_secondary"
+          }
+        },
+        {
+          "type": "button",
+          "id": "safe_stop_training",
+          "label": "Safe Stop",
+          "action_id": "live.safe_stop",
+          "args": {},
+          "variant": "danger",
+          "required": true,
+          "enabled_when": "always",
+          "confirm": true,
+          "style": {
+            "preset": "button_danger"
+          }
+        }
       ],
-      "card_policy": {"allow_move": true, "allow_resize": true, "allow_remove": false, "allow_collapse": true}
+      "card_policy": {
+        "allow_move": true,
+        "allow_resize": true,
+        "allow_remove": false,
+        "allow_collapse": true
+      }
     },
     {
       "id": "session_card",
@@ -34,17 +83,60 @@
       "title": "Session",
       "subtitle": "Active session state",
       "required": true,
-      "locked": false,
+      "locked": true,
       "preset": "normal_card",
-      "position": {"col": 5, "row": 1, "col_span": 4, "row_span": 3},
+      "position": {
+        "col": 5,
+        "row": 1,
+        "col_span": 4,
+        "row_span": 3
+      },
       "shape": "rounded_rect",
       "style": {},
       "widgets": [
-        {"type": "metric", "id": "sess_active", "label": "Active", "source": "sessionState.session_active", "fallback": "false", "format": "bool", "unit": "", "preset": "metric_default", "style": {}, "visible_when": "always"},
-        {"type": "metric", "id": "sess_id", "label": "Session ID", "source": "sessionState.current_session_id", "fallback": "none", "format": "plain", "unit": "", "preset": "metric_default", "style": {}, "visible_when": "always"},
-        {"type": "metric", "id": "sess_elapsed", "label": "Elapsed", "source": "sessionState.session_elapsed_ms", "fallback": "0", "format": "int", "unit": "ms", "preset": "metric_default", "style": {}, "visible_when": "always"}
+        {
+          "type": "metric",
+          "id": "sess_active",
+          "label": "Active",
+          "source": "sessionState.session_active",
+          "fallback": "false",
+          "format": "bool",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "metric",
+          "id": "sess_id",
+          "label": "Session ID",
+          "source": "sessionState.current_session_id",
+          "fallback": "none",
+          "format": "plain",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "metric",
+          "id": "sess_elapsed",
+          "label": "Elapsed",
+          "source": "sessionState.session_elapsed_ms",
+          "fallback": "0",
+          "format": "int",
+          "unit": "ms",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        }
       ],
-      "card_policy": {"allow_move": true, "allow_resize": true, "allow_remove": false, "allow_collapse": true}
+      "card_policy": {
+        "allow_move": true,
+        "allow_resize": true,
+        "allow_remove": false,
+        "allow_collapse": true
+      }
     },
     {
       "id": "calibration_status_card",
@@ -52,17 +144,62 @@
       "title": "Calibration Status",
       "subtitle": "Training prerequisite",
       "required": true,
-      "locked": false,
+      "locked": true,
       "preset": "glass_card",
-      "position": {"col": 9, "row": 1, "col_span": 4, "row_span": 3},
+      "position": {
+        "col": 9,
+        "row": 1,
+        "col_span": 4,
+        "row_span": 3
+      },
       "shape": "rounded_rect",
       "style": {},
       "widgets": [
-        {"type": "metric", "id": "cal_user", "label": "User", "source": "controlStateJson.current_user_id", "fallback": "none", "format": "plain", "unit": "", "preset": "metric_default", "style": {}, "visible_when": "always"},
-        {"type": "metric", "id": "cal_id", "label": "Calibration ID", "source": "controlStateJson.current_calibration_id", "fallback": "none", "format": "plain", "unit": "", "preset": "metric_default", "style": {}, "visible_when": "always"},
-        {"type": "button", "id": "cal_status_btn", "label": "Calibration Status", "action_id": "calibration.status", "args": {}, "variant": "secondary", "required": true, "enabled_when": "always", "confirm": false, "style": {"preset": "button_secondary"}}
+        {
+          "type": "metric",
+          "id": "cal_user",
+          "label": "User",
+          "source": "controlStateJson.current_user_id",
+          "fallback": "none",
+          "format": "plain",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "metric",
+          "id": "cal_id",
+          "label": "Calibration ID",
+          "source": "controlStateJson.current_calibration_id",
+          "fallback": "none",
+          "format": "plain",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "button",
+          "id": "cal_status_btn",
+          "label": "Calibration Status",
+          "action_id": "calibration.status",
+          "args": {},
+          "variant": "secondary",
+          "required": true,
+          "enabled_when": "always",
+          "confirm": false,
+          "style": {
+            "preset": "button_secondary"
+          }
+        }
       ],
-      "card_policy": {"allow_move": true, "allow_resize": true, "allow_remove": false, "allow_collapse": true}
+      "card_policy": {
+        "allow_move": true,
+        "allow_resize": true,
+        "allow_remove": false,
+        "allow_collapse": true
+      }
     },
     {
       "id": "runtime_io_card",
@@ -70,17 +207,60 @@
       "title": "Runtime",
       "subtitle": "Signal and warnings",
       "required": true,
-      "locked": false,
+      "locked": true,
       "preset": "normal_card",
-      "position": {"col": 1, "row": 4, "col_span": 4, "row_span": 3},
+      "position": {
+        "col": 1,
+        "row": 4,
+        "col_span": 4,
+        "row_span": 3
+      },
       "shape": "rounded_rect",
       "style": {},
       "widgets": [
-        {"type": "metric", "id": "run_stream", "label": "Stream", "source": "runtimeSnapshot.stream_alive", "fallback": "false", "format": "bool", "unit": "", "preset": "metric_default", "style": {}, "visible_when": "always"},
-        {"type": "metric", "id": "run_warn", "label": "Warning", "source": "runtimeSnapshot.warning_flags", "fallback": "[]", "format": "plain", "unit": "", "preset": "metric_warning", "style": {}, "visible_when": "always"},
-        {"type": "metric", "id": "run_err", "label": "Error", "source": "runtimeSnapshot.error_flags", "fallback": "[]", "format": "plain", "unit": "", "preset": "metric_danger", "style": {}, "visible_when": "always"}
+        {
+          "type": "metric",
+          "id": "run_stream",
+          "label": "Stream",
+          "source": "runtimeSnapshot.stream_alive",
+          "fallback": "false",
+          "format": "bool",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "metric",
+          "id": "run_warn",
+          "label": "Warning",
+          "source": "runtimeSnapshot.warning_flags",
+          "fallback": "[]",
+          "format": "plain",
+          "unit": "",
+          "preset": "metric_warning",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "metric",
+          "id": "run_err",
+          "label": "Error",
+          "source": "runtimeSnapshot.error_flags",
+          "fallback": "[]",
+          "format": "plain",
+          "unit": "",
+          "preset": "metric_danger",
+          "style": {},
+          "visible_when": "always"
+        }
       ],
-      "card_policy": {"allow_move": true, "allow_resize": true, "allow_remove": false, "allow_collapse": true}
+      "card_policy": {
+        "allow_move": true,
+        "allow_resize": true,
+        "allow_remove": false,
+        "allow_collapse": true
+      }
     },
     {
       "id": "game_hud_card",
@@ -88,15 +268,36 @@
       "title": "Game HUD",
       "subtitle": "TraceLock metrics",
       "required": true,
-      "locked": false,
+      "locked": true,
       "preset": "hud_card",
-      "position": {"col": 5, "row": 4, "col_span": 8, "row_span": 2},
+      "position": {
+        "col": 5,
+        "row": 4,
+        "col_span": 8,
+        "row_span": 2
+      },
       "shape": "pill",
       "style": {},
       "widgets": [
-        {"type": "hud", "id": "hud_bundle", "label": "HUD", "source": "gameHudJson", "fallback": "{}", "format": "object", "unit": "", "preset": "hud_compact", "style": {}, "visible_when": "always"}
+        {
+          "type": "hud",
+          "id": "hud_bundle",
+          "label": "HUD",
+          "source": "gameHudJson",
+          "fallback": "{}",
+          "format": "object",
+          "unit": "",
+          "preset": "hud_compact",
+          "style": {},
+          "visible_when": "always"
+        }
       ],
-      "card_policy": {"allow_move": true, "allow_resize": true, "allow_remove": false, "allow_collapse": true}
+      "card_policy": {
+        "allow_move": true,
+        "allow_resize": true,
+        "allow_remove": false,
+        "allow_collapse": true
+      }
     },
     {
       "id": "game_canvas_card",
@@ -104,15 +305,36 @@
       "title": "Game Canvas",
       "subtitle": "TraceLock viewport",
       "required": true,
-      "locked": false,
+      "locked": true,
       "preset": "game_card",
-      "position": {"col": 5, "row": 6, "col_span": 8, "row_span": 4},
+      "position": {
+        "col": 5,
+        "row": 6,
+        "col_span": 8,
+        "row_span": 4
+      },
       "shape": "rect",
       "style": {},
       "widgets": [
-        {"type": "game", "id": "trace_lock_canvas", "label": "TraceLock", "source": "gameViewJson", "fallback": "{}", "format": "object", "unit": "", "preset": "game_card", "style": {}, "visible_when": "always"}
+        {
+          "type": "game",
+          "id": "trace_lock_canvas",
+          "label": "TraceLock",
+          "source": "gameViewJson",
+          "fallback": "{}",
+          "format": "object",
+          "unit": "",
+          "preset": "game_card",
+          "style": {},
+          "visible_when": "always"
+        }
       ],
-      "card_policy": {"allow_move": false, "allow_resize": true, "allow_remove": false, "allow_collapse": false}
+      "card_policy": {
+        "allow_move": false,
+        "allow_resize": true,
+        "allow_remove": false,
+        "allow_collapse": false
+      }
     }
   ]
 }
