@@ -1,0 +1,98 @@
+{
+  "page_id": "home",
+  "max_slots": 4,
+  "slots": [
+    {
+      "slot_index": 1,
+      "card_id": "runtime_io_card",
+      "card_type": "runtime",
+      "title": "Runtime I/O",
+      "subtitle": "Connection and stream health",
+      "required": true,
+      "locked": true,
+      "x": 10.0,
+      "y": 10.0,
+      "width": 388.0,
+      "height": 287.5,
+      "widget_count": 3,
+      "action_ids": [],
+      "source_roots": [
+        "runtimeSnapshot"
+      ],
+      "first_widget_labels": [
+        "Runtime",
+        "Stream",
+        "Attention"
+      ]
+    },
+    {
+      "slot_index": 2,
+      "card_id": "quick_actions_card",
+      "card_type": "actions",
+      "title": "Quick Actions",
+      "subtitle": "Safety and refresh",
+      "required": true,
+      "locked": true,
+      "x": 406.0,
+      "y": 10.0,
+      "width": 388.0,
+      "height": 287.5,
+      "widget_count": 2,
+      "action_ids": [
+        "app.refresh_now",
+        "live.safe_stop"
+      ],
+      "source_roots": [],
+      "first_widget_labels": [
+        "Refresh",
+        "Safe Stop"
+      ]
+    },
+    {
+      "slot_index": 3,
+      "card_id": "recent_session_card",
+      "card_type": "session",
+      "title": "Recent Session",
+      "subtitle": "Session summary",
+      "required": false,
+      "locked": false,
+      "x": 10.0,
+      "y": 305.5,
+      "width": 586.0,
+      "height": 287.5,
+      "widget_count": 3,
+      "action_ids": [],
+      "source_roots": [
+        "gameHudJson",
+        "sessionState"
+      ],
+      "first_widget_labels": [
+        "Active",
+        "Session ID",
+        "HUD"
+      ]
+    },
+    {
+      "slot_index": 4,
+      "card_id": "relic_identity_card",
+      "card_type": "identity",
+      "title": "RELIC Identity",
+      "subtitle": "Brand and visual",
+      "required": false,
+      "locked": false,
+      "x": 802.0,
+      "y": 10.0,
+      "width": 388.0,
+      "height": 583.0,
+      "widget_count": 2,
+      "action_ids": [],
+      "source_roots": [
+        "renderResourcesJson"
+      ],
+      "first_widget_labels": [
+        "Identity",
+        "Tagline"
+      ]
+    }
+  ]
+}
