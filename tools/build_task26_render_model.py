@@ -14,6 +14,8 @@ from gui.desktop_model import (
     build_home_render_model,
     build_home_render_model_summary,
     build_page_render_model,
+    build_training_render_model,
+    build_training_render_model_summary,
     write_render_model,
 )
 from gui.desktop_schema import load_json
@@ -33,25 +35,45 @@ def main() -> None:
     parser.add_argument("--injection", action="store_true")
     args = parser.parse_args()
 
-    if args.page != "home":
-        raise SystemExit("only home is supported in TASK26E-0")
+    if args.page not in {"home", "training"}:
+        raise SystemExit("only home and training are supported in TASK26 render model builds")
+
+    if args.page == "training" and (args.slots or args.injection):
+        raise SystemExit("training slots are not supported in TASK26F-0A")
 
     example_root = ROOT
-    if args.width == 1200 and args.height == 800:
-        model = build_home_render_model(example_root)
+    if args.page == "home":
+        if args.width == 1200 and args.height == 800:
+            model = build_home_render_model(example_root)
+        else:
+            page_cfg = load_json(example_root / "assets/layouts/task26_examples/home_page.desktop_demo.json")
+            model = build_page_render_model(page_cfg, page_width=args.width, page_height=args.height)
+        output = args.output
     else:
-        page_cfg = load_json(example_root / "assets/layouts/task26_examples/home_page.desktop_demo.json")
-        model = build_page_render_model(page_cfg, page_width=args.width, page_height=args.height)
+        if args.output == "assets/layouts/task26_examples/home_desktop_render_model.example.json":
+            output = "assets/layouts/task26_examples/training_desktop_render_model.example.json"
+        else:
+            output = args.output
+        if args.width == 1200 and args.height == 800:
+            model = build_training_render_model(example_root)
+        else:
+            page_cfg = load_json(example_root / "assets/layouts/task26_examples/training_page.desktop_demo.json")
+            model = build_page_render_model(page_cfg, page_width=args.width, page_height=args.height)
 
-    out_path = ROOT / args.output
+    out_path = ROOT / output
     write_render_model(model, out_path)
-    print(f"TASK26 render model written: {args.output}")
+    print(f"TASK26 render model written: {output}")
 
     if args.summary:
-        summary = build_home_render_model_summary(example_root)
-        summary_output = ROOT / "assets/layouts/task26_examples/home_desktop_render_model_summary.example.json"
+        if args.page == "home":
+            summary = build_home_render_model_summary(example_root)
+            summary_rel = "assets/layouts/task26_examples/home_desktop_render_model_summary.example.json"
+        else:
+            summary = build_training_render_model_summary(example_root)
+            summary_rel = "assets/layouts/task26_examples/training_desktop_render_model_summary.example.json"
+        summary_output = ROOT / summary_rel
         write_render_model(summary, summary_output)
-        print("TASK26 render model summary written: assets/layouts/task26_examples/home_desktop_render_model_summary.example.json")
+        print(f"TASK26 render model summary written: {summary_rel}")
 
     if args.slots:
         slots = build_home_card_slots_from_examples(example_root, max_slots=4)

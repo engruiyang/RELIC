@@ -266,6 +266,19 @@ def build_home_render_model_summary(example_root: Path) -> dict:
     return build_render_model_summary(build_home_render_model(example_root))
 
 
+def build_training_render_model(example_root: Path) -> dict:
+    page_path = example_root / "assets" / "layouts" / "task26_examples" / "training_page.desktop_demo.json"
+    with page_path.open("r", encoding="utf-8") as f:
+        config = json.load(f)
+    if not isinstance(config, dict):
+        raise ValueError("training_page.desktop_demo.json must be object")
+    return build_page_render_model(config)
+
+
+def build_training_render_model_summary(example_root: Path) -> dict:
+    return build_render_model_summary(build_training_render_model(example_root))
+
+
 def build_home_card_slots_from_examples(example_root: Path, *, max_slots: int = 4) -> list[dict]:
     return build_home_card_slots(build_home_render_model(example_root), max_slots=max_slots)
 
