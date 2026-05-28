@@ -38,6 +38,40 @@ Item {
         return payload[key]
     }
 
+    function task26TrainingSummary() {
+        var resources = renderResourcesObj || ({})
+        return resources.task26_training_summary || ({})
+    }
+
+    function task26TrainingValue(key, fallbackValue) {
+        var summary = task26TrainingSummary()
+        if (summary[key] === undefined || summary[key] === null) {
+            return fallbackValue
+        }
+        return summary[key]
+    }
+
+    function task26TrainingListValue(key, fallbackValue) {
+        var v = task26TrainingValue(key, [])
+        if (!v || v.length === undefined || v.length === 0) {
+            return fallbackValue
+        }
+        return v.join(", ")
+    }
+
+    function task26TrainingSlotsPayload() {
+        var resources = renderResourcesObj || ({})
+        return resources.task26_training_slots_payload || ({})
+    }
+
+    function task26TrainingSlotValue(key, fallbackValue) {
+        var payload = task26TrainingSlotsPayload()
+        if (payload[key] === undefined || payload[key] === null) {
+            return fallbackValue
+        }
+        return payload[key]
+    }
+
     DesignBackground {
         anchors.fill: parent
         themeObj: root.designThemeObj
@@ -162,6 +196,128 @@ Item {
             }
         }
 
+        GroupBox {
+            title: "TASK26 Training Render Model Preview"
+
+            TrainingRenderModelPreview {
+                id: task26TrainingRenderModelPreview
+                width: parent.width
+                height: 420
+                pageId: task26TrainingValue("page_id", "training")
+                cardCount: task26TrainingValue("card_count", 0)
+                widgetCount: task26TrainingValue("widget_count", 0)
+                requiredCardsText: task26TrainingListValue("required_card_ids", "n/a")
+                actionsText: task26TrainingListValue("action_ids", "n/a")
+                sourceRootsText: task26TrainingListValue("source_roots", "n/a")
+                placeholderSourcesText: task26TrainingListValue("placeholder_sources", "n/a")
+                gameCanvasStatusText: task26TrainingValue("game_canvas_card_status", "n/a")
+                safeStopPresent: task26TrainingValue("safe_stop_present", false)
+                slotsSupportedText: task26TrainingValue("training_slots_supported", false) ? "true" : "false"
+                injectionSupportedText: task26TrainingValue("training_injection_supported", false) ? "true" : "false"
+            }
+        }
+
+        GroupBox {
+            title: "TASK26 Training Card Slots Preview"
+
+            TrainingCardSlotsPreview {
+                id: task26TrainingCardSlotsPreview
+                width: parent.width
+                height: 760
+                slotCount: task26TrainingSlotValue("slot_count", 7)
+                slot1CardId: task26TrainingSlotValue("slot1_card_id", "training_control_card")
+                slot1CardType: task26TrainingSlotValue("slot1_card_type", "")
+                slot1Title: task26TrainingSlotValue("slot1_title", "training_control_card")
+                slot1Subtitle: task26TrainingSlotValue("slot1_subtitle", "")
+                slot1Required: task26TrainingSlotValue("slot1_required", true)
+                slot1Locked: task26TrainingSlotValue("slot1_locked", true)
+                slot1RectText: task26TrainingSlotValue("slot1_rect_text", "n/a")
+                slot1WidgetCount: task26TrainingSlotValue("slot1_widget_count", 0)
+                slot1ActionIdsText: task26TrainingSlotValue("slot1_action_ids_text", "n/a")
+                slot1SourceRootsText: task26TrainingSlotValue("slot1_source_roots_text", "n/a")
+                slot1FirstWidgetLabelsText: task26TrainingSlotValue("slot1_first_widget_labels_text", "n/a")
+                slot1Placeholder: task26TrainingSlotValue("slot1_placeholder", false)
+                slot1RoleText: task26TrainingSlotValue("slot1_role", "")
+                slot2CardId: task26TrainingSlotValue("slot2_card_id", "session_card")
+                slot2CardType: task26TrainingSlotValue("slot2_card_type", "")
+                slot2Title: task26TrainingSlotValue("slot2_title", "session_card")
+                slot2Subtitle: task26TrainingSlotValue("slot2_subtitle", "")
+                slot2Required: task26TrainingSlotValue("slot2_required", true)
+                slot2Locked: task26TrainingSlotValue("slot2_locked", true)
+                slot2RectText: task26TrainingSlotValue("slot2_rect_text", "n/a")
+                slot2WidgetCount: task26TrainingSlotValue("slot2_widget_count", 0)
+                slot2ActionIdsText: task26TrainingSlotValue("slot2_action_ids_text", "n/a")
+                slot2SourceRootsText: task26TrainingSlotValue("slot2_source_roots_text", "n/a")
+                slot2FirstWidgetLabelsText: task26TrainingSlotValue("slot2_first_widget_labels_text", "n/a")
+                slot2Placeholder: task26TrainingSlotValue("slot2_placeholder", false)
+                slot2RoleText: task26TrainingSlotValue("slot2_role", "")
+                slot3CardId: task26TrainingSlotValue("slot3_card_id", "runtime_io_card")
+                slot3CardType: task26TrainingSlotValue("slot3_card_type", "")
+                slot3Title: task26TrainingSlotValue("slot3_title", "runtime_io_card")
+                slot3Subtitle: task26TrainingSlotValue("slot3_subtitle", "")
+                slot3Required: task26TrainingSlotValue("slot3_required", true)
+                slot3Locked: task26TrainingSlotValue("slot3_locked", true)
+                slot3RectText: task26TrainingSlotValue("slot3_rect_text", "n/a")
+                slot3WidgetCount: task26TrainingSlotValue("slot3_widget_count", 0)
+                slot3ActionIdsText: task26TrainingSlotValue("slot3_action_ids_text", "n/a")
+                slot3SourceRootsText: task26TrainingSlotValue("slot3_source_roots_text", "n/a")
+                slot3FirstWidgetLabelsText: task26TrainingSlotValue("slot3_first_widget_labels_text", "n/a")
+                slot3Placeholder: task26TrainingSlotValue("slot3_placeholder", false)
+                slot3RoleText: task26TrainingSlotValue("slot3_role", "")
+                slot4CardId: task26TrainingSlotValue("slot4_card_id", "calibration_status_card")
+                slot4CardType: task26TrainingSlotValue("slot4_card_type", "")
+                slot4Title: task26TrainingSlotValue("slot4_title", "calibration_status_card")
+                slot4Subtitle: task26TrainingSlotValue("slot4_subtitle", "")
+                slot4Required: task26TrainingSlotValue("slot4_required", true)
+                slot4Locked: task26TrainingSlotValue("slot4_locked", true)
+                slot4RectText: task26TrainingSlotValue("slot4_rect_text", "n/a")
+                slot4WidgetCount: task26TrainingSlotValue("slot4_widget_count", 0)
+                slot4ActionIdsText: task26TrainingSlotValue("slot4_action_ids_text", "n/a")
+                slot4SourceRootsText: task26TrainingSlotValue("slot4_source_roots_text", "n/a")
+                slot4FirstWidgetLabelsText: task26TrainingSlotValue("slot4_first_widget_labels_text", "n/a")
+                slot4Placeholder: task26TrainingSlotValue("slot4_placeholder", false)
+                slot4RoleText: task26TrainingSlotValue("slot4_role", "")
+                slot5CardId: task26TrainingSlotValue("slot5_card_id", "game_hud_card")
+                slot5CardType: task26TrainingSlotValue("slot5_card_type", "")
+                slot5Title: task26TrainingSlotValue("slot5_title", "game_hud_card")
+                slot5Subtitle: task26TrainingSlotValue("slot5_subtitle", "")
+                slot5Required: task26TrainingSlotValue("slot5_required", true)
+                slot5Locked: task26TrainingSlotValue("slot5_locked", true)
+                slot5RectText: task26TrainingSlotValue("slot5_rect_text", "n/a")
+                slot5WidgetCount: task26TrainingSlotValue("slot5_widget_count", 0)
+                slot5ActionIdsText: task26TrainingSlotValue("slot5_action_ids_text", "n/a")
+                slot5SourceRootsText: task26TrainingSlotValue("slot5_source_roots_text", "n/a")
+                slot5FirstWidgetLabelsText: task26TrainingSlotValue("slot5_first_widget_labels_text", "n/a")
+                slot5Placeholder: task26TrainingSlotValue("slot5_placeholder", false)
+                slot5RoleText: task26TrainingSlotValue("slot5_role", "")
+                slot6CardId: task26TrainingSlotValue("slot6_card_id", "game_canvas_card")
+                slot6CardType: task26TrainingSlotValue("slot6_card_type", "")
+                slot6Title: task26TrainingSlotValue("slot6_title", "game_canvas_card")
+                slot6Subtitle: task26TrainingSlotValue("slot6_subtitle", "")
+                slot6Required: task26TrainingSlotValue("slot6_required", true)
+                slot6Locked: task26TrainingSlotValue("slot6_locked", true)
+                slot6RectText: task26TrainingSlotValue("slot6_rect_text", "n/a")
+                slot6WidgetCount: task26TrainingSlotValue("slot6_widget_count", 0)
+                slot6ActionIdsText: task26TrainingSlotValue("slot6_action_ids_text", "n/a")
+                slot6SourceRootsText: task26TrainingSlotValue("slot6_source_roots_text", "n/a")
+                slot6FirstWidgetLabelsText: task26TrainingSlotValue("slot6_first_widget_labels_text", "n/a")
+                slot6Placeholder: task26TrainingSlotValue("slot6_placeholder", false)
+                slot6RoleText: task26TrainingSlotValue("slot6_role", "")
+                slot7CardId: task26TrainingSlotValue("slot7_card_id", "diagnostics_summary_card")
+                slot7CardType: task26TrainingSlotValue("slot7_card_type", "")
+                slot7Title: task26TrainingSlotValue("slot7_title", "diagnostics_summary_card")
+                slot7Subtitle: task26TrainingSlotValue("slot7_subtitle", "")
+                slot7Required: task26TrainingSlotValue("slot7_required", true)
+                slot7Locked: task26TrainingSlotValue("slot7_locked", true)
+                slot7RectText: task26TrainingSlotValue("slot7_rect_text", "n/a")
+                slot7WidgetCount: task26TrainingSlotValue("slot7_widget_count", 0)
+                slot7ActionIdsText: task26TrainingSlotValue("slot7_action_ids_text", "n/a")
+                slot7SourceRootsText: task26TrainingSlotValue("slot7_source_roots_text", "n/a")
+                slot7FirstWidgetLabelsText: task26TrainingSlotValue("slot7_first_widget_labels_text", "n/a")
+                slot7Placeholder: task26TrainingSlotValue("slot7_placeholder", false)
+                slot7RoleText: task26TrainingSlotValue("slot7_role", "")
+            }
+        }
         GroupBox {
             title: "Metadata"
             Column {
