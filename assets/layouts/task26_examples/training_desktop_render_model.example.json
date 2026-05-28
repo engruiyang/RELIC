@@ -6,8 +6,12 @@
     "mode": "grid",
     "columns": 12,
     "rows": 8,
-    "gap": 8,
-    "padding": 10
+    "gap": 8.0,
+    "padding": 10.0,
+    "page_width": 1200,
+    "page_height": 800,
+    "cell_width": 91.0,
+    "cell_height": 90.5
   },
   "cards": [
     {
@@ -17,91 +21,97 @@
       "subtitle": "Readiness, session, and safe stop actions",
       "required": true,
       "locked": true,
+      "x": 10.0,
+      "y": 10.0,
+      "width": 388.0,
+      "height": 189.0,
       "preset": "danger_card",
-      "position": {
-        "col": 1,
-        "row": 1,
-        "col_span": 4,
-        "row_span": 2
-      },
-      "shape": "rounded_rect",
       "style": {},
       "widgets": [
         {
-          "type": "button",
           "id": "start_session_btn",
+          "type": "button",
           "label": "Start Session",
+          "value": null,
+          "source": "",
+          "fallback": "",
+          "unit": "",
           "action_id": "session.start",
-          "args": {},
           "variant": "primary",
           "required": true,
-          "enabled_when": "readiness_ready",
-          "confirm": true,
           "style": {
             "preset": "button_primary"
-          }
+          },
+          "enabled_when": "readiness_ready",
+          "visible_when": null
         },
         {
-          "type": "button",
           "id": "stop_session_btn",
+          "type": "button",
           "label": "Stop Session",
+          "value": null,
+          "source": "",
+          "fallback": "",
+          "unit": "",
           "action_id": "session.stop",
-          "args": {},
           "variant": "secondary",
           "required": true,
-          "enabled_when": "always",
-          "confirm": true,
           "style": {
             "preset": "button_secondary"
-          }
+          },
+          "enabled_when": "always",
+          "visible_when": null
         },
         {
-          "type": "button",
           "id": "safe_stop_btn",
+          "type": "button",
           "label": "Safe Stop",
+          "value": null,
+          "source": "",
+          "fallback": "",
+          "unit": "",
           "action_id": "live.safe_stop",
-          "args": {},
           "variant": "danger",
           "required": true,
-          "enabled_when": "always",
-          "confirm": true,
           "style": {
             "preset": "button_danger"
-          }
+          },
+          "enabled_when": "always",
+          "visible_when": null
         },
         {
-          "type": "button",
           "id": "session_status_btn",
+          "type": "button",
           "label": "Session Status",
+          "value": null,
+          "source": "",
+          "fallback": "",
+          "unit": "",
           "action_id": "session.status",
-          "args": {},
           "variant": "secondary",
           "required": false,
-          "enabled_when": "always",
-          "confirm": false,
           "style": {
             "preset": "button_secondary"
-          }
+          },
+          "enabled_when": "always",
+          "visible_when": null
         },
         {
-          "type": "text",
           "id": "current_user_id_source",
+          "type": "text",
           "label": "Current User",
+          "value": null,
           "source": "controlStateJson.current_user_id",
           "fallback": "none",
-          "format": "plain",
           "unit": "",
-          "preset": "text_body",
+          "action_id": null,
+          "variant": "",
+          "required": false,
           "style": {},
+          "enabled_when": null,
           "visible_when": "always"
         }
-      ],
-      "card_policy": {
-        "allow_move": false,
-        "allow_resize": false,
-        "allow_remove": false,
-        "allow_collapse": false
-      }
+      ]
     },
     {
       "id": "session_card",
@@ -110,59 +120,59 @@
       "subtitle": "Active session identity and elapsed time",
       "required": true,
       "locked": true,
+      "x": 406.0,
+      "y": 10.0,
+      "width": 388.0,
+      "height": 189.0,
       "preset": "normal_card",
-      "position": {
-        "col": 5,
-        "row": 1,
-        "col_span": 4,
-        "row_span": 2
-      },
-      "shape": "rounded_rect",
       "style": {},
       "widgets": [
         {
-          "type": "metric",
           "id": "session_active",
+          "type": "metric",
           "label": "Active",
+          "value": null,
           "source": "sessionState.session_active",
           "fallback": "false",
-          "format": "bool",
           "unit": "",
-          "preset": "metric_default",
+          "action_id": null,
+          "variant": "",
+          "required": false,
           "style": {},
+          "enabled_when": null,
           "visible_when": "always"
         },
         {
-          "type": "metric",
           "id": "current_session_id",
+          "type": "metric",
           "label": "Session ID",
+          "value": null,
           "source": "sessionState.current_session_id",
           "fallback": "none",
-          "format": "plain",
           "unit": "",
-          "preset": "metric_default",
+          "action_id": null,
+          "variant": "",
+          "required": false,
           "style": {},
+          "enabled_when": null,
           "visible_when": "always"
         },
         {
-          "type": "metric",
           "id": "session_elapsed_ms",
+          "type": "metric",
           "label": "Elapsed",
+          "value": null,
           "source": "sessionState.session_elapsed_ms",
           "fallback": "0",
-          "format": "duration_ms",
           "unit": "ms",
-          "preset": "metric_default",
+          "action_id": null,
+          "variant": "",
+          "required": false,
           "style": {},
+          "enabled_when": null,
           "visible_when": "always"
         }
-      ],
-      "card_policy": {
-        "allow_move": false,
-        "allow_resize": false,
-        "allow_remove": false,
-        "allow_collapse": true
-      }
+      ]
     },
     {
       "id": "runtime_io_card",
@@ -171,107 +181,119 @@
       "subtitle": "Stream, attention, and gyro freshness",
       "required": true,
       "locked": true,
+      "x": 802.0,
+      "y": 10.0,
+      "width": 388.0,
+      "height": 287.5,
       "preset": "normal_card",
-      "position": {
-        "col": 9,
-        "row": 1,
-        "col_span": 4,
-        "row_span": 3
-      },
-      "shape": "rounded_rect",
       "style": {},
       "widgets": [
         {
-          "type": "metric",
           "id": "stream_alive",
+          "type": "metric",
           "label": "Stream Alive",
+          "value": null,
           "source": "runtimeSnapshot.stream_alive",
           "fallback": "false",
-          "format": "bool",
           "unit": "",
-          "preset": "metric_default",
+          "action_id": null,
+          "variant": "",
+          "required": false,
           "style": {},
+          "enabled_when": null,
           "visible_when": "always"
         },
         {
-          "type": "metric",
           "id": "attention",
+          "type": "metric",
           "label": "Attention",
+          "value": null,
           "source": "runtimeSnapshot.attention",
           "fallback": "n/a",
-          "format": "float_2",
           "unit": "",
-          "preset": "metric_default",
+          "action_id": null,
+          "variant": "",
+          "required": false,
           "style": {},
+          "enabled_when": null,
           "visible_when": "always"
         },
         {
-          "type": "metric",
           "id": "attention_age_ms",
+          "type": "metric",
           "label": "Attention Age",
+          "value": null,
           "source": "runtimeSnapshot.attention_age_ms",
           "fallback": "n/a",
-          "format": "duration_ms",
           "unit": "ms",
-          "preset": "metric_default",
+          "action_id": null,
+          "variant": "",
+          "required": false,
           "style": {},
+          "enabled_when": null,
           "visible_when": "always"
         },
         {
-          "type": "metric",
           "id": "gyro_x",
+          "type": "metric",
           "label": "Gyro X",
+          "value": null,
           "source": "runtimeSnapshot.gyro_x",
           "fallback": "n/a",
-          "format": "float_2",
           "unit": "",
-          "preset": "metric_default",
+          "action_id": null,
+          "variant": "",
+          "required": false,
           "style": {},
+          "enabled_when": null,
           "visible_when": "always"
         },
         {
-          "type": "metric",
           "id": "gyro_y",
+          "type": "metric",
           "label": "Gyro Y",
+          "value": null,
           "source": "runtimeSnapshot.gyro_y",
           "fallback": "n/a",
-          "format": "float_2",
           "unit": "",
-          "preset": "metric_default",
+          "action_id": null,
+          "variant": "",
+          "required": false,
           "style": {},
+          "enabled_when": null,
           "visible_when": "always"
         },
         {
-          "type": "metric",
           "id": "gyro_z",
+          "type": "metric",
           "label": "Gyro Z",
+          "value": null,
           "source": "runtimeSnapshot.gyro_z",
           "fallback": "n/a",
-          "format": "float_2",
           "unit": "",
-          "preset": "metric_default",
+          "action_id": null,
+          "variant": "",
+          "required": false,
           "style": {},
+          "enabled_when": null,
           "visible_when": "always"
         },
         {
-          "type": "metric",
           "id": "gyro_age_ms",
+          "type": "metric",
           "label": "Gyro Age",
+          "value": null,
           "source": "runtimeSnapshot.gyro_age_ms",
           "fallback": "n/a",
-          "format": "duration_ms",
           "unit": "ms",
-          "preset": "metric_default",
+          "action_id": null,
+          "variant": "",
+          "required": false,
           "style": {},
+          "enabled_when": null,
           "visible_when": "always"
         }
-      ],
-      "card_policy": {
-        "allow_move": false,
-        "allow_resize": false,
-        "allow_remove": false,
-        "allow_collapse": true
-      }
+      ]
     },
     {
       "id": "calibration_status_card",
@@ -280,61 +302,61 @@
       "subtitle": "Readiness gate calibration coverage",
       "required": true,
       "locked": true,
+      "x": 10.0,
+      "y": 207.0,
+      "width": 388.0,
+      "height": 189.0,
       "preset": "normal_card",
-      "position": {
-        "col": 1,
-        "row": 3,
-        "col_span": 4,
-        "row_span": 2
-      },
-      "shape": "rounded_rect",
       "style": {},
       "widgets": [
         {
-          "type": "metric",
           "id": "calibration_usable",
+          "type": "metric",
           "label": "Calibration Usable",
+          "value": null,
           "source": "controlState.calibration_usable",
           "fallback": "unknown",
-          "format": "bool",
           "unit": "",
-          "preset": "metric_default",
+          "action_id": null,
+          "variant": "",
+          "required": false,
           "style": {},
+          "enabled_when": null,
           "visible_when": "always"
         },
         {
-          "type": "metric",
           "id": "last_calibration_id",
+          "type": "metric",
           "label": "Last Calibration",
+          "value": null,
           "source": "controlState.last_calibration_id",
           "fallback": "none",
-          "format": "plain",
           "unit": "",
-          "preset": "metric_default",
+          "action_id": null,
+          "variant": "",
+          "required": false,
           "style": {},
+          "enabled_when": null,
           "visible_when": "always"
         },
         {
-          "type": "button",
           "id": "calibration_status_btn",
+          "type": "button",
           "label": "Calibration Status",
+          "value": null,
+          "source": "",
+          "fallback": "",
+          "unit": "",
           "action_id": "calibration.status",
-          "args": {},
           "variant": "secondary",
           "required": false,
-          "enabled_when": "always",
-          "confirm": false,
           "style": {
             "preset": "button_secondary"
-          }
+          },
+          "enabled_when": "always",
+          "visible_when": null
         }
-      ],
-      "card_policy": {
-        "allow_move": false,
-        "allow_resize": false,
-        "allow_remove": false,
-        "allow_collapse": true
-      }
+      ]
     },
     {
       "id": "game_hud_card",
@@ -343,73 +365,76 @@
       "subtitle": "TraceLock HUD and status placeholders",
       "required": true,
       "locked": true,
+      "x": 406.0,
+      "y": 207.0,
+      "width": 388.0,
+      "height": 287.5,
       "preset": "glass_card",
-      "position": {
-        "col": 5,
-        "row": 3,
-        "col_span": 4,
-        "row_span": 3
-      },
-      "shape": "rounded_rect",
       "style": {},
       "widgets": [
         {
-          "type": "metric",
           "id": "game_status",
+          "type": "metric",
           "label": "Status",
+          "value": null,
           "source": "gameHudJson.status",
           "fallback": "unknown",
-          "format": "plain",
           "unit": "",
-          "preset": "metric_default",
+          "action_id": null,
+          "variant": "",
+          "required": false,
           "style": {},
+          "enabled_when": null,
           "visible_when": "always"
         },
         {
-          "type": "metric",
           "id": "game_score",
+          "type": "metric",
           "label": "Score",
+          "value": null,
           "source": "gameHudJson.score",
           "fallback": "0",
-          "format": "int",
           "unit": "",
-          "preset": "metric_default",
+          "action_id": null,
+          "variant": "",
+          "required": false,
           "style": {},
+          "enabled_when": null,
           "visible_when": "always"
         },
         {
-          "type": "metric",
           "id": "game_focus_index",
+          "type": "metric",
           "label": "Focus Index",
+          "value": null,
           "source": "gameHudJson.focus_index",
           "fallback": "n/a",
-          "format": "float_2",
           "unit": "",
-          "preset": "metric_default",
+          "action_id": null,
+          "variant": "",
+          "required": false,
           "style": {},
+          "enabled_when": null,
           "visible_when": "always"
         },
         {
-          "type": "button",
           "id": "game_status_btn",
+          "type": "button",
           "label": "Game Status",
+          "value": null,
+          "source": "",
+          "fallback": "",
+          "unit": "",
           "action_id": "game.status",
-          "args": {},
           "variant": "secondary",
           "required": false,
-          "enabled_when": "always",
-          "confirm": false,
           "style": {
             "preset": "button_secondary"
-          }
+          },
+          "enabled_when": "always",
+          "visible_when": null
         }
-      ],
-      "card_policy": {
-        "allow_move": false,
-        "allow_resize": false,
-        "allow_remove": false,
-        "allow_collapse": true
-      }
+      ]
     },
     {
       "id": "game_canvas_card",
@@ -418,35 +443,29 @@
       "subtitle": "Placeholder declaration only; no QML GameCanvas hookup in TASK26F-0A",
       "required": true,
       "locked": true,
+      "x": 10.0,
+      "y": 404.0,
+      "width": 784.0,
+      "height": 386.0,
       "preset": "image_card",
-      "position": {
-        "col": 1,
-        "row": 5,
-        "col_span": 8,
-        "row_span": 4
-      },
-      "shape": "rounded_rect",
       "style": {},
       "widgets": [
         {
-          "type": "game_placeholder",
           "id": "game_canvas_placeholder",
+          "type": "game_placeholder",
           "label": "GameCanvas Placeholder",
+          "value": null,
           "source": "gameViewJson.game_id",
           "fallback": "trace_lock",
-          "format": "game_canvas_placeholder",
           "unit": "",
-          "preset": "game_canvas_placeholder",
+          "action_id": null,
+          "variant": "",
+          "required": false,
           "style": {},
+          "enabled_when": null,
           "visible_when": "always"
         }
-      ],
-      "card_policy": {
-        "allow_move": false,
-        "allow_resize": false,
-        "allow_remove": false,
-        "allow_collapse": false
-      }
+      ]
     },
     {
       "id": "diagnostics_summary_card",
@@ -455,61 +474,61 @@
       "subtitle": "Warnings, errors, and manual refresh",
       "required": true,
       "locked": true,
+      "x": 802.0,
+      "y": 305.5,
+      "width": 388.0,
+      "height": 484.5,
       "preset": "normal_card",
-      "position": {
-        "col": 9,
-        "row": 4,
-        "col_span": 4,
-        "row_span": 5
-      },
-      "shape": "rounded_rect",
       "style": {},
       "widgets": [
         {
-          "type": "text",
           "id": "warning_flags",
+          "type": "text",
           "label": "Warnings",
+          "value": null,
           "source": "runtimeSnapshot.warning_flags",
           "fallback": "none",
-          "format": "plain",
           "unit": "",
-          "preset": "text_body",
+          "action_id": null,
+          "variant": "",
+          "required": false,
           "style": {},
+          "enabled_when": null,
           "visible_when": "always"
         },
         {
-          "type": "text",
           "id": "error_flags",
+          "type": "text",
           "label": "Errors",
+          "value": null,
           "source": "runtimeSnapshot.error_flags",
           "fallback": "none",
-          "format": "plain",
           "unit": "",
-          "preset": "text_body",
+          "action_id": null,
+          "variant": "",
+          "required": false,
           "style": {},
+          "enabled_when": null,
           "visible_when": "always"
         },
         {
-          "type": "button",
           "id": "diagnostics_refresh_btn",
+          "type": "button",
           "label": "Refresh Diagnostics",
+          "value": null,
+          "source": "",
+          "fallback": "",
+          "unit": "",
           "action_id": "diagnostics.refresh",
-          "args": {},
           "variant": "secondary",
           "required": false,
-          "enabled_when": "always",
-          "confirm": false,
           "style": {
             "preset": "button_secondary"
-          }
+          },
+          "enabled_when": "always",
+          "visible_when": null
         }
-      ],
-      "card_policy": {
-        "allow_move": false,
-        "allow_resize": false,
-        "allow_remove": false,
-        "allow_collapse": true
-      }
+      ]
     }
   ]
 }
