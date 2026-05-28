@@ -81,3 +81,28 @@
 - HomePage / TrainingPage 仍不接入，legacy fallback 不受影响。
 - `source` / `action_id` 仍只作为展示字段传递，不执行 source，不调用 action。
 - E-4B 与未来 E-5 的边界：E-4B 只在 DeveloperLab 预览消费；如果后续进入 HomePage 试点，必须继续保留 legacy fallback。
+
+## TASK26F-0A Training render model prototype
+- TASK26F-0A extends the offline render-model prototype from Home to Training by adding `training_page.desktop_demo.json` and Python helpers that compile it into `training_desktop_render_model.example.json`.
+- Training is higher risk than Home because it contains safety controls (`live.safe_stop`), training lifecycle actions (`session.start` / `session.stop`), readiness gates, calibration state, runtime freshness, game HUD state, and the existing `GameCanvas` event/render path.
+- This phase is intentionally limited to audit + config + render model generation. It does not modify `TrainingPage.qml`, `HomePage.qml`, `MinimalGui.qml`, or any runtime training flow.
+- The Training prototype does not connect `GameCanvas`; it only declares a locked `game_canvas_card` placeholder so the future migration has an explicit slot.
+- `source` and `action_id` values remain declarative in JSON/render model. Python validates and copies them, but does not execute sources and does not invoke actions.
+- Future Training migration phases must keep a legacy fallback path until the desktop/card path is fully validated under live and non-live modes.
+- `GameCanvas` must be migrated separately as a dedicated `ConfigGameWidget` or `GameCanvasCard`; TASK26F-0A does not implement either component.
+- `live.safe_stop` remains covered through the existing native whitelist / facade path and must stay globally accessible if any future Training desktop UI is introduced.
+
+## TASK26F-1 Training contract hardening + DeveloperLab summary preview
+- TASK26F-1 hardens the Training prototype by adding a contract summary (`task26_training_summary`) and showing that summary in DeveloperLab only.
+- Training slots and Training injection payloads were intentionally unsupported in F-1; TASK26F-2 adds DeveloperLab-only slots and injection previews without changing TrainingPage.
+- `GameCanvasCard` / `ConfigGameWidget` remain future work and must be implemented separately from ordinary metric/text widgets.
+- `gameHudJson.status`, `gameHudJson.score`, and `gameHudJson.focus_index` are prototype fields and must be confirmed later against bridge/facade truth before any real Training page migration.
+- `TrainingPage.qml` remains unmodified, and legacy fallback is mandatory for later Training desktop phases.
+- DeveloperLab currently displays a summary preview only; it does not render real Training cards, execute `source`, invoke `action_id`, or attach `GameCanvas`.
+
+## TASK26F-2 Training card slots preview
+- TASK26F-2 adds Training card slots derived from the compiled Training render model and exposes them as `task26_training_slots_payload` in render resources.
+- Training `--slots` and `--injection` are supported starting in F-2; Home behavior is unchanged.
+- `TrainingCardSlotsPreview` is DeveloperLab-only and uses fixed slot bindings rather than dynamic rendering.
+- `TrainingPage.qml` remains unmodified, no real `GameCanvas` is attached, and `game_canvas_card` remains a placeholder slot.
+- `source` / `action_id` values remain preview metadata; no source evaluation and no action invocation occur in F-2.
