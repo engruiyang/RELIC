@@ -90,3 +90,7 @@ TASK26F-0A introduces the following offline card split in `training_page.desktop
 - `gameHudJson.status`, `gameHudJson.score`, and `gameHudJson.focus_index` are intentionally conservative placeholders for the prototype; later TASK26F phases must verify the final HUD field contract against bridge/facade payloads.
 - `sessionState.*` is the intended desktop schema root for session fields; current legacy TrainingPage displays several session values through `controlStateObj`, so later migration must preserve legacy fallback behavior while normalizing sources.
 - `GameCanvas` migration must be handled as a separate `ConfigGameWidget` or `GameCanvasCard` design and must preserve pointer event routing and existing game-client behavior.
+
+## TASK26F-1 contract hardening note
+
+TASK26F-1 adds a Training contract summary for DeveloperLab preview only. This does not alter the original audit boundary: `TrainingPage.qml` remains unchanged, `GameCanvas` remains on the legacy path, and configured `source` / `action_id` values remain declarative.

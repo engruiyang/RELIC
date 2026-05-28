@@ -91,3 +91,11 @@
 - Future Training migration phases must keep a legacy fallback path until the desktop/card path is fully validated under live and non-live modes.
 - `GameCanvas` must be migrated separately as a dedicated `ConfigGameWidget` or `GameCanvasCard`; TASK26F-0A does not implement either component.
 - `live.safe_stop` remains covered through the existing native whitelist / facade path and must stay globally accessible if any future Training desktop UI is introduced.
+
+## TASK26F-1 Training contract hardening + DeveloperLab summary preview
+- TASK26F-1 hardens the Training prototype by adding a contract summary (`task26_training_summary`) and showing that summary in DeveloperLab only.
+- Training slots and Training injection payloads are intentionally unsupported in this phase; `--page training --slots` and `--page training --injection` must fail clearly instead of generating partial payloads.
+- `GameCanvasCard` / `ConfigGameWidget` remain future work and must be implemented separately from ordinary metric/text widgets.
+- `gameHudJson.status`, `gameHudJson.score`, and `gameHudJson.focus_index` are prototype fields and must be confirmed later against bridge/facade truth before any real Training page migration.
+- `TrainingPage.qml` remains unmodified, and legacy fallback is mandatory for later Training desktop phases.
+- DeveloperLab currently displays a summary preview only; it does not render real Training cards, execute `source`, invoke `action_id`, or attach `GameCanvas`.

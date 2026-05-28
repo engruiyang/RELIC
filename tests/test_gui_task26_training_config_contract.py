@@ -100,3 +100,33 @@ def test_training_page_schema_and_contracts_validate() -> None:
     validate_page_config(config)
     validate_action_ids(collect_action_ids_from_obj(config))
     validate_source_roots(collect_sources_from_obj(config))
+
+
+def test_safe_stop_widget_is_required_danger_and_confirmed() -> None:
+    card = _card(_config(), "training_control_card")
+    widgets = [w for w in card.get("widgets", []) if isinstance(w, dict) and w.get("action_id") == "live.safe_stop"]
+    assert widgets
+    widget = widgets[0]
+    assert widget.get("required") is True
+    assert widget.get("variant") == "danger"
+    assert "confirm" in widget or "confirmEnabled" in widget
+
+
+def test_game_canvas_card_has_placeholder_contract_marker() -> None:
+    card = _card(_config(), "game_canvas_card")
+    contract = card.get("contract", {})
+    assert contract.get("canvas_role") == "game_canvas_placeholder"
+    assert contract.get("implementation_status") == "placeholder_only"
+    assert contract.get("requires_legacy_fallback") is True
+
+
+def test_game_hud_placeholder_fields_have_pending_contract_marker() -> None:
+    card = _card(_config(), "game_hud_card")
+    sources = {"gameHudJson.status", "gameHudJson.score", "gameHudJson.focus_index"}
+    found = 0
+    for widget in card.get("widgets", []):
+        if isinstance(widget, dict) and widget.get("source") in sources:
+            contract = widget.get("contract", {})
+            assert contract.get("contract_status") == "pending_bridge_validation" or contract.get("prototype") is True
+            found += 1
+    assert found == 3

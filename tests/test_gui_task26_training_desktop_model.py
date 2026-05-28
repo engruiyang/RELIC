@@ -7,6 +7,7 @@ import pytest
 
 from gui.desktop_model import (
     build_page_render_model,
+    build_training_contract_summary,
     build_training_render_model,
     build_training_render_model_summary,
 )
@@ -85,3 +86,13 @@ def test_out_of_grid_boundary_raises_value_error() -> None:
     bad["cards"][0]["position"]["col_span"] = 2
     with pytest.raises(ValueError, match="out of grid boundary"):
         build_page_render_model(bad)
+
+
+def test_build_training_contract_summary_guards() -> None:
+    summary = build_training_contract_summary(ROOT)
+    assert "live.safe_stop" in summary["action_ids"]
+    assert any(src.startswith("gameHudJson") for src in summary["placeholder_sources"])
+    assert summary["game_canvas_card_status"]
+    assert summary["safe_stop_present"] is True
+    assert summary["training_slots_supported"] is False
+    assert summary["training_injection_supported"] is False

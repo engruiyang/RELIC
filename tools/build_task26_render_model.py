@@ -39,7 +39,7 @@ def main() -> None:
         raise SystemExit("only home and training are supported in TASK26 render model builds")
 
     if args.page == "training" and (args.slots or args.injection):
-        raise SystemExit("training slots are not supported in TASK26F-0A")
+        raise SystemExit("training slots are not supported in TASK26F-1")
 
     example_root = ROOT
     if args.page == "home":

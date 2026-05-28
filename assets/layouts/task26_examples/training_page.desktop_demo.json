@@ -363,7 +363,11 @@
           "unit": "",
           "preset": "metric_default",
           "style": {},
-          "visible_when": "always"
+          "visible_when": "always",
+          "contract": {
+            "contract_status": "pending_bridge_validation",
+            "prototype": true
+          }
         },
         {
           "type": "metric",
@@ -375,7 +379,11 @@
           "unit": "",
           "preset": "metric_default",
           "style": {},
-          "visible_when": "always"
+          "visible_when": "always",
+          "contract": {
+            "contract_status": "pending_bridge_validation",
+            "prototype": true
+          }
         },
         {
           "type": "metric",
@@ -387,7 +395,11 @@
           "unit": "",
           "preset": "metric_default",
           "style": {},
-          "visible_when": "always"
+          "visible_when": "always",
+          "contract": {
+            "contract_status": "pending_bridge_validation",
+            "prototype": true
+          }
         },
         {
           "type": "button",
@@ -409,6 +421,15 @@
         "allow_resize": false,
         "allow_remove": false,
         "allow_collapse": true
+      },
+      "contract": {
+        "contract_status": "pending_bridge_validation",
+        "prototype": true,
+        "pending_sources": [
+          "gameHudJson.status",
+          "gameHudJson.score",
+          "gameHudJson.focus_index"
+        ]
       }
     },
     {
@@ -438,7 +459,12 @@
           "unit": "",
           "preset": "game_canvas_placeholder",
           "style": {},
-          "visible_when": "always"
+          "visible_when": "always",
+          "contract": {
+            "canvas_role": "game_canvas_placeholder",
+            "implementation_status": "placeholder_only",
+            "requires_legacy_fallback": true
+          }
         }
       ],
       "card_policy": {
@@ -446,6 +472,11 @@
         "allow_resize": false,
         "allow_remove": false,
         "allow_collapse": false
+      },
+      "contract": {
+        "canvas_role": "game_canvas_placeholder",
+        "implementation_status": "placeholder_only",
+        "requires_legacy_fallback": true
       }
     },
     {
