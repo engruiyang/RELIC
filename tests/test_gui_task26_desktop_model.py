@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from gui.desktop_model import (
+    build_home_slots_render_resource,
     build_home_card_slots,
     build_home_card_slots_from_examples,
     build_home_card_slots_injection_payload,
@@ -213,3 +214,10 @@ def test_write_injection_json_readable(tmp_path: Path) -> None:
     loaded = json.loads(out.read_text(encoding="utf-8"))
     assert loaded["slot1_card_id"] == "runtime_io_card"
     validate_home_slot_injection_payload(loaded)
+
+
+def test_build_home_slots_render_resource_ok() -> None:
+    resource = build_home_slots_render_resource(Path("."))
+    assert resource["task26_home_slots_status"] == "ok"
+    payload = resource["task26_home_slots_payload"]
+    validate_home_slot_injection_payload(payload)

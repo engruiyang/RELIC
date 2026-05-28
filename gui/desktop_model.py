@@ -307,6 +307,16 @@ def build_home_card_slots_injection_payload_from_examples(example_root: Path) ->
     return build_home_card_slots_injection_payload(slots)
 
 
+def build_home_slots_render_resource(example_root: Path) -> dict:
+    payload = build_home_card_slots_injection_payload_from_examples(example_root)
+    validate_home_slot_injection_payload(payload)
+    return {
+        "task26_home_slots_payload": payload,
+        "task26_home_slots_status": "ok",
+        "task26_home_slots_source": "assets/layouts/task26_examples/home_page.desktop_demo.json",
+    }
+
+
 def expected_home_slot_injection_fields() -> set[str]:
     return set(HOME_SLOT_INJECTION_FIELDS)
 

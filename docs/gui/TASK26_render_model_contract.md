@@ -67,3 +67,10 @@
 - `--show-diff` 用于输出 Python payload 字段、QML property、DeveloperLab 传参三者差异摘要，便于定位合同漂移。
 - 在 E-4 前先建立 gate 可显著降低“字段改动后 UI 静默失效”的风险。
 - 当前仍不接 bridge，仍不接 HomePage，仍不实现真实 CardHost。
+
+## E-4A renderResources / bridge 受控输出
+- E-4A 的目标是把 Home slots payload 暴露到 Python 数据层（facade/bridge），而不是直接接入页面渲染。
+- `renderResourcesJson` 可包含 `task26_home_slots_payload`、`task26_home_slots_status`、`task26_home_slots_source`。
+- QML 仍不读取文件系统 JSON；本阶段只保证 bridge 可读，不要求 QML 消费。
+- source/action 仍不执行；不改变 command/action 执行链路。
+- E-4A 与 E-4B 边界：E-4A 只提供数据，E-4B 才考虑 DeveloperLab 受控消费 bridge 属性。
