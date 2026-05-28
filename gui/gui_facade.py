@@ -16,6 +16,7 @@ from core.resource_managers import build_render_resource_bundle
 from storage.sqlite_store import SqliteStore
 from .command_registry import build_page_command_manifest
 from game.game_client_registry import create_game_client
+from .desktop_model import build_home_slots_render_resource
 
 
 class GuiFacade:
@@ -293,8 +294,21 @@ class GuiFacade:
                 "error": str(exc),
             }
 
+    def _build_task26_home_slots_resource(self) -> dict[str, Any]:
+        try:
+            return build_home_slots_render_resource(Path("."))
+        except Exception as exc:
+            return {
+                "task26_home_slots_payload": {},
+                "task26_home_slots_status": "missing",
+                "task26_home_slots_source": "assets/layouts/task26_examples/home_page.desktop_demo.json",
+                "task26_home_slots_error": str(exc),
+            }
+
     def get_render_resources(self) -> dict[str, Any]:
-        return deepcopy(self._render_resources)
+        resources = deepcopy(self._render_resources)
+        resources.update(self._build_task26_home_slots_resource())
+        return resources
 
 
     def get_page_command_manifest(self) -> dict[str, Any]:

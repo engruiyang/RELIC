@@ -4,6 +4,7 @@ import "../components"
 
 Item {
     id: root
+    property var guiBridge: null
     property var designThemeObj: ({})
     property var pageStyleObj: ({})
     property var componentStyleObj: ({})
@@ -62,6 +63,93 @@ Item {
                 DesignButton { buttonStyleObj: root.componentStyleObj.button || ({}); themeObj: root.designThemeObj; renderResourcesObj: root.renderResourcesObj; text: "developer.task6b_evaluate"; onClicked: pick("developer.task6b_evaluate", "active", "copy_only", "python -m ui_cli.evaluate_task6b ...") }
                 DesignButton { buttonStyleObj: root.componentStyleObj.button || ({}); themeObj: root.designThemeObj; renderResourcesObj: root.renderResourcesObj; text: "developer.task6b_tune"; onClicked: pick("developer.task6b_tune", "active", "copy_only", "python -m ui_cli.tune_task6b ...") }
                 DesignButton { buttonStyleObj: root.componentStyleObj.button || ({}); themeObj: root.designThemeObj; renderResourcesObj: root.renderResourcesObj; text: "developer.task6b_calibrate"; onClicked: pick("developer.task6b_calibrate", "active", "copy_only", "python -m ui_cli.calibrate_task6b ...") }
+            }
+        }
+
+        GroupBox {
+            title: "TASK26 Desktop Card Preview"
+
+            CardHostPreview {
+                id: task26CardPreview
+                width: parent.width
+                height: 420
+                guiBridge: root.guiBridge
+            }
+        }
+
+
+
+        GroupBox {
+            title: "TASK26 Home Render Model Preview"
+
+            HomeRenderModelPreview {
+                id: task26HomeRenderModelPreview
+                width: parent.width
+                height: 360
+                pageId: "home"
+                cardCount: 4
+                widgetCount: 10
+                requiredCardCount: 2
+                lockedCardCount: 2
+                actionsText: "app.refresh_now, live.safe_stop"
+                sourceRootsText: "gameHudJson, renderResourcesJson, runtimeSnapshot, sessionState"
+                cardIdsText: "runtime_io_card, quick_actions_card, recent_session_card, relic_identity_card"
+            }
+        }
+
+
+
+        GroupBox {
+            title: "TASK26 Home Card Slots Preview"
+
+            HomeCardSlotsPreview {
+                id: task26HomeCardSlotsPreview
+                width: parent.width
+                height: 520
+                slot1CardId: "runtime_io_card"
+                slot2CardId: "quick_actions_card"
+                slot3CardId: "recent_session_card"
+                slot4CardId: "relic_identity_card"
+                slot1CardType: "runtime"
+                slot2CardType: "actions"
+                slot3CardType: "session"
+                slot4CardType: "identity"
+                slot1Title: "Runtime I/O"
+                slot2Title: "Quick Actions"
+                slot3Title: "Recent Session"
+                slot4Title: "RELIC Identity"
+                slot1Subtitle: "Connection and stream health"
+                slot2Subtitle: "Safety and refresh"
+                slot3Subtitle: "Session summary"
+                slot4Subtitle: "Brand and visual"
+                slot1Required: true
+                slot2Required: true
+                slot3Required: false
+                slot4Required: false
+                slot1Locked: true
+                slot2Locked: true
+                slot3Locked: false
+                slot4Locked: false
+                slot1RectText: "x=10.0, y=10.0, w=386.0, h=290.0"
+                slot2RectText: "x=404.0, y=10.0, w=386.0, h=290.0"
+                slot3RectText: "x=10.0, y=308.0, w=584.0, h=290.0"
+                slot4RectText: "x=798.0, y=10.0, w=386.0, h=588.0"
+                slot1WidgetCount: 3
+                slot2WidgetCount: 2
+                slot3WidgetCount: 3
+                slot4WidgetCount: 2
+                slot1ActionIdsText: "n/a"
+                slot2ActionIdsText: "app.refresh_now, live.safe_stop"
+                slot3ActionIdsText: "n/a"
+                slot4ActionIdsText: "n/a"
+                slot1SourceRootsText: "runtimeSnapshot"
+                slot2SourceRootsText: "n/a"
+                slot3SourceRootsText: "gameHudJson, sessionState"
+                slot4SourceRootsText: "renderResourcesJson"
+                slot1FirstWidgetLabelsText: "Runtime, Stream, Attention"
+                slot2FirstWidgetLabelsText: "Refresh, Safe Stop"
+                slot3FirstWidgetLabelsText: "Active, Session ID, HUD"
+                slot4FirstWidgetLabelsText: "Identity, Tagline"
             }
         }
 
