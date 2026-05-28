@@ -74,3 +74,10 @@
 - QML 仍不读取文件系统 JSON；本阶段只保证 bridge 可读，不要求 QML 消费。
 - source/action 仍不执行；不改变 command/action 执行链路。
 - E-4A 与 E-4B 边界：E-4A 只提供数据，E-4B 才考虑 DeveloperLab 受控消费 bridge 属性。
+
+## E-4B DeveloperLab 消费 renderResources
+- E-4B 的目标是让 `DeveloperLabPage.qml` 从 bridge/facade 已暴露的 render resources 中读取 `task26_home_slots_payload`，再注入 `HomeCardSlotsPreview`。
+- QML 不读取文件系统 JSON；DeveloperLab 只消费已经由 Python/facade/bridge 提供的 `renderResourcesObj`。
+- HomePage / TrainingPage 仍不接入，legacy fallback 不受影响。
+- `source` / `action_id` 仍只作为展示字段传递，不执行 source，不调用 action。
+- E-4B 与未来 E-5 的边界：E-4B 只在 DeveloperLab 预览消费；如果后续进入 HomePage 试点，必须继续保留 legacy fallback。

@@ -29,6 +29,15 @@ Item {
         return (v === undefined || v === null || v === "") ? "n/a" : String(v)
     }
 
+    function task26PayloadValue(key, fallbackValue) {
+        var resources = root.renderResourcesObj || ({})
+        var payload = resources.task26_home_slots_payload || ({})
+        if (payload[key] === undefined || payload[key] === null) {
+            return fallbackValue
+        }
+        return payload[key]
+    }
+
     DesignBackground {
         anchors.fill: parent
         themeObj: root.designThemeObj
@@ -106,50 +115,50 @@ Item {
                 id: task26HomeCardSlotsPreview
                 width: parent.width
                 height: 520
-                slot1CardId: "runtime_io_card"
-                slot2CardId: "quick_actions_card"
-                slot3CardId: "recent_session_card"
-                slot4CardId: "relic_identity_card"
-                slot1CardType: "runtime"
-                slot2CardType: "actions"
-                slot3CardType: "session"
-                slot4CardType: "identity"
-                slot1Title: "Runtime I/O"
-                slot2Title: "Quick Actions"
-                slot3Title: "Recent Session"
-                slot4Title: "RELIC Identity"
-                slot1Subtitle: "Connection and stream health"
-                slot2Subtitle: "Safety and refresh"
-                slot3Subtitle: "Session summary"
-                slot4Subtitle: "Brand and visual"
-                slot1Required: true
-                slot2Required: true
-                slot3Required: false
-                slot4Required: false
-                slot1Locked: true
-                slot2Locked: true
-                slot3Locked: false
-                slot4Locked: false
-                slot1RectText: "x=10.0, y=10.0, w=386.0, h=290.0"
-                slot2RectText: "x=404.0, y=10.0, w=386.0, h=290.0"
-                slot3RectText: "x=10.0, y=308.0, w=584.0, h=290.0"
-                slot4RectText: "x=798.0, y=10.0, w=386.0, h=588.0"
-                slot1WidgetCount: 3
-                slot2WidgetCount: 2
-                slot3WidgetCount: 3
-                slot4WidgetCount: 2
-                slot1ActionIdsText: "n/a"
-                slot2ActionIdsText: "app.refresh_now, live.safe_stop"
-                slot3ActionIdsText: "n/a"
-                slot4ActionIdsText: "n/a"
-                slot1SourceRootsText: "runtimeSnapshot"
-                slot2SourceRootsText: "n/a"
-                slot3SourceRootsText: "gameHudJson, sessionState"
-                slot4SourceRootsText: "renderResourcesJson"
-                slot1FirstWidgetLabelsText: "Runtime, Stream, Attention"
-                slot2FirstWidgetLabelsText: "Refresh, Safe Stop"
-                slot3FirstWidgetLabelsText: "Active, Session ID, HUD"
-                slot4FirstWidgetLabelsText: "Identity, Tagline"
+                slot1CardId: task26PayloadValue("slot1_card_id", "runtime_io_card")
+                slot2CardId: task26PayloadValue("slot2_card_id", "quick_actions_card")
+                slot3CardId: task26PayloadValue("slot3_card_id", "recent_session_card")
+                slot4CardId: task26PayloadValue("slot4_card_id", "relic_identity_card")
+                slot1CardType: task26PayloadValue("slot1_card_type", "runtime")
+                slot2CardType: task26PayloadValue("slot2_card_type", "actions")
+                slot3CardType: task26PayloadValue("slot3_card_type", "session")
+                slot4CardType: task26PayloadValue("slot4_card_type", "identity")
+                slot1Title: task26PayloadValue("slot1_title", "Runtime I/O")
+                slot2Title: task26PayloadValue("slot2_title", "Quick Actions")
+                slot3Title: task26PayloadValue("slot3_title", "Recent Session")
+                slot4Title: task26PayloadValue("slot4_title", "RELIC Identity")
+                slot1Subtitle: task26PayloadValue("slot1_subtitle", "Connection and stream health")
+                slot2Subtitle: task26PayloadValue("slot2_subtitle", "Safety and refresh")
+                slot3Subtitle: task26PayloadValue("slot3_subtitle", "Session summary")
+                slot4Subtitle: task26PayloadValue("slot4_subtitle", "Brand and visual")
+                slot1Required: task26PayloadValue("slot1_required", true)
+                slot2Required: task26PayloadValue("slot2_required", true)
+                slot3Required: task26PayloadValue("slot3_required", false)
+                slot4Required: task26PayloadValue("slot4_required", false)
+                slot1Locked: task26PayloadValue("slot1_locked", true)
+                slot2Locked: task26PayloadValue("slot2_locked", true)
+                slot3Locked: task26PayloadValue("slot3_locked", false)
+                slot4Locked: task26PayloadValue("slot4_locked", false)
+                slot1RectText: task26PayloadValue("slot1_rect_text", "x=10.0, y=10.0, w=386.0, h=290.0")
+                slot2RectText: task26PayloadValue("slot2_rect_text", "x=404.0, y=10.0, w=386.0, h=290.0")
+                slot3RectText: task26PayloadValue("slot3_rect_text", "x=10.0, y=308.0, w=584.0, h=290.0")
+                slot4RectText: task26PayloadValue("slot4_rect_text", "x=798.0, y=10.0, w=386.0, h=588.0")
+                slot1WidgetCount: task26PayloadValue("slot1_widget_count", 3)
+                slot2WidgetCount: task26PayloadValue("slot2_widget_count", 2)
+                slot3WidgetCount: task26PayloadValue("slot3_widget_count", 3)
+                slot4WidgetCount: task26PayloadValue("slot4_widget_count", 2)
+                slot1ActionIdsText: task26PayloadValue("slot1_action_ids_text", "n/a")
+                slot2ActionIdsText: task26PayloadValue("slot2_action_ids_text", "app.refresh_now, live.safe_stop")
+                slot3ActionIdsText: task26PayloadValue("slot3_action_ids_text", "n/a")
+                slot4ActionIdsText: task26PayloadValue("slot4_action_ids_text", "n/a")
+                slot1SourceRootsText: task26PayloadValue("slot1_source_roots_text", "runtimeSnapshot")
+                slot2SourceRootsText: task26PayloadValue("slot2_source_roots_text", "n/a")
+                slot3SourceRootsText: task26PayloadValue("slot3_source_roots_text", "gameHudJson, sessionState")
+                slot4SourceRootsText: task26PayloadValue("slot4_source_roots_text", "renderResourcesJson")
+                slot1FirstWidgetLabelsText: task26PayloadValue("slot1_first_widget_labels_text", "Runtime, Stream, Attention")
+                slot2FirstWidgetLabelsText: task26PayloadValue("slot2_first_widget_labels_text", "Refresh, Safe Stop")
+                slot3FirstWidgetLabelsText: task26PayloadValue("slot3_first_widget_labels_text", "Active, Session ID, HUD")
+                slot4FirstWidgetLabelsText: task26PayloadValue("slot4_first_widget_labels_text", "Identity, Tagline")
             }
         }
 
