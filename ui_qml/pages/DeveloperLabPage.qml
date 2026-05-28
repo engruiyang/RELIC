@@ -4,6 +4,7 @@ import "../components"
 
 Item {
     id: root
+    property var guiBridge: null
     property var designThemeObj: ({})
     property var pageStyleObj: ({})
     property var componentStyleObj: ({})
@@ -26,6 +27,15 @@ Item {
 
     function s(v) {
         return (v === undefined || v === null || v === "") ? "n/a" : String(v)
+    }
+
+    function task26PayloadValue(key, fallbackValue) {
+        var resources = root.renderResourcesObj || ({})
+        var payload = resources.task26_home_slots_payload || ({})
+        if (payload[key] === undefined || payload[key] === null) {
+            return fallbackValue
+        }
+        return payload[key]
     }
 
     DesignBackground {
@@ -62,6 +72,93 @@ Item {
                 DesignButton { buttonStyleObj: root.componentStyleObj.button || ({}); themeObj: root.designThemeObj; renderResourcesObj: root.renderResourcesObj; text: "developer.task6b_evaluate"; onClicked: pick("developer.task6b_evaluate", "active", "copy_only", "python -m ui_cli.evaluate_task6b ...") }
                 DesignButton { buttonStyleObj: root.componentStyleObj.button || ({}); themeObj: root.designThemeObj; renderResourcesObj: root.renderResourcesObj; text: "developer.task6b_tune"; onClicked: pick("developer.task6b_tune", "active", "copy_only", "python -m ui_cli.tune_task6b ...") }
                 DesignButton { buttonStyleObj: root.componentStyleObj.button || ({}); themeObj: root.designThemeObj; renderResourcesObj: root.renderResourcesObj; text: "developer.task6b_calibrate"; onClicked: pick("developer.task6b_calibrate", "active", "copy_only", "python -m ui_cli.calibrate_task6b ...") }
+            }
+        }
+
+        GroupBox {
+            title: "TASK26 Desktop Card Preview"
+
+            CardHostPreview {
+                id: task26CardPreview
+                width: parent.width
+                height: 420
+                guiBridge: root.guiBridge
+            }
+        }
+
+
+
+        GroupBox {
+            title: "TASK26 Home Render Model Preview"
+
+            HomeRenderModelPreview {
+                id: task26HomeRenderModelPreview
+                width: parent.width
+                height: 360
+                pageId: "home"
+                cardCount: 4
+                widgetCount: 10
+                requiredCardCount: 2
+                lockedCardCount: 2
+                actionsText: "app.refresh_now, live.safe_stop"
+                sourceRootsText: "gameHudJson, renderResourcesJson, runtimeSnapshot, sessionState"
+                cardIdsText: "runtime_io_card, quick_actions_card, recent_session_card, relic_identity_card"
+            }
+        }
+
+
+
+        GroupBox {
+            title: "TASK26 Home Card Slots Preview"
+
+            HomeCardSlotsPreview {
+                id: task26HomeCardSlotsPreview
+                width: parent.width
+                height: 520
+                slot1CardId: task26PayloadValue("slot1_card_id", "runtime_io_card")
+                slot2CardId: task26PayloadValue("slot2_card_id", "quick_actions_card")
+                slot3CardId: task26PayloadValue("slot3_card_id", "recent_session_card")
+                slot4CardId: task26PayloadValue("slot4_card_id", "relic_identity_card")
+                slot1CardType: task26PayloadValue("slot1_card_type", "runtime")
+                slot2CardType: task26PayloadValue("slot2_card_type", "actions")
+                slot3CardType: task26PayloadValue("slot3_card_type", "session")
+                slot4CardType: task26PayloadValue("slot4_card_type", "identity")
+                slot1Title: task26PayloadValue("slot1_title", "Runtime I/O")
+                slot2Title: task26PayloadValue("slot2_title", "Quick Actions")
+                slot3Title: task26PayloadValue("slot3_title", "Recent Session")
+                slot4Title: task26PayloadValue("slot4_title", "RELIC Identity")
+                slot1Subtitle: task26PayloadValue("slot1_subtitle", "Connection and stream health")
+                slot2Subtitle: task26PayloadValue("slot2_subtitle", "Safety and refresh")
+                slot3Subtitle: task26PayloadValue("slot3_subtitle", "Session summary")
+                slot4Subtitle: task26PayloadValue("slot4_subtitle", "Brand and visual")
+                slot1Required: task26PayloadValue("slot1_required", true)
+                slot2Required: task26PayloadValue("slot2_required", true)
+                slot3Required: task26PayloadValue("slot3_required", false)
+                slot4Required: task26PayloadValue("slot4_required", false)
+                slot1Locked: task26PayloadValue("slot1_locked", true)
+                slot2Locked: task26PayloadValue("slot2_locked", true)
+                slot3Locked: task26PayloadValue("slot3_locked", false)
+                slot4Locked: task26PayloadValue("slot4_locked", false)
+                slot1RectText: task26PayloadValue("slot1_rect_text", "x=10.0, y=10.0, w=386.0, h=290.0")
+                slot2RectText: task26PayloadValue("slot2_rect_text", "x=404.0, y=10.0, w=386.0, h=290.0")
+                slot3RectText: task26PayloadValue("slot3_rect_text", "x=10.0, y=308.0, w=584.0, h=290.0")
+                slot4RectText: task26PayloadValue("slot4_rect_text", "x=798.0, y=10.0, w=386.0, h=588.0")
+                slot1WidgetCount: task26PayloadValue("slot1_widget_count", 3)
+                slot2WidgetCount: task26PayloadValue("slot2_widget_count", 2)
+                slot3WidgetCount: task26PayloadValue("slot3_widget_count", 3)
+                slot4WidgetCount: task26PayloadValue("slot4_widget_count", 2)
+                slot1ActionIdsText: task26PayloadValue("slot1_action_ids_text", "n/a")
+                slot2ActionIdsText: task26PayloadValue("slot2_action_ids_text", "app.refresh_now, live.safe_stop")
+                slot3ActionIdsText: task26PayloadValue("slot3_action_ids_text", "n/a")
+                slot4ActionIdsText: task26PayloadValue("slot4_action_ids_text", "n/a")
+                slot1SourceRootsText: task26PayloadValue("slot1_source_roots_text", "runtimeSnapshot")
+                slot2SourceRootsText: task26PayloadValue("slot2_source_roots_text", "n/a")
+                slot3SourceRootsText: task26PayloadValue("slot3_source_roots_text", "gameHudJson, sessionState")
+                slot4SourceRootsText: task26PayloadValue("slot4_source_roots_text", "renderResourcesJson")
+                slot1FirstWidgetLabelsText: task26PayloadValue("slot1_first_widget_labels_text", "Runtime, Stream, Attention")
+                slot2FirstWidgetLabelsText: task26PayloadValue("slot2_first_widget_labels_text", "Refresh, Safe Stop")
+                slot3FirstWidgetLabelsText: task26PayloadValue("slot3_first_widget_labels_text", "Active, Session ID, HUD")
+                slot4FirstWidgetLabelsText: task26PayloadValue("slot4_first_widget_labels_text", "Identity, Tagline")
             }
         }
 

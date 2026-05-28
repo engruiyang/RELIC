@@ -97,7 +97,10 @@ class GuiBridge(QObject):
             changed = True
 
         self._game_view_json = dumps(self._facade.get_game_view())
-        self._render_resources_json = dumps(self._facade.get_render_resources(), ensure_ascii=False)
+        try:
+            self._render_resources_json = dumps(self._facade.get_render_resources(), ensure_ascii=False)
+        except Exception as exc:
+            self._render_resources_json = dumps({"status": "error", "error": str(exc)}, ensure_ascii=False)
         self._command_count = self._facade.command_count
         self._event_count = self._facade.event_count
         self._last_command = dumps(self._facade.last_command) if self._facade.last_command else ""
