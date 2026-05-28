@@ -38,6 +38,27 @@ Item {
         return payload[key]
     }
 
+    function task26TrainingSummary() {
+        var resources = renderResourcesObj || ({})
+        return resources.task26_training_summary || ({})
+    }
+
+    function task26TrainingValue(key, fallbackValue) {
+        var summary = task26TrainingSummary()
+        if (summary[key] === undefined || summary[key] === null) {
+            return fallbackValue
+        }
+        return summary[key]
+    }
+
+    function task26TrainingListValue(key, fallbackValue) {
+        var v = task26TrainingValue(key, [])
+        if (!v || v.length === undefined || v.length === 0) {
+            return fallbackValue
+        }
+        return v.join(", ")
+    }
+
     DesignBackground {
         anchors.fill: parent
         themeObj: root.designThemeObj
@@ -159,6 +180,27 @@ Item {
                 slot2FirstWidgetLabelsText: task26PayloadValue("slot2_first_widget_labels_text", "Refresh, Safe Stop")
                 slot3FirstWidgetLabelsText: task26PayloadValue("slot3_first_widget_labels_text", "Active, Session ID, HUD")
                 slot4FirstWidgetLabelsText: task26PayloadValue("slot4_first_widget_labels_text", "Identity, Tagline")
+            }
+        }
+
+        GroupBox {
+            title: "TASK26 Training Render Model Preview"
+
+            TrainingRenderModelPreview {
+                id: task26TrainingRenderModelPreview
+                width: parent.width
+                height: 420
+                pageId: task26TrainingValue("page_id", "training")
+                cardCount: task26TrainingValue("card_count", 0)
+                widgetCount: task26TrainingValue("widget_count", 0)
+                requiredCardsText: task26TrainingListValue("required_card_ids", "n/a")
+                actionsText: task26TrainingListValue("action_ids", "n/a")
+                sourceRootsText: task26TrainingListValue("source_roots", "n/a")
+                placeholderSourcesText: task26TrainingListValue("placeholder_sources", "n/a")
+                gameCanvasStatusText: task26TrainingValue("game_canvas_card_status", "n/a")
+                safeStopPresent: task26TrainingValue("safe_stop_present", false)
+                slotsSupportedText: task26TrainingValue("training_slots_supported", false) ? "true" : "false"
+                injectionSupportedText: task26TrainingValue("training_injection_supported", false) ? "true" : "false"
             }
         }
 

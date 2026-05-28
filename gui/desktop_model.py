@@ -266,6 +266,90 @@ def build_home_render_model_summary(example_root: Path) -> dict:
     return build_render_model_summary(build_home_render_model(example_root))
 
 
+def build_training_render_model(example_root: Path) -> dict:
+    page_path = example_root / "assets" / "layouts" / "task26_examples" / "training_page.desktop_demo.json"
+    with page_path.open("r", encoding="utf-8") as f:
+        config = json.load(f)
+    if not isinstance(config, dict):
+        raise ValueError("training_page.desktop_demo.json must be object")
+    return build_page_render_model(config)
+
+
+def build_training_render_model_summary(example_root: Path) -> dict:
+    return build_render_model_summary(build_training_render_model(example_root))
+
+
+def _training_game_canvas_card_status(cards: list[dict[str, Any]]) -> str:
+    for card in cards:
+        if card.get("id") != "game_canvas_card":
+            continue
+        widgets = card.get("widgets") if isinstance(card.get("widgets"), list) else []
+        has_placeholder = any(
+            isinstance(w, dict)
+            and (w.get("type") == "game_placeholder" or w.get("id") == "game_canvas_placeholder")
+            for w in widgets
+        )
+        if card.get("type") == "game" or has_placeholder:
+            return "placeholder_present"
+        return "card_present_without_placeholder"
+    return "missing"
+
+
+def build_training_contract_summary(example_root: Path) -> dict:
+    model = build_training_render_model(example_root)
+    cards = model.get("cards")
+    if not isinstance(cards, list):
+        raise ValueError("training render model cards must be list")
+
+    action_ids: set[str] = set()
+    source_roots: set[str] = set()
+    placeholder_sources: set[str] = set()
+    widget_count = 0
+    required_card_ids: list[str] = []
+
+    for card in cards:
+        if not isinstance(card, dict):
+            continue
+        if bool(card.get("required", False)):
+            required_card_ids.append(str(card.get("id", "")))
+        widgets = card.get("widgets") if isinstance(card.get("widgets"), list) else []
+        widget_count += len(widgets)
+        for widget in widgets:
+            if not isinstance(widget, dict):
+                continue
+            action_id = widget.get("action_id")
+            if isinstance(action_id, str) and action_id:
+                action_ids.add(action_id)
+            source = widget.get("source")
+            if isinstance(source, str) and source:
+                source_roots.add(source.split(".", 1)[0])
+                if source in {"gameHudJson.status", "gameHudJson.score", "gameHudJson.focus_index"} or source.startswith("gameViewJson"):
+                    placeholder_sources.add(source)
+
+    action_ids_sorted = sorted(action_ids)
+    return {
+        "page_id": model.get("page_id", ""),
+        "card_count": len(cards),
+        "widget_count": widget_count,
+        "required_card_ids": required_card_ids,
+        "action_ids": action_ids_sorted,
+        "source_roots": sorted(source_roots),
+        "placeholder_sources": sorted(placeholder_sources),
+        "game_canvas_card_status": _training_game_canvas_card_status(cards),
+        "safe_stop_present": "live.safe_stop" in action_ids,
+        "training_slots_supported": False,
+        "training_injection_supported": False,
+    }
+
+
+def build_training_render_resource(example_root: Path) -> dict:
+    return {
+        "task26_training_summary": build_training_contract_summary(example_root),
+        "task26_training_status": "ok",
+        "task26_training_source": "assets/layouts/task26_examples/training_page.desktop_demo.json",
+    }
+
+
 def build_home_card_slots_from_examples(example_root: Path, *, max_slots: int = 4) -> list[dict]:
     return build_home_card_slots(build_home_render_model(example_root), max_slots=max_slots)
 

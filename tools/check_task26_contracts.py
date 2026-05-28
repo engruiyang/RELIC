@@ -12,6 +12,7 @@ if str(ROOT) not in sys.path:
 from gui.desktop_coverage import (  # noqa: E402
     collect_cards_fields_buttons_from_pages,
     load_pipeline_bindings,
+    validate_action_ids,
     validate_pipeline_coverage,
     validate_safe_stop_accessible,
 )
@@ -19,14 +20,20 @@ from gui.desktop_model import (  # noqa: E402
     build_home_card_slots,
     build_home_card_slots_injection_payload,
     build_home_render_model,
+    build_training_contract_summary,
+    build_training_render_model,
     diff_home_slot_injection_contract,
     expected_home_slot_injection_fields,
     expected_home_slot_qml_properties,
     validate_home_slot_injection_payload,
 )
 from gui.desktop_schema import (  # noqa: E402
+    collect_action_ids_from_obj,
+    collect_sources_from_obj,
     iter_task26_example_json,
     reject_script_like_values,
+    validate_page_config,
+    validate_source_roots,
 )
 
 
@@ -70,6 +77,32 @@ def run(strict: bool = False, show_diff: bool = False) -> None:
     inventory = collect_cards_fields_buttons_from_pages([home_page, training_page], desktop)
     validate_pipeline_coverage(bindings, inventory, strict=strict)
     validate_safe_stop_accessible(inventory)
+
+    validate_page_config(training_page)
+    validate_action_ids(collect_action_ids_from_obj(training_page))
+    validate_source_roots(collect_sources_from_obj(training_page))
+    build_training_render_model(ROOT)
+    training_summary = build_training_contract_summary(ROOT)
+    required_training_cards = {
+        "training_control_card",
+        "session_card",
+        "runtime_io_card",
+        "calibration_status_card",
+        "game_hud_card",
+        "game_canvas_card",
+        "diagnostics_summary_card",
+    }
+    missing_training_cards = sorted(required_training_cards - set(training_summary.get("required_card_ids", [])))
+    if missing_training_cards:
+        raise ValueError(f"training required cards missing: {missing_training_cards}")
+    if training_summary.get("safe_stop_present") is not True:
+        raise ValueError("training safe_stop_present must be true")
+    if "placeholder" not in str(training_summary.get("game_canvas_card_status", "")):
+        raise ValueError("training game_canvas_card placeholder missing")
+    if training_summary.get("training_slots_supported") is not False:
+        raise ValueError("training slots must remain unsupported")
+    if training_summary.get("training_injection_supported") is not False:
+        raise ValueError("training injection must remain unsupported")
 
     model = build_home_render_model(ROOT)
     slots = build_home_card_slots(model, max_slots=4)
