@@ -4,6 +4,14 @@ Item {
     id: root
 
     property var layoutPayload: ({})
+    property var guiBridge: null
+    property var appStateObj: ({})
+    property var runtimeSnapshotObj: ({})
+    property var sessionStateObj: ({})
+    property var controlStateObj: ({})
+    property var gameHudObj: ({})
+    property var gameViewObj: ({})
+    property var renderResourcesObj: ({})
     property string previewTitle: "Desktop Layout Preview"
     property string previewSubtitle: "TASK26 real layout preview"
     property string pageId: String(layoutValue("page_id", ""))
@@ -38,6 +46,66 @@ Item {
     property string card1FirstWidgetLabelsText: String(layoutValue("card1_first_widget_labels_text", "n/a"))
     property bool card1Placeholder: Boolean(layoutValue("card1_placeholder", false))
     property string card1RoleText: String(layoutValue("card1_role", ""))
+    property string card1Widget1Type: String(layoutValue("card1_widget1_type", ""))
+    property string card1Widget1Id: String(layoutValue("card1_widget1_id", ""))
+    property string card1Widget1Label: String(layoutValue("card1_widget1_label", ""))
+    property string card1Widget1Source: String(layoutValue("card1_widget1_source", ""))
+    property string card1Widget1Fallback: String(layoutValue("card1_widget1_fallback", ""))
+    property string card1Widget1Unit: String(layoutValue("card1_widget1_unit", ""))
+    property string card1Widget1ActionId: String(layoutValue("card1_widget1_action_id", ""))
+    property string card1Widget1Variant: String(layoutValue("card1_widget1_variant", ""))
+    property bool card1Widget1Required: Boolean(layoutValue("card1_widget1_required", false))
+    property string card1Widget1Value: String(layoutValue("card1_widget1_value", ""))
+    property string card1Widget2Type: String(layoutValue("card1_widget2_type", ""))
+    property string card1Widget2Id: String(layoutValue("card1_widget2_id", ""))
+    property string card1Widget2Label: String(layoutValue("card1_widget2_label", ""))
+    property string card1Widget2Source: String(layoutValue("card1_widget2_source", ""))
+    property string card1Widget2Fallback: String(layoutValue("card1_widget2_fallback", ""))
+    property string card1Widget2Unit: String(layoutValue("card1_widget2_unit", ""))
+    property string card1Widget2ActionId: String(layoutValue("card1_widget2_action_id", ""))
+    property string card1Widget2Variant: String(layoutValue("card1_widget2_variant", ""))
+    property bool card1Widget2Required: Boolean(layoutValue("card1_widget2_required", false))
+    property string card1Widget2Value: String(layoutValue("card1_widget2_value", ""))
+    property string card1Widget3Type: String(layoutValue("card1_widget3_type", ""))
+    property string card1Widget3Id: String(layoutValue("card1_widget3_id", ""))
+    property string card1Widget3Label: String(layoutValue("card1_widget3_label", ""))
+    property string card1Widget3Source: String(layoutValue("card1_widget3_source", ""))
+    property string card1Widget3Fallback: String(layoutValue("card1_widget3_fallback", ""))
+    property string card1Widget3Unit: String(layoutValue("card1_widget3_unit", ""))
+    property string card1Widget3ActionId: String(layoutValue("card1_widget3_action_id", ""))
+    property string card1Widget3Variant: String(layoutValue("card1_widget3_variant", ""))
+    property bool card1Widget3Required: Boolean(layoutValue("card1_widget3_required", false))
+    property string card1Widget3Value: String(layoutValue("card1_widget3_value", ""))
+    property string card1Widget4Type: String(layoutValue("card1_widget4_type", ""))
+    property string card1Widget4Id: String(layoutValue("card1_widget4_id", ""))
+    property string card1Widget4Label: String(layoutValue("card1_widget4_label", ""))
+    property string card1Widget4Source: String(layoutValue("card1_widget4_source", ""))
+    property string card1Widget4Fallback: String(layoutValue("card1_widget4_fallback", ""))
+    property string card1Widget4Unit: String(layoutValue("card1_widget4_unit", ""))
+    property string card1Widget4ActionId: String(layoutValue("card1_widget4_action_id", ""))
+    property string card1Widget4Variant: String(layoutValue("card1_widget4_variant", ""))
+    property bool card1Widget4Required: Boolean(layoutValue("card1_widget4_required", false))
+    property string card1Widget4Value: String(layoutValue("card1_widget4_value", ""))
+    property string card1Widget5Type: String(layoutValue("card1_widget5_type", ""))
+    property string card1Widget5Id: String(layoutValue("card1_widget5_id", ""))
+    property string card1Widget5Label: String(layoutValue("card1_widget5_label", ""))
+    property string card1Widget5Source: String(layoutValue("card1_widget5_source", ""))
+    property string card1Widget5Fallback: String(layoutValue("card1_widget5_fallback", ""))
+    property string card1Widget5Unit: String(layoutValue("card1_widget5_unit", ""))
+    property string card1Widget5ActionId: String(layoutValue("card1_widget5_action_id", ""))
+    property string card1Widget5Variant: String(layoutValue("card1_widget5_variant", ""))
+    property bool card1Widget5Required: Boolean(layoutValue("card1_widget5_required", false))
+    property string card1Widget5Value: String(layoutValue("card1_widget5_value", ""))
+    property string card1Widget6Type: String(layoutValue("card1_widget6_type", ""))
+    property string card1Widget6Id: String(layoutValue("card1_widget6_id", ""))
+    property string card1Widget6Label: String(layoutValue("card1_widget6_label", ""))
+    property string card1Widget6Source: String(layoutValue("card1_widget6_source", ""))
+    property string card1Widget6Fallback: String(layoutValue("card1_widget6_fallback", ""))
+    property string card1Widget6Unit: String(layoutValue("card1_widget6_unit", ""))
+    property string card1Widget6ActionId: String(layoutValue("card1_widget6_action_id", ""))
+    property string card1Widget6Variant: String(layoutValue("card1_widget6_variant", ""))
+    property bool card1Widget6Required: Boolean(layoutValue("card1_widget6_required", false))
+    property string card1Widget6Value: String(layoutValue("card1_widget6_value", ""))
     property bool card2Visible: Boolean(layoutValue("card2_visible", false))
     property string card2Id: String(layoutValue("card2_id", ""))
     property string card2Type: String(layoutValue("card2_type", ""))
@@ -55,6 +123,66 @@ Item {
     property string card2FirstWidgetLabelsText: String(layoutValue("card2_first_widget_labels_text", "n/a"))
     property bool card2Placeholder: Boolean(layoutValue("card2_placeholder", false))
     property string card2RoleText: String(layoutValue("card2_role", ""))
+    property string card2Widget1Type: String(layoutValue("card2_widget1_type", ""))
+    property string card2Widget1Id: String(layoutValue("card2_widget1_id", ""))
+    property string card2Widget1Label: String(layoutValue("card2_widget1_label", ""))
+    property string card2Widget1Source: String(layoutValue("card2_widget1_source", ""))
+    property string card2Widget1Fallback: String(layoutValue("card2_widget1_fallback", ""))
+    property string card2Widget1Unit: String(layoutValue("card2_widget1_unit", ""))
+    property string card2Widget1ActionId: String(layoutValue("card2_widget1_action_id", ""))
+    property string card2Widget1Variant: String(layoutValue("card2_widget1_variant", ""))
+    property bool card2Widget1Required: Boolean(layoutValue("card2_widget1_required", false))
+    property string card2Widget1Value: String(layoutValue("card2_widget1_value", ""))
+    property string card2Widget2Type: String(layoutValue("card2_widget2_type", ""))
+    property string card2Widget2Id: String(layoutValue("card2_widget2_id", ""))
+    property string card2Widget2Label: String(layoutValue("card2_widget2_label", ""))
+    property string card2Widget2Source: String(layoutValue("card2_widget2_source", ""))
+    property string card2Widget2Fallback: String(layoutValue("card2_widget2_fallback", ""))
+    property string card2Widget2Unit: String(layoutValue("card2_widget2_unit", ""))
+    property string card2Widget2ActionId: String(layoutValue("card2_widget2_action_id", ""))
+    property string card2Widget2Variant: String(layoutValue("card2_widget2_variant", ""))
+    property bool card2Widget2Required: Boolean(layoutValue("card2_widget2_required", false))
+    property string card2Widget2Value: String(layoutValue("card2_widget2_value", ""))
+    property string card2Widget3Type: String(layoutValue("card2_widget3_type", ""))
+    property string card2Widget3Id: String(layoutValue("card2_widget3_id", ""))
+    property string card2Widget3Label: String(layoutValue("card2_widget3_label", ""))
+    property string card2Widget3Source: String(layoutValue("card2_widget3_source", ""))
+    property string card2Widget3Fallback: String(layoutValue("card2_widget3_fallback", ""))
+    property string card2Widget3Unit: String(layoutValue("card2_widget3_unit", ""))
+    property string card2Widget3ActionId: String(layoutValue("card2_widget3_action_id", ""))
+    property string card2Widget3Variant: String(layoutValue("card2_widget3_variant", ""))
+    property bool card2Widget3Required: Boolean(layoutValue("card2_widget3_required", false))
+    property string card2Widget3Value: String(layoutValue("card2_widget3_value", ""))
+    property string card2Widget4Type: String(layoutValue("card2_widget4_type", ""))
+    property string card2Widget4Id: String(layoutValue("card2_widget4_id", ""))
+    property string card2Widget4Label: String(layoutValue("card2_widget4_label", ""))
+    property string card2Widget4Source: String(layoutValue("card2_widget4_source", ""))
+    property string card2Widget4Fallback: String(layoutValue("card2_widget4_fallback", ""))
+    property string card2Widget4Unit: String(layoutValue("card2_widget4_unit", ""))
+    property string card2Widget4ActionId: String(layoutValue("card2_widget4_action_id", ""))
+    property string card2Widget4Variant: String(layoutValue("card2_widget4_variant", ""))
+    property bool card2Widget4Required: Boolean(layoutValue("card2_widget4_required", false))
+    property string card2Widget4Value: String(layoutValue("card2_widget4_value", ""))
+    property string card2Widget5Type: String(layoutValue("card2_widget5_type", ""))
+    property string card2Widget5Id: String(layoutValue("card2_widget5_id", ""))
+    property string card2Widget5Label: String(layoutValue("card2_widget5_label", ""))
+    property string card2Widget5Source: String(layoutValue("card2_widget5_source", ""))
+    property string card2Widget5Fallback: String(layoutValue("card2_widget5_fallback", ""))
+    property string card2Widget5Unit: String(layoutValue("card2_widget5_unit", ""))
+    property string card2Widget5ActionId: String(layoutValue("card2_widget5_action_id", ""))
+    property string card2Widget5Variant: String(layoutValue("card2_widget5_variant", ""))
+    property bool card2Widget5Required: Boolean(layoutValue("card2_widget5_required", false))
+    property string card2Widget5Value: String(layoutValue("card2_widget5_value", ""))
+    property string card2Widget6Type: String(layoutValue("card2_widget6_type", ""))
+    property string card2Widget6Id: String(layoutValue("card2_widget6_id", ""))
+    property string card2Widget6Label: String(layoutValue("card2_widget6_label", ""))
+    property string card2Widget6Source: String(layoutValue("card2_widget6_source", ""))
+    property string card2Widget6Fallback: String(layoutValue("card2_widget6_fallback", ""))
+    property string card2Widget6Unit: String(layoutValue("card2_widget6_unit", ""))
+    property string card2Widget6ActionId: String(layoutValue("card2_widget6_action_id", ""))
+    property string card2Widget6Variant: String(layoutValue("card2_widget6_variant", ""))
+    property bool card2Widget6Required: Boolean(layoutValue("card2_widget6_required", false))
+    property string card2Widget6Value: String(layoutValue("card2_widget6_value", ""))
     property bool card3Visible: Boolean(layoutValue("card3_visible", false))
     property string card3Id: String(layoutValue("card3_id", ""))
     property string card3Type: String(layoutValue("card3_type", ""))
@@ -72,6 +200,66 @@ Item {
     property string card3FirstWidgetLabelsText: String(layoutValue("card3_first_widget_labels_text", "n/a"))
     property bool card3Placeholder: Boolean(layoutValue("card3_placeholder", false))
     property string card3RoleText: String(layoutValue("card3_role", ""))
+    property string card3Widget1Type: String(layoutValue("card3_widget1_type", ""))
+    property string card3Widget1Id: String(layoutValue("card3_widget1_id", ""))
+    property string card3Widget1Label: String(layoutValue("card3_widget1_label", ""))
+    property string card3Widget1Source: String(layoutValue("card3_widget1_source", ""))
+    property string card3Widget1Fallback: String(layoutValue("card3_widget1_fallback", ""))
+    property string card3Widget1Unit: String(layoutValue("card3_widget1_unit", ""))
+    property string card3Widget1ActionId: String(layoutValue("card3_widget1_action_id", ""))
+    property string card3Widget1Variant: String(layoutValue("card3_widget1_variant", ""))
+    property bool card3Widget1Required: Boolean(layoutValue("card3_widget1_required", false))
+    property string card3Widget1Value: String(layoutValue("card3_widget1_value", ""))
+    property string card3Widget2Type: String(layoutValue("card3_widget2_type", ""))
+    property string card3Widget2Id: String(layoutValue("card3_widget2_id", ""))
+    property string card3Widget2Label: String(layoutValue("card3_widget2_label", ""))
+    property string card3Widget2Source: String(layoutValue("card3_widget2_source", ""))
+    property string card3Widget2Fallback: String(layoutValue("card3_widget2_fallback", ""))
+    property string card3Widget2Unit: String(layoutValue("card3_widget2_unit", ""))
+    property string card3Widget2ActionId: String(layoutValue("card3_widget2_action_id", ""))
+    property string card3Widget2Variant: String(layoutValue("card3_widget2_variant", ""))
+    property bool card3Widget2Required: Boolean(layoutValue("card3_widget2_required", false))
+    property string card3Widget2Value: String(layoutValue("card3_widget2_value", ""))
+    property string card3Widget3Type: String(layoutValue("card3_widget3_type", ""))
+    property string card3Widget3Id: String(layoutValue("card3_widget3_id", ""))
+    property string card3Widget3Label: String(layoutValue("card3_widget3_label", ""))
+    property string card3Widget3Source: String(layoutValue("card3_widget3_source", ""))
+    property string card3Widget3Fallback: String(layoutValue("card3_widget3_fallback", ""))
+    property string card3Widget3Unit: String(layoutValue("card3_widget3_unit", ""))
+    property string card3Widget3ActionId: String(layoutValue("card3_widget3_action_id", ""))
+    property string card3Widget3Variant: String(layoutValue("card3_widget3_variant", ""))
+    property bool card3Widget3Required: Boolean(layoutValue("card3_widget3_required", false))
+    property string card3Widget3Value: String(layoutValue("card3_widget3_value", ""))
+    property string card3Widget4Type: String(layoutValue("card3_widget4_type", ""))
+    property string card3Widget4Id: String(layoutValue("card3_widget4_id", ""))
+    property string card3Widget4Label: String(layoutValue("card3_widget4_label", ""))
+    property string card3Widget4Source: String(layoutValue("card3_widget4_source", ""))
+    property string card3Widget4Fallback: String(layoutValue("card3_widget4_fallback", ""))
+    property string card3Widget4Unit: String(layoutValue("card3_widget4_unit", ""))
+    property string card3Widget4ActionId: String(layoutValue("card3_widget4_action_id", ""))
+    property string card3Widget4Variant: String(layoutValue("card3_widget4_variant", ""))
+    property bool card3Widget4Required: Boolean(layoutValue("card3_widget4_required", false))
+    property string card3Widget4Value: String(layoutValue("card3_widget4_value", ""))
+    property string card3Widget5Type: String(layoutValue("card3_widget5_type", ""))
+    property string card3Widget5Id: String(layoutValue("card3_widget5_id", ""))
+    property string card3Widget5Label: String(layoutValue("card3_widget5_label", ""))
+    property string card3Widget5Source: String(layoutValue("card3_widget5_source", ""))
+    property string card3Widget5Fallback: String(layoutValue("card3_widget5_fallback", ""))
+    property string card3Widget5Unit: String(layoutValue("card3_widget5_unit", ""))
+    property string card3Widget5ActionId: String(layoutValue("card3_widget5_action_id", ""))
+    property string card3Widget5Variant: String(layoutValue("card3_widget5_variant", ""))
+    property bool card3Widget5Required: Boolean(layoutValue("card3_widget5_required", false))
+    property string card3Widget5Value: String(layoutValue("card3_widget5_value", ""))
+    property string card3Widget6Type: String(layoutValue("card3_widget6_type", ""))
+    property string card3Widget6Id: String(layoutValue("card3_widget6_id", ""))
+    property string card3Widget6Label: String(layoutValue("card3_widget6_label", ""))
+    property string card3Widget6Source: String(layoutValue("card3_widget6_source", ""))
+    property string card3Widget6Fallback: String(layoutValue("card3_widget6_fallback", ""))
+    property string card3Widget6Unit: String(layoutValue("card3_widget6_unit", ""))
+    property string card3Widget6ActionId: String(layoutValue("card3_widget6_action_id", ""))
+    property string card3Widget6Variant: String(layoutValue("card3_widget6_variant", ""))
+    property bool card3Widget6Required: Boolean(layoutValue("card3_widget6_required", false))
+    property string card3Widget6Value: String(layoutValue("card3_widget6_value", ""))
     property bool card4Visible: Boolean(layoutValue("card4_visible", false))
     property string card4Id: String(layoutValue("card4_id", ""))
     property string card4Type: String(layoutValue("card4_type", ""))
@@ -89,6 +277,66 @@ Item {
     property string card4FirstWidgetLabelsText: String(layoutValue("card4_first_widget_labels_text", "n/a"))
     property bool card4Placeholder: Boolean(layoutValue("card4_placeholder", false))
     property string card4RoleText: String(layoutValue("card4_role", ""))
+    property string card4Widget1Type: String(layoutValue("card4_widget1_type", ""))
+    property string card4Widget1Id: String(layoutValue("card4_widget1_id", ""))
+    property string card4Widget1Label: String(layoutValue("card4_widget1_label", ""))
+    property string card4Widget1Source: String(layoutValue("card4_widget1_source", ""))
+    property string card4Widget1Fallback: String(layoutValue("card4_widget1_fallback", ""))
+    property string card4Widget1Unit: String(layoutValue("card4_widget1_unit", ""))
+    property string card4Widget1ActionId: String(layoutValue("card4_widget1_action_id", ""))
+    property string card4Widget1Variant: String(layoutValue("card4_widget1_variant", ""))
+    property bool card4Widget1Required: Boolean(layoutValue("card4_widget1_required", false))
+    property string card4Widget1Value: String(layoutValue("card4_widget1_value", ""))
+    property string card4Widget2Type: String(layoutValue("card4_widget2_type", ""))
+    property string card4Widget2Id: String(layoutValue("card4_widget2_id", ""))
+    property string card4Widget2Label: String(layoutValue("card4_widget2_label", ""))
+    property string card4Widget2Source: String(layoutValue("card4_widget2_source", ""))
+    property string card4Widget2Fallback: String(layoutValue("card4_widget2_fallback", ""))
+    property string card4Widget2Unit: String(layoutValue("card4_widget2_unit", ""))
+    property string card4Widget2ActionId: String(layoutValue("card4_widget2_action_id", ""))
+    property string card4Widget2Variant: String(layoutValue("card4_widget2_variant", ""))
+    property bool card4Widget2Required: Boolean(layoutValue("card4_widget2_required", false))
+    property string card4Widget2Value: String(layoutValue("card4_widget2_value", ""))
+    property string card4Widget3Type: String(layoutValue("card4_widget3_type", ""))
+    property string card4Widget3Id: String(layoutValue("card4_widget3_id", ""))
+    property string card4Widget3Label: String(layoutValue("card4_widget3_label", ""))
+    property string card4Widget3Source: String(layoutValue("card4_widget3_source", ""))
+    property string card4Widget3Fallback: String(layoutValue("card4_widget3_fallback", ""))
+    property string card4Widget3Unit: String(layoutValue("card4_widget3_unit", ""))
+    property string card4Widget3ActionId: String(layoutValue("card4_widget3_action_id", ""))
+    property string card4Widget3Variant: String(layoutValue("card4_widget3_variant", ""))
+    property bool card4Widget3Required: Boolean(layoutValue("card4_widget3_required", false))
+    property string card4Widget3Value: String(layoutValue("card4_widget3_value", ""))
+    property string card4Widget4Type: String(layoutValue("card4_widget4_type", ""))
+    property string card4Widget4Id: String(layoutValue("card4_widget4_id", ""))
+    property string card4Widget4Label: String(layoutValue("card4_widget4_label", ""))
+    property string card4Widget4Source: String(layoutValue("card4_widget4_source", ""))
+    property string card4Widget4Fallback: String(layoutValue("card4_widget4_fallback", ""))
+    property string card4Widget4Unit: String(layoutValue("card4_widget4_unit", ""))
+    property string card4Widget4ActionId: String(layoutValue("card4_widget4_action_id", ""))
+    property string card4Widget4Variant: String(layoutValue("card4_widget4_variant", ""))
+    property bool card4Widget4Required: Boolean(layoutValue("card4_widget4_required", false))
+    property string card4Widget4Value: String(layoutValue("card4_widget4_value", ""))
+    property string card4Widget5Type: String(layoutValue("card4_widget5_type", ""))
+    property string card4Widget5Id: String(layoutValue("card4_widget5_id", ""))
+    property string card4Widget5Label: String(layoutValue("card4_widget5_label", ""))
+    property string card4Widget5Source: String(layoutValue("card4_widget5_source", ""))
+    property string card4Widget5Fallback: String(layoutValue("card4_widget5_fallback", ""))
+    property string card4Widget5Unit: String(layoutValue("card4_widget5_unit", ""))
+    property string card4Widget5ActionId: String(layoutValue("card4_widget5_action_id", ""))
+    property string card4Widget5Variant: String(layoutValue("card4_widget5_variant", ""))
+    property bool card4Widget5Required: Boolean(layoutValue("card4_widget5_required", false))
+    property string card4Widget5Value: String(layoutValue("card4_widget5_value", ""))
+    property string card4Widget6Type: String(layoutValue("card4_widget6_type", ""))
+    property string card4Widget6Id: String(layoutValue("card4_widget6_id", ""))
+    property string card4Widget6Label: String(layoutValue("card4_widget6_label", ""))
+    property string card4Widget6Source: String(layoutValue("card4_widget6_source", ""))
+    property string card4Widget6Fallback: String(layoutValue("card4_widget6_fallback", ""))
+    property string card4Widget6Unit: String(layoutValue("card4_widget6_unit", ""))
+    property string card4Widget6ActionId: String(layoutValue("card4_widget6_action_id", ""))
+    property string card4Widget6Variant: String(layoutValue("card4_widget6_variant", ""))
+    property bool card4Widget6Required: Boolean(layoutValue("card4_widget6_required", false))
+    property string card4Widget6Value: String(layoutValue("card4_widget6_value", ""))
     property bool card5Visible: Boolean(layoutValue("card5_visible", false))
     property string card5Id: String(layoutValue("card5_id", ""))
     property string card5Type: String(layoutValue("card5_type", ""))
@@ -106,6 +354,66 @@ Item {
     property string card5FirstWidgetLabelsText: String(layoutValue("card5_first_widget_labels_text", "n/a"))
     property bool card5Placeholder: Boolean(layoutValue("card5_placeholder", false))
     property string card5RoleText: String(layoutValue("card5_role", ""))
+    property string card5Widget1Type: String(layoutValue("card5_widget1_type", ""))
+    property string card5Widget1Id: String(layoutValue("card5_widget1_id", ""))
+    property string card5Widget1Label: String(layoutValue("card5_widget1_label", ""))
+    property string card5Widget1Source: String(layoutValue("card5_widget1_source", ""))
+    property string card5Widget1Fallback: String(layoutValue("card5_widget1_fallback", ""))
+    property string card5Widget1Unit: String(layoutValue("card5_widget1_unit", ""))
+    property string card5Widget1ActionId: String(layoutValue("card5_widget1_action_id", ""))
+    property string card5Widget1Variant: String(layoutValue("card5_widget1_variant", ""))
+    property bool card5Widget1Required: Boolean(layoutValue("card5_widget1_required", false))
+    property string card5Widget1Value: String(layoutValue("card5_widget1_value", ""))
+    property string card5Widget2Type: String(layoutValue("card5_widget2_type", ""))
+    property string card5Widget2Id: String(layoutValue("card5_widget2_id", ""))
+    property string card5Widget2Label: String(layoutValue("card5_widget2_label", ""))
+    property string card5Widget2Source: String(layoutValue("card5_widget2_source", ""))
+    property string card5Widget2Fallback: String(layoutValue("card5_widget2_fallback", ""))
+    property string card5Widget2Unit: String(layoutValue("card5_widget2_unit", ""))
+    property string card5Widget2ActionId: String(layoutValue("card5_widget2_action_id", ""))
+    property string card5Widget2Variant: String(layoutValue("card5_widget2_variant", ""))
+    property bool card5Widget2Required: Boolean(layoutValue("card5_widget2_required", false))
+    property string card5Widget2Value: String(layoutValue("card5_widget2_value", ""))
+    property string card5Widget3Type: String(layoutValue("card5_widget3_type", ""))
+    property string card5Widget3Id: String(layoutValue("card5_widget3_id", ""))
+    property string card5Widget3Label: String(layoutValue("card5_widget3_label", ""))
+    property string card5Widget3Source: String(layoutValue("card5_widget3_source", ""))
+    property string card5Widget3Fallback: String(layoutValue("card5_widget3_fallback", ""))
+    property string card5Widget3Unit: String(layoutValue("card5_widget3_unit", ""))
+    property string card5Widget3ActionId: String(layoutValue("card5_widget3_action_id", ""))
+    property string card5Widget3Variant: String(layoutValue("card5_widget3_variant", ""))
+    property bool card5Widget3Required: Boolean(layoutValue("card5_widget3_required", false))
+    property string card5Widget3Value: String(layoutValue("card5_widget3_value", ""))
+    property string card5Widget4Type: String(layoutValue("card5_widget4_type", ""))
+    property string card5Widget4Id: String(layoutValue("card5_widget4_id", ""))
+    property string card5Widget4Label: String(layoutValue("card5_widget4_label", ""))
+    property string card5Widget4Source: String(layoutValue("card5_widget4_source", ""))
+    property string card5Widget4Fallback: String(layoutValue("card5_widget4_fallback", ""))
+    property string card5Widget4Unit: String(layoutValue("card5_widget4_unit", ""))
+    property string card5Widget4ActionId: String(layoutValue("card5_widget4_action_id", ""))
+    property string card5Widget4Variant: String(layoutValue("card5_widget4_variant", ""))
+    property bool card5Widget4Required: Boolean(layoutValue("card5_widget4_required", false))
+    property string card5Widget4Value: String(layoutValue("card5_widget4_value", ""))
+    property string card5Widget5Type: String(layoutValue("card5_widget5_type", ""))
+    property string card5Widget5Id: String(layoutValue("card5_widget5_id", ""))
+    property string card5Widget5Label: String(layoutValue("card5_widget5_label", ""))
+    property string card5Widget5Source: String(layoutValue("card5_widget5_source", ""))
+    property string card5Widget5Fallback: String(layoutValue("card5_widget5_fallback", ""))
+    property string card5Widget5Unit: String(layoutValue("card5_widget5_unit", ""))
+    property string card5Widget5ActionId: String(layoutValue("card5_widget5_action_id", ""))
+    property string card5Widget5Variant: String(layoutValue("card5_widget5_variant", ""))
+    property bool card5Widget5Required: Boolean(layoutValue("card5_widget5_required", false))
+    property string card5Widget5Value: String(layoutValue("card5_widget5_value", ""))
+    property string card5Widget6Type: String(layoutValue("card5_widget6_type", ""))
+    property string card5Widget6Id: String(layoutValue("card5_widget6_id", ""))
+    property string card5Widget6Label: String(layoutValue("card5_widget6_label", ""))
+    property string card5Widget6Source: String(layoutValue("card5_widget6_source", ""))
+    property string card5Widget6Fallback: String(layoutValue("card5_widget6_fallback", ""))
+    property string card5Widget6Unit: String(layoutValue("card5_widget6_unit", ""))
+    property string card5Widget6ActionId: String(layoutValue("card5_widget6_action_id", ""))
+    property string card5Widget6Variant: String(layoutValue("card5_widget6_variant", ""))
+    property bool card5Widget6Required: Boolean(layoutValue("card5_widget6_required", false))
+    property string card5Widget6Value: String(layoutValue("card5_widget6_value", ""))
     property bool card6Visible: Boolean(layoutValue("card6_visible", false))
     property string card6Id: String(layoutValue("card6_id", ""))
     property string card6Type: String(layoutValue("card6_type", ""))
@@ -123,6 +431,66 @@ Item {
     property string card6FirstWidgetLabelsText: String(layoutValue("card6_first_widget_labels_text", "n/a"))
     property bool card6Placeholder: Boolean(layoutValue("card6_placeholder", false))
     property string card6RoleText: String(layoutValue("card6_role", ""))
+    property string card6Widget1Type: String(layoutValue("card6_widget1_type", ""))
+    property string card6Widget1Id: String(layoutValue("card6_widget1_id", ""))
+    property string card6Widget1Label: String(layoutValue("card6_widget1_label", ""))
+    property string card6Widget1Source: String(layoutValue("card6_widget1_source", ""))
+    property string card6Widget1Fallback: String(layoutValue("card6_widget1_fallback", ""))
+    property string card6Widget1Unit: String(layoutValue("card6_widget1_unit", ""))
+    property string card6Widget1ActionId: String(layoutValue("card6_widget1_action_id", ""))
+    property string card6Widget1Variant: String(layoutValue("card6_widget1_variant", ""))
+    property bool card6Widget1Required: Boolean(layoutValue("card6_widget1_required", false))
+    property string card6Widget1Value: String(layoutValue("card6_widget1_value", ""))
+    property string card6Widget2Type: String(layoutValue("card6_widget2_type", ""))
+    property string card6Widget2Id: String(layoutValue("card6_widget2_id", ""))
+    property string card6Widget2Label: String(layoutValue("card6_widget2_label", ""))
+    property string card6Widget2Source: String(layoutValue("card6_widget2_source", ""))
+    property string card6Widget2Fallback: String(layoutValue("card6_widget2_fallback", ""))
+    property string card6Widget2Unit: String(layoutValue("card6_widget2_unit", ""))
+    property string card6Widget2ActionId: String(layoutValue("card6_widget2_action_id", ""))
+    property string card6Widget2Variant: String(layoutValue("card6_widget2_variant", ""))
+    property bool card6Widget2Required: Boolean(layoutValue("card6_widget2_required", false))
+    property string card6Widget2Value: String(layoutValue("card6_widget2_value", ""))
+    property string card6Widget3Type: String(layoutValue("card6_widget3_type", ""))
+    property string card6Widget3Id: String(layoutValue("card6_widget3_id", ""))
+    property string card6Widget3Label: String(layoutValue("card6_widget3_label", ""))
+    property string card6Widget3Source: String(layoutValue("card6_widget3_source", ""))
+    property string card6Widget3Fallback: String(layoutValue("card6_widget3_fallback", ""))
+    property string card6Widget3Unit: String(layoutValue("card6_widget3_unit", ""))
+    property string card6Widget3ActionId: String(layoutValue("card6_widget3_action_id", ""))
+    property string card6Widget3Variant: String(layoutValue("card6_widget3_variant", ""))
+    property bool card6Widget3Required: Boolean(layoutValue("card6_widget3_required", false))
+    property string card6Widget3Value: String(layoutValue("card6_widget3_value", ""))
+    property string card6Widget4Type: String(layoutValue("card6_widget4_type", ""))
+    property string card6Widget4Id: String(layoutValue("card6_widget4_id", ""))
+    property string card6Widget4Label: String(layoutValue("card6_widget4_label", ""))
+    property string card6Widget4Source: String(layoutValue("card6_widget4_source", ""))
+    property string card6Widget4Fallback: String(layoutValue("card6_widget4_fallback", ""))
+    property string card6Widget4Unit: String(layoutValue("card6_widget4_unit", ""))
+    property string card6Widget4ActionId: String(layoutValue("card6_widget4_action_id", ""))
+    property string card6Widget4Variant: String(layoutValue("card6_widget4_variant", ""))
+    property bool card6Widget4Required: Boolean(layoutValue("card6_widget4_required", false))
+    property string card6Widget4Value: String(layoutValue("card6_widget4_value", ""))
+    property string card6Widget5Type: String(layoutValue("card6_widget5_type", ""))
+    property string card6Widget5Id: String(layoutValue("card6_widget5_id", ""))
+    property string card6Widget5Label: String(layoutValue("card6_widget5_label", ""))
+    property string card6Widget5Source: String(layoutValue("card6_widget5_source", ""))
+    property string card6Widget5Fallback: String(layoutValue("card6_widget5_fallback", ""))
+    property string card6Widget5Unit: String(layoutValue("card6_widget5_unit", ""))
+    property string card6Widget5ActionId: String(layoutValue("card6_widget5_action_id", ""))
+    property string card6Widget5Variant: String(layoutValue("card6_widget5_variant", ""))
+    property bool card6Widget5Required: Boolean(layoutValue("card6_widget5_required", false))
+    property string card6Widget5Value: String(layoutValue("card6_widget5_value", ""))
+    property string card6Widget6Type: String(layoutValue("card6_widget6_type", ""))
+    property string card6Widget6Id: String(layoutValue("card6_widget6_id", ""))
+    property string card6Widget6Label: String(layoutValue("card6_widget6_label", ""))
+    property string card6Widget6Source: String(layoutValue("card6_widget6_source", ""))
+    property string card6Widget6Fallback: String(layoutValue("card6_widget6_fallback", ""))
+    property string card6Widget6Unit: String(layoutValue("card6_widget6_unit", ""))
+    property string card6Widget6ActionId: String(layoutValue("card6_widget6_action_id", ""))
+    property string card6Widget6Variant: String(layoutValue("card6_widget6_variant", ""))
+    property bool card6Widget6Required: Boolean(layoutValue("card6_widget6_required", false))
+    property string card6Widget6Value: String(layoutValue("card6_widget6_value", ""))
     property bool card7Visible: Boolean(layoutValue("card7_visible", false))
     property string card7Id: String(layoutValue("card7_id", ""))
     property string card7Type: String(layoutValue("card7_type", ""))
@@ -140,6 +508,66 @@ Item {
     property string card7FirstWidgetLabelsText: String(layoutValue("card7_first_widget_labels_text", "n/a"))
     property bool card7Placeholder: Boolean(layoutValue("card7_placeholder", false))
     property string card7RoleText: String(layoutValue("card7_role", ""))
+    property string card7Widget1Type: String(layoutValue("card7_widget1_type", ""))
+    property string card7Widget1Id: String(layoutValue("card7_widget1_id", ""))
+    property string card7Widget1Label: String(layoutValue("card7_widget1_label", ""))
+    property string card7Widget1Source: String(layoutValue("card7_widget1_source", ""))
+    property string card7Widget1Fallback: String(layoutValue("card7_widget1_fallback", ""))
+    property string card7Widget1Unit: String(layoutValue("card7_widget1_unit", ""))
+    property string card7Widget1ActionId: String(layoutValue("card7_widget1_action_id", ""))
+    property string card7Widget1Variant: String(layoutValue("card7_widget1_variant", ""))
+    property bool card7Widget1Required: Boolean(layoutValue("card7_widget1_required", false))
+    property string card7Widget1Value: String(layoutValue("card7_widget1_value", ""))
+    property string card7Widget2Type: String(layoutValue("card7_widget2_type", ""))
+    property string card7Widget2Id: String(layoutValue("card7_widget2_id", ""))
+    property string card7Widget2Label: String(layoutValue("card7_widget2_label", ""))
+    property string card7Widget2Source: String(layoutValue("card7_widget2_source", ""))
+    property string card7Widget2Fallback: String(layoutValue("card7_widget2_fallback", ""))
+    property string card7Widget2Unit: String(layoutValue("card7_widget2_unit", ""))
+    property string card7Widget2ActionId: String(layoutValue("card7_widget2_action_id", ""))
+    property string card7Widget2Variant: String(layoutValue("card7_widget2_variant", ""))
+    property bool card7Widget2Required: Boolean(layoutValue("card7_widget2_required", false))
+    property string card7Widget2Value: String(layoutValue("card7_widget2_value", ""))
+    property string card7Widget3Type: String(layoutValue("card7_widget3_type", ""))
+    property string card7Widget3Id: String(layoutValue("card7_widget3_id", ""))
+    property string card7Widget3Label: String(layoutValue("card7_widget3_label", ""))
+    property string card7Widget3Source: String(layoutValue("card7_widget3_source", ""))
+    property string card7Widget3Fallback: String(layoutValue("card7_widget3_fallback", ""))
+    property string card7Widget3Unit: String(layoutValue("card7_widget3_unit", ""))
+    property string card7Widget3ActionId: String(layoutValue("card7_widget3_action_id", ""))
+    property string card7Widget3Variant: String(layoutValue("card7_widget3_variant", ""))
+    property bool card7Widget3Required: Boolean(layoutValue("card7_widget3_required", false))
+    property string card7Widget3Value: String(layoutValue("card7_widget3_value", ""))
+    property string card7Widget4Type: String(layoutValue("card7_widget4_type", ""))
+    property string card7Widget4Id: String(layoutValue("card7_widget4_id", ""))
+    property string card7Widget4Label: String(layoutValue("card7_widget4_label", ""))
+    property string card7Widget4Source: String(layoutValue("card7_widget4_source", ""))
+    property string card7Widget4Fallback: String(layoutValue("card7_widget4_fallback", ""))
+    property string card7Widget4Unit: String(layoutValue("card7_widget4_unit", ""))
+    property string card7Widget4ActionId: String(layoutValue("card7_widget4_action_id", ""))
+    property string card7Widget4Variant: String(layoutValue("card7_widget4_variant", ""))
+    property bool card7Widget4Required: Boolean(layoutValue("card7_widget4_required", false))
+    property string card7Widget4Value: String(layoutValue("card7_widget4_value", ""))
+    property string card7Widget5Type: String(layoutValue("card7_widget5_type", ""))
+    property string card7Widget5Id: String(layoutValue("card7_widget5_id", ""))
+    property string card7Widget5Label: String(layoutValue("card7_widget5_label", ""))
+    property string card7Widget5Source: String(layoutValue("card7_widget5_source", ""))
+    property string card7Widget5Fallback: String(layoutValue("card7_widget5_fallback", ""))
+    property string card7Widget5Unit: String(layoutValue("card7_widget5_unit", ""))
+    property string card7Widget5ActionId: String(layoutValue("card7_widget5_action_id", ""))
+    property string card7Widget5Variant: String(layoutValue("card7_widget5_variant", ""))
+    property bool card7Widget5Required: Boolean(layoutValue("card7_widget5_required", false))
+    property string card7Widget5Value: String(layoutValue("card7_widget5_value", ""))
+    property string card7Widget6Type: String(layoutValue("card7_widget6_type", ""))
+    property string card7Widget6Id: String(layoutValue("card7_widget6_id", ""))
+    property string card7Widget6Label: String(layoutValue("card7_widget6_label", ""))
+    property string card7Widget6Source: String(layoutValue("card7_widget6_source", ""))
+    property string card7Widget6Fallback: String(layoutValue("card7_widget6_fallback", ""))
+    property string card7Widget6Unit: String(layoutValue("card7_widget6_unit", ""))
+    property string card7Widget6ActionId: String(layoutValue("card7_widget6_action_id", ""))
+    property string card7Widget6Variant: String(layoutValue("card7_widget6_variant", ""))
+    property bool card7Widget6Required: Boolean(layoutValue("card7_widget6_required", false))
+    property string card7Widget6Value: String(layoutValue("card7_widget6_value", ""))
 
     property string card1BackgroundColor: String(layoutValue("card1_background_color", ""))
     property real card1BackgroundOpacity: Number(layoutValue("card1_background_opacity", 0.92))
@@ -316,6 +744,74 @@ Item {
                     firstWidgetLabelsText: root.card1FirstWidgetLabelsText
                     placeholder: root.card1Placeholder
                     roleText: root.card1RoleText
+                    guiBridge: root.guiBridge
+                    appStateObj: root.appStateObj
+                    runtimeSnapshotObj: root.runtimeSnapshotObj
+                    sessionStateObj: root.sessionStateObj
+                    controlStateObj: root.controlStateObj
+                    gameHudObj: root.gameHudObj
+                    gameViewObj: root.gameViewObj
+                    renderResourcesObj: root.renderResourcesObj
+                    widget1Type: root.card1Widget1Type
+                    widget1Id: root.card1Widget1Id
+                    widget1Label: root.card1Widget1Label
+                    widget1Source: root.card1Widget1Source
+                    widget1Fallback: root.card1Widget1Fallback
+                    widget1Unit: root.card1Widget1Unit
+                    widget1ActionId: root.card1Widget1ActionId
+                    widget1Variant: root.card1Widget1Variant
+                    widget1Required: root.card1Widget1Required
+                    widget1Value: root.card1Widget1Value
+                    widget2Type: root.card1Widget2Type
+                    widget2Id: root.card1Widget2Id
+                    widget2Label: root.card1Widget2Label
+                    widget2Source: root.card1Widget2Source
+                    widget2Fallback: root.card1Widget2Fallback
+                    widget2Unit: root.card1Widget2Unit
+                    widget2ActionId: root.card1Widget2ActionId
+                    widget2Variant: root.card1Widget2Variant
+                    widget2Required: root.card1Widget2Required
+                    widget2Value: root.card1Widget2Value
+                    widget3Type: root.card1Widget3Type
+                    widget3Id: root.card1Widget3Id
+                    widget3Label: root.card1Widget3Label
+                    widget3Source: root.card1Widget3Source
+                    widget3Fallback: root.card1Widget3Fallback
+                    widget3Unit: root.card1Widget3Unit
+                    widget3ActionId: root.card1Widget3ActionId
+                    widget3Variant: root.card1Widget3Variant
+                    widget3Required: root.card1Widget3Required
+                    widget3Value: root.card1Widget3Value
+                    widget4Type: root.card1Widget4Type
+                    widget4Id: root.card1Widget4Id
+                    widget4Label: root.card1Widget4Label
+                    widget4Source: root.card1Widget4Source
+                    widget4Fallback: root.card1Widget4Fallback
+                    widget4Unit: root.card1Widget4Unit
+                    widget4ActionId: root.card1Widget4ActionId
+                    widget4Variant: root.card1Widget4Variant
+                    widget4Required: root.card1Widget4Required
+                    widget4Value: root.card1Widget4Value
+                    widget5Type: root.card1Widget5Type
+                    widget5Id: root.card1Widget5Id
+                    widget5Label: root.card1Widget5Label
+                    widget5Source: root.card1Widget5Source
+                    widget5Fallback: root.card1Widget5Fallback
+                    widget5Unit: root.card1Widget5Unit
+                    widget5ActionId: root.card1Widget5ActionId
+                    widget5Variant: root.card1Widget5Variant
+                    widget5Required: root.card1Widget5Required
+                    widget5Value: root.card1Widget5Value
+                    widget6Type: root.card1Widget6Type
+                    widget6Id: root.card1Widget6Id
+                    widget6Label: root.card1Widget6Label
+                    widget6Source: root.card1Widget6Source
+                    widget6Fallback: root.card1Widget6Fallback
+                    widget6Unit: root.card1Widget6Unit
+                    widget6ActionId: root.card1Widget6ActionId
+                    widget6Variant: root.card1Widget6Variant
+                    widget6Required: root.card1Widget6Required
+                    widget6Value: root.card1Widget6Value
                 cardBackgroundColor: root.card1BackgroundColor
                 cardBackgroundOpacity: root.card1BackgroundOpacity
                 cardBorderColor: root.card1BorderColor
@@ -347,6 +843,74 @@ Item {
                     firstWidgetLabelsText: root.card2FirstWidgetLabelsText
                     placeholder: root.card2Placeholder
                     roleText: root.card2RoleText
+                    guiBridge: root.guiBridge
+                    appStateObj: root.appStateObj
+                    runtimeSnapshotObj: root.runtimeSnapshotObj
+                    sessionStateObj: root.sessionStateObj
+                    controlStateObj: root.controlStateObj
+                    gameHudObj: root.gameHudObj
+                    gameViewObj: root.gameViewObj
+                    renderResourcesObj: root.renderResourcesObj
+                    widget1Type: root.card2Widget1Type
+                    widget1Id: root.card2Widget1Id
+                    widget1Label: root.card2Widget1Label
+                    widget1Source: root.card2Widget1Source
+                    widget1Fallback: root.card2Widget1Fallback
+                    widget1Unit: root.card2Widget1Unit
+                    widget1ActionId: root.card2Widget1ActionId
+                    widget1Variant: root.card2Widget1Variant
+                    widget1Required: root.card2Widget1Required
+                    widget1Value: root.card2Widget1Value
+                    widget2Type: root.card2Widget2Type
+                    widget2Id: root.card2Widget2Id
+                    widget2Label: root.card2Widget2Label
+                    widget2Source: root.card2Widget2Source
+                    widget2Fallback: root.card2Widget2Fallback
+                    widget2Unit: root.card2Widget2Unit
+                    widget2ActionId: root.card2Widget2ActionId
+                    widget2Variant: root.card2Widget2Variant
+                    widget2Required: root.card2Widget2Required
+                    widget2Value: root.card2Widget2Value
+                    widget3Type: root.card2Widget3Type
+                    widget3Id: root.card2Widget3Id
+                    widget3Label: root.card2Widget3Label
+                    widget3Source: root.card2Widget3Source
+                    widget3Fallback: root.card2Widget3Fallback
+                    widget3Unit: root.card2Widget3Unit
+                    widget3ActionId: root.card2Widget3ActionId
+                    widget3Variant: root.card2Widget3Variant
+                    widget3Required: root.card2Widget3Required
+                    widget3Value: root.card2Widget3Value
+                    widget4Type: root.card2Widget4Type
+                    widget4Id: root.card2Widget4Id
+                    widget4Label: root.card2Widget4Label
+                    widget4Source: root.card2Widget4Source
+                    widget4Fallback: root.card2Widget4Fallback
+                    widget4Unit: root.card2Widget4Unit
+                    widget4ActionId: root.card2Widget4ActionId
+                    widget4Variant: root.card2Widget4Variant
+                    widget4Required: root.card2Widget4Required
+                    widget4Value: root.card2Widget4Value
+                    widget5Type: root.card2Widget5Type
+                    widget5Id: root.card2Widget5Id
+                    widget5Label: root.card2Widget5Label
+                    widget5Source: root.card2Widget5Source
+                    widget5Fallback: root.card2Widget5Fallback
+                    widget5Unit: root.card2Widget5Unit
+                    widget5ActionId: root.card2Widget5ActionId
+                    widget5Variant: root.card2Widget5Variant
+                    widget5Required: root.card2Widget5Required
+                    widget5Value: root.card2Widget5Value
+                    widget6Type: root.card2Widget6Type
+                    widget6Id: root.card2Widget6Id
+                    widget6Label: root.card2Widget6Label
+                    widget6Source: root.card2Widget6Source
+                    widget6Fallback: root.card2Widget6Fallback
+                    widget6Unit: root.card2Widget6Unit
+                    widget6ActionId: root.card2Widget6ActionId
+                    widget6Variant: root.card2Widget6Variant
+                    widget6Required: root.card2Widget6Required
+                    widget6Value: root.card2Widget6Value
                 cardBackgroundColor: root.card2BackgroundColor
                 cardBackgroundOpacity: root.card2BackgroundOpacity
                 cardBorderColor: root.card2BorderColor
@@ -378,6 +942,74 @@ Item {
                     firstWidgetLabelsText: root.card3FirstWidgetLabelsText
                     placeholder: root.card3Placeholder
                     roleText: root.card3RoleText
+                    guiBridge: root.guiBridge
+                    appStateObj: root.appStateObj
+                    runtimeSnapshotObj: root.runtimeSnapshotObj
+                    sessionStateObj: root.sessionStateObj
+                    controlStateObj: root.controlStateObj
+                    gameHudObj: root.gameHudObj
+                    gameViewObj: root.gameViewObj
+                    renderResourcesObj: root.renderResourcesObj
+                    widget1Type: root.card3Widget1Type
+                    widget1Id: root.card3Widget1Id
+                    widget1Label: root.card3Widget1Label
+                    widget1Source: root.card3Widget1Source
+                    widget1Fallback: root.card3Widget1Fallback
+                    widget1Unit: root.card3Widget1Unit
+                    widget1ActionId: root.card3Widget1ActionId
+                    widget1Variant: root.card3Widget1Variant
+                    widget1Required: root.card3Widget1Required
+                    widget1Value: root.card3Widget1Value
+                    widget2Type: root.card3Widget2Type
+                    widget2Id: root.card3Widget2Id
+                    widget2Label: root.card3Widget2Label
+                    widget2Source: root.card3Widget2Source
+                    widget2Fallback: root.card3Widget2Fallback
+                    widget2Unit: root.card3Widget2Unit
+                    widget2ActionId: root.card3Widget2ActionId
+                    widget2Variant: root.card3Widget2Variant
+                    widget2Required: root.card3Widget2Required
+                    widget2Value: root.card3Widget2Value
+                    widget3Type: root.card3Widget3Type
+                    widget3Id: root.card3Widget3Id
+                    widget3Label: root.card3Widget3Label
+                    widget3Source: root.card3Widget3Source
+                    widget3Fallback: root.card3Widget3Fallback
+                    widget3Unit: root.card3Widget3Unit
+                    widget3ActionId: root.card3Widget3ActionId
+                    widget3Variant: root.card3Widget3Variant
+                    widget3Required: root.card3Widget3Required
+                    widget3Value: root.card3Widget3Value
+                    widget4Type: root.card3Widget4Type
+                    widget4Id: root.card3Widget4Id
+                    widget4Label: root.card3Widget4Label
+                    widget4Source: root.card3Widget4Source
+                    widget4Fallback: root.card3Widget4Fallback
+                    widget4Unit: root.card3Widget4Unit
+                    widget4ActionId: root.card3Widget4ActionId
+                    widget4Variant: root.card3Widget4Variant
+                    widget4Required: root.card3Widget4Required
+                    widget4Value: root.card3Widget4Value
+                    widget5Type: root.card3Widget5Type
+                    widget5Id: root.card3Widget5Id
+                    widget5Label: root.card3Widget5Label
+                    widget5Source: root.card3Widget5Source
+                    widget5Fallback: root.card3Widget5Fallback
+                    widget5Unit: root.card3Widget5Unit
+                    widget5ActionId: root.card3Widget5ActionId
+                    widget5Variant: root.card3Widget5Variant
+                    widget5Required: root.card3Widget5Required
+                    widget5Value: root.card3Widget5Value
+                    widget6Type: root.card3Widget6Type
+                    widget6Id: root.card3Widget6Id
+                    widget6Label: root.card3Widget6Label
+                    widget6Source: root.card3Widget6Source
+                    widget6Fallback: root.card3Widget6Fallback
+                    widget6Unit: root.card3Widget6Unit
+                    widget6ActionId: root.card3Widget6ActionId
+                    widget6Variant: root.card3Widget6Variant
+                    widget6Required: root.card3Widget6Required
+                    widget6Value: root.card3Widget6Value
                 cardBackgroundColor: root.card3BackgroundColor
                 cardBackgroundOpacity: root.card3BackgroundOpacity
                 cardBorderColor: root.card3BorderColor
@@ -409,6 +1041,74 @@ Item {
                     firstWidgetLabelsText: root.card4FirstWidgetLabelsText
                     placeholder: root.card4Placeholder
                     roleText: root.card4RoleText
+                    guiBridge: root.guiBridge
+                    appStateObj: root.appStateObj
+                    runtimeSnapshotObj: root.runtimeSnapshotObj
+                    sessionStateObj: root.sessionStateObj
+                    controlStateObj: root.controlStateObj
+                    gameHudObj: root.gameHudObj
+                    gameViewObj: root.gameViewObj
+                    renderResourcesObj: root.renderResourcesObj
+                    widget1Type: root.card4Widget1Type
+                    widget1Id: root.card4Widget1Id
+                    widget1Label: root.card4Widget1Label
+                    widget1Source: root.card4Widget1Source
+                    widget1Fallback: root.card4Widget1Fallback
+                    widget1Unit: root.card4Widget1Unit
+                    widget1ActionId: root.card4Widget1ActionId
+                    widget1Variant: root.card4Widget1Variant
+                    widget1Required: root.card4Widget1Required
+                    widget1Value: root.card4Widget1Value
+                    widget2Type: root.card4Widget2Type
+                    widget2Id: root.card4Widget2Id
+                    widget2Label: root.card4Widget2Label
+                    widget2Source: root.card4Widget2Source
+                    widget2Fallback: root.card4Widget2Fallback
+                    widget2Unit: root.card4Widget2Unit
+                    widget2ActionId: root.card4Widget2ActionId
+                    widget2Variant: root.card4Widget2Variant
+                    widget2Required: root.card4Widget2Required
+                    widget2Value: root.card4Widget2Value
+                    widget3Type: root.card4Widget3Type
+                    widget3Id: root.card4Widget3Id
+                    widget3Label: root.card4Widget3Label
+                    widget3Source: root.card4Widget3Source
+                    widget3Fallback: root.card4Widget3Fallback
+                    widget3Unit: root.card4Widget3Unit
+                    widget3ActionId: root.card4Widget3ActionId
+                    widget3Variant: root.card4Widget3Variant
+                    widget3Required: root.card4Widget3Required
+                    widget3Value: root.card4Widget3Value
+                    widget4Type: root.card4Widget4Type
+                    widget4Id: root.card4Widget4Id
+                    widget4Label: root.card4Widget4Label
+                    widget4Source: root.card4Widget4Source
+                    widget4Fallback: root.card4Widget4Fallback
+                    widget4Unit: root.card4Widget4Unit
+                    widget4ActionId: root.card4Widget4ActionId
+                    widget4Variant: root.card4Widget4Variant
+                    widget4Required: root.card4Widget4Required
+                    widget4Value: root.card4Widget4Value
+                    widget5Type: root.card4Widget5Type
+                    widget5Id: root.card4Widget5Id
+                    widget5Label: root.card4Widget5Label
+                    widget5Source: root.card4Widget5Source
+                    widget5Fallback: root.card4Widget5Fallback
+                    widget5Unit: root.card4Widget5Unit
+                    widget5ActionId: root.card4Widget5ActionId
+                    widget5Variant: root.card4Widget5Variant
+                    widget5Required: root.card4Widget5Required
+                    widget5Value: root.card4Widget5Value
+                    widget6Type: root.card4Widget6Type
+                    widget6Id: root.card4Widget6Id
+                    widget6Label: root.card4Widget6Label
+                    widget6Source: root.card4Widget6Source
+                    widget6Fallback: root.card4Widget6Fallback
+                    widget6Unit: root.card4Widget6Unit
+                    widget6ActionId: root.card4Widget6ActionId
+                    widget6Variant: root.card4Widget6Variant
+                    widget6Required: root.card4Widget6Required
+                    widget6Value: root.card4Widget6Value
                 cardBackgroundColor: root.card4BackgroundColor
                 cardBackgroundOpacity: root.card4BackgroundOpacity
                 cardBorderColor: root.card4BorderColor
@@ -440,6 +1140,74 @@ Item {
                     firstWidgetLabelsText: root.card5FirstWidgetLabelsText
                     placeholder: root.card5Placeholder
                     roleText: root.card5RoleText
+                    guiBridge: root.guiBridge
+                    appStateObj: root.appStateObj
+                    runtimeSnapshotObj: root.runtimeSnapshotObj
+                    sessionStateObj: root.sessionStateObj
+                    controlStateObj: root.controlStateObj
+                    gameHudObj: root.gameHudObj
+                    gameViewObj: root.gameViewObj
+                    renderResourcesObj: root.renderResourcesObj
+                    widget1Type: root.card5Widget1Type
+                    widget1Id: root.card5Widget1Id
+                    widget1Label: root.card5Widget1Label
+                    widget1Source: root.card5Widget1Source
+                    widget1Fallback: root.card5Widget1Fallback
+                    widget1Unit: root.card5Widget1Unit
+                    widget1ActionId: root.card5Widget1ActionId
+                    widget1Variant: root.card5Widget1Variant
+                    widget1Required: root.card5Widget1Required
+                    widget1Value: root.card5Widget1Value
+                    widget2Type: root.card5Widget2Type
+                    widget2Id: root.card5Widget2Id
+                    widget2Label: root.card5Widget2Label
+                    widget2Source: root.card5Widget2Source
+                    widget2Fallback: root.card5Widget2Fallback
+                    widget2Unit: root.card5Widget2Unit
+                    widget2ActionId: root.card5Widget2ActionId
+                    widget2Variant: root.card5Widget2Variant
+                    widget2Required: root.card5Widget2Required
+                    widget2Value: root.card5Widget2Value
+                    widget3Type: root.card5Widget3Type
+                    widget3Id: root.card5Widget3Id
+                    widget3Label: root.card5Widget3Label
+                    widget3Source: root.card5Widget3Source
+                    widget3Fallback: root.card5Widget3Fallback
+                    widget3Unit: root.card5Widget3Unit
+                    widget3ActionId: root.card5Widget3ActionId
+                    widget3Variant: root.card5Widget3Variant
+                    widget3Required: root.card5Widget3Required
+                    widget3Value: root.card5Widget3Value
+                    widget4Type: root.card5Widget4Type
+                    widget4Id: root.card5Widget4Id
+                    widget4Label: root.card5Widget4Label
+                    widget4Source: root.card5Widget4Source
+                    widget4Fallback: root.card5Widget4Fallback
+                    widget4Unit: root.card5Widget4Unit
+                    widget4ActionId: root.card5Widget4ActionId
+                    widget4Variant: root.card5Widget4Variant
+                    widget4Required: root.card5Widget4Required
+                    widget4Value: root.card5Widget4Value
+                    widget5Type: root.card5Widget5Type
+                    widget5Id: root.card5Widget5Id
+                    widget5Label: root.card5Widget5Label
+                    widget5Source: root.card5Widget5Source
+                    widget5Fallback: root.card5Widget5Fallback
+                    widget5Unit: root.card5Widget5Unit
+                    widget5ActionId: root.card5Widget5ActionId
+                    widget5Variant: root.card5Widget5Variant
+                    widget5Required: root.card5Widget5Required
+                    widget5Value: root.card5Widget5Value
+                    widget6Type: root.card5Widget6Type
+                    widget6Id: root.card5Widget6Id
+                    widget6Label: root.card5Widget6Label
+                    widget6Source: root.card5Widget6Source
+                    widget6Fallback: root.card5Widget6Fallback
+                    widget6Unit: root.card5Widget6Unit
+                    widget6ActionId: root.card5Widget6ActionId
+                    widget6Variant: root.card5Widget6Variant
+                    widget6Required: root.card5Widget6Required
+                    widget6Value: root.card5Widget6Value
                 cardBackgroundColor: root.card5BackgroundColor
                 cardBackgroundOpacity: root.card5BackgroundOpacity
                 cardBorderColor: root.card5BorderColor
@@ -471,6 +1239,74 @@ Item {
                     firstWidgetLabelsText: root.card6FirstWidgetLabelsText
                     placeholder: root.card6Placeholder
                     roleText: root.card6RoleText
+                    guiBridge: root.guiBridge
+                    appStateObj: root.appStateObj
+                    runtimeSnapshotObj: root.runtimeSnapshotObj
+                    sessionStateObj: root.sessionStateObj
+                    controlStateObj: root.controlStateObj
+                    gameHudObj: root.gameHudObj
+                    gameViewObj: root.gameViewObj
+                    renderResourcesObj: root.renderResourcesObj
+                    widget1Type: root.card6Widget1Type
+                    widget1Id: root.card6Widget1Id
+                    widget1Label: root.card6Widget1Label
+                    widget1Source: root.card6Widget1Source
+                    widget1Fallback: root.card6Widget1Fallback
+                    widget1Unit: root.card6Widget1Unit
+                    widget1ActionId: root.card6Widget1ActionId
+                    widget1Variant: root.card6Widget1Variant
+                    widget1Required: root.card6Widget1Required
+                    widget1Value: root.card6Widget1Value
+                    widget2Type: root.card6Widget2Type
+                    widget2Id: root.card6Widget2Id
+                    widget2Label: root.card6Widget2Label
+                    widget2Source: root.card6Widget2Source
+                    widget2Fallback: root.card6Widget2Fallback
+                    widget2Unit: root.card6Widget2Unit
+                    widget2ActionId: root.card6Widget2ActionId
+                    widget2Variant: root.card6Widget2Variant
+                    widget2Required: root.card6Widget2Required
+                    widget2Value: root.card6Widget2Value
+                    widget3Type: root.card6Widget3Type
+                    widget3Id: root.card6Widget3Id
+                    widget3Label: root.card6Widget3Label
+                    widget3Source: root.card6Widget3Source
+                    widget3Fallback: root.card6Widget3Fallback
+                    widget3Unit: root.card6Widget3Unit
+                    widget3ActionId: root.card6Widget3ActionId
+                    widget3Variant: root.card6Widget3Variant
+                    widget3Required: root.card6Widget3Required
+                    widget3Value: root.card6Widget3Value
+                    widget4Type: root.card6Widget4Type
+                    widget4Id: root.card6Widget4Id
+                    widget4Label: root.card6Widget4Label
+                    widget4Source: root.card6Widget4Source
+                    widget4Fallback: root.card6Widget4Fallback
+                    widget4Unit: root.card6Widget4Unit
+                    widget4ActionId: root.card6Widget4ActionId
+                    widget4Variant: root.card6Widget4Variant
+                    widget4Required: root.card6Widget4Required
+                    widget4Value: root.card6Widget4Value
+                    widget5Type: root.card6Widget5Type
+                    widget5Id: root.card6Widget5Id
+                    widget5Label: root.card6Widget5Label
+                    widget5Source: root.card6Widget5Source
+                    widget5Fallback: root.card6Widget5Fallback
+                    widget5Unit: root.card6Widget5Unit
+                    widget5ActionId: root.card6Widget5ActionId
+                    widget5Variant: root.card6Widget5Variant
+                    widget5Required: root.card6Widget5Required
+                    widget5Value: root.card6Widget5Value
+                    widget6Type: root.card6Widget6Type
+                    widget6Id: root.card6Widget6Id
+                    widget6Label: root.card6Widget6Label
+                    widget6Source: root.card6Widget6Source
+                    widget6Fallback: root.card6Widget6Fallback
+                    widget6Unit: root.card6Widget6Unit
+                    widget6ActionId: root.card6Widget6ActionId
+                    widget6Variant: root.card6Widget6Variant
+                    widget6Required: root.card6Widget6Required
+                    widget6Value: root.card6Widget6Value
                 cardBackgroundColor: root.card6BackgroundColor
                 cardBackgroundOpacity: root.card6BackgroundOpacity
                 cardBorderColor: root.card6BorderColor
@@ -502,6 +1338,74 @@ Item {
                     firstWidgetLabelsText: root.card7FirstWidgetLabelsText
                     placeholder: root.card7Placeholder
                     roleText: root.card7RoleText
+                    guiBridge: root.guiBridge
+                    appStateObj: root.appStateObj
+                    runtimeSnapshotObj: root.runtimeSnapshotObj
+                    sessionStateObj: root.sessionStateObj
+                    controlStateObj: root.controlStateObj
+                    gameHudObj: root.gameHudObj
+                    gameViewObj: root.gameViewObj
+                    renderResourcesObj: root.renderResourcesObj
+                    widget1Type: root.card7Widget1Type
+                    widget1Id: root.card7Widget1Id
+                    widget1Label: root.card7Widget1Label
+                    widget1Source: root.card7Widget1Source
+                    widget1Fallback: root.card7Widget1Fallback
+                    widget1Unit: root.card7Widget1Unit
+                    widget1ActionId: root.card7Widget1ActionId
+                    widget1Variant: root.card7Widget1Variant
+                    widget1Required: root.card7Widget1Required
+                    widget1Value: root.card7Widget1Value
+                    widget2Type: root.card7Widget2Type
+                    widget2Id: root.card7Widget2Id
+                    widget2Label: root.card7Widget2Label
+                    widget2Source: root.card7Widget2Source
+                    widget2Fallback: root.card7Widget2Fallback
+                    widget2Unit: root.card7Widget2Unit
+                    widget2ActionId: root.card7Widget2ActionId
+                    widget2Variant: root.card7Widget2Variant
+                    widget2Required: root.card7Widget2Required
+                    widget2Value: root.card7Widget2Value
+                    widget3Type: root.card7Widget3Type
+                    widget3Id: root.card7Widget3Id
+                    widget3Label: root.card7Widget3Label
+                    widget3Source: root.card7Widget3Source
+                    widget3Fallback: root.card7Widget3Fallback
+                    widget3Unit: root.card7Widget3Unit
+                    widget3ActionId: root.card7Widget3ActionId
+                    widget3Variant: root.card7Widget3Variant
+                    widget3Required: root.card7Widget3Required
+                    widget3Value: root.card7Widget3Value
+                    widget4Type: root.card7Widget4Type
+                    widget4Id: root.card7Widget4Id
+                    widget4Label: root.card7Widget4Label
+                    widget4Source: root.card7Widget4Source
+                    widget4Fallback: root.card7Widget4Fallback
+                    widget4Unit: root.card7Widget4Unit
+                    widget4ActionId: root.card7Widget4ActionId
+                    widget4Variant: root.card7Widget4Variant
+                    widget4Required: root.card7Widget4Required
+                    widget4Value: root.card7Widget4Value
+                    widget5Type: root.card7Widget5Type
+                    widget5Id: root.card7Widget5Id
+                    widget5Label: root.card7Widget5Label
+                    widget5Source: root.card7Widget5Source
+                    widget5Fallback: root.card7Widget5Fallback
+                    widget5Unit: root.card7Widget5Unit
+                    widget5ActionId: root.card7Widget5ActionId
+                    widget5Variant: root.card7Widget5Variant
+                    widget5Required: root.card7Widget5Required
+                    widget5Value: root.card7Widget5Value
+                    widget6Type: root.card7Widget6Type
+                    widget6Id: root.card7Widget6Id
+                    widget6Label: root.card7Widget6Label
+                    widget6Source: root.card7Widget6Source
+                    widget6Fallback: root.card7Widget6Fallback
+                    widget6Unit: root.card7Widget6Unit
+                    widget6ActionId: root.card7Widget6ActionId
+                    widget6Variant: root.card7Widget6Variant
+                    widget6Required: root.card7Widget6Required
+                    widget6Value: root.card7Widget6Value
                 cardBackgroundColor: root.card7BackgroundColor
                 cardBackgroundOpacity: root.card7BackgroundOpacity
                 cardBorderColor: root.card7BorderColor
