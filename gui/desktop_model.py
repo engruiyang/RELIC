@@ -26,6 +26,29 @@ HOME_SLOT_INJECTION_FIELDS: tuple[str, ...] = (
     ),
 )
 
+TRAINING_SLOT_INJECTION_FIELDS: tuple[str, ...] = (
+    "slot_count",
+    *(
+        f"slot{i}_{suffix}"
+        for i in range(1, 8)
+        for suffix in (
+            "card_id",
+            "card_type",
+            "title",
+            "subtitle",
+            "required",
+            "locked",
+            "rect_text",
+            "widget_count",
+            "action_ids_text",
+            "source_roots_text",
+            "first_widget_labels_text",
+            "placeholder",
+            "role",
+        )
+    ),
+)
+
 
 def _as_pos_int(value: Any, *, field: str, card_id: str) -> int:
     if not isinstance(value, int) or value <= 0:
@@ -205,7 +228,33 @@ def build_render_model_summary(model: dict) -> dict:
     }
 
 
-def build_home_card_slots(model: dict, *, max_slots: int = 4) -> list[dict]:
+def _widget_labels(widgets: list[dict[str, Any]], *, limit: int = 3) -> list[str]:
+    labels: list[str] = []
+    for w in widgets[:limit]:
+        if not isinstance(w, dict):
+            continue
+        label = w.get("label")
+        if isinstance(label, str) and label:
+            labels.append(label)
+        elif isinstance(w.get("id"), str) and w.get("id"):
+            labels.append(w["id"])
+        else:
+            labels.append(str(w.get("type", "unknown")))
+    return labels
+
+
+def _card_placeholder_role(card_id: str, card_type: str, widgets: list[dict[str, Any]]) -> tuple[bool, str]:
+    has_game_placeholder = any(
+        isinstance(w, dict)
+        and (w.get("type") == "game_placeholder" or w.get("id") == "game_canvas_placeholder")
+        for w in widgets
+    )
+    if card_id == "game_canvas_card" or has_game_placeholder:
+        return True, "game_canvas_placeholder"
+    return False, card_type
+
+
+def build_card_slots(model: dict, *, max_slots: int) -> list[dict]:
     if not isinstance(max_slots, int) or max_slots <= 0:
         raise ValueError("max_slots must be positive integer")
     cards = model.get("cards")
@@ -214,28 +263,22 @@ def build_home_card_slots(model: dict, *, max_slots: int = 4) -> list[dict]:
 
     out: list[dict[str, Any]] = []
     for i, c in enumerate(cards[:max_slots], start=1):
+        if not isinstance(c, dict):
+            continue
         card_id = str(c.get("id", ""))
+        card_type = str(c.get("type", ""))
         widgets = c.get("widgets") or []
         if not isinstance(widgets, list):
             widgets = []
-        action_ids = sorted({w.get("action_id") for w in widgets if isinstance(w, dict) and isinstance(w.get("action_id"), str) and w.get("action_id")})
-        source_roots = sorted({str(w.get("source")).split(".", 1)[0] for w in widgets if isinstance(w, dict) and isinstance(w.get("source"), str) and w.get("source")})
-        labels: list[str] = []
-        for w in widgets[:3]:
-            if not isinstance(w, dict):
-                continue
-            label = w.get("label")
-            if isinstance(label, str) and label:
-                labels.append(label)
-            elif isinstance(w.get("id"), str) and w.get("id"):
-                labels.append(w["id"])
-            else:
-                labels.append(str(w.get("type", "unknown")))
+        typed_widgets = [w for w in widgets if isinstance(w, dict)]
+        action_ids = sorted({w.get("action_id") for w in typed_widgets if isinstance(w.get("action_id"), str) and w.get("action_id")})
+        source_roots = sorted({str(w.get("source")).split(".", 1)[0] for w in typed_widgets if isinstance(w.get("source"), str) and w.get("source")})
+        placeholder, role = _card_placeholder_role(card_id, card_type, typed_widgets)
         out.append(
             {
                 "slot_index": i,
                 "card_id": card_id,
-                "card_type": c.get("type", ""),
+                "card_type": card_type,
                 "title": c.get("title", ""),
                 "subtitle": c.get("subtitle", ""),
                 "required": bool(c.get("required", False)),
@@ -247,11 +290,20 @@ def build_home_card_slots(model: dict, *, max_slots: int = 4) -> list[dict]:
                 "widget_count": len(widgets),
                 "action_ids": action_ids,
                 "source_roots": source_roots,
-                "first_widget_labels": labels,
+                "first_widget_labels": _widget_labels(typed_widgets),
+                "placeholder": placeholder,
+                "role": role,
             }
         )
     return out
 
+
+def build_home_card_slots(model: dict, *, max_slots: int = 4) -> list[dict]:
+    slots = build_card_slots(model, max_slots=max_slots)
+    for slot in slots:
+        slot.pop("placeholder", None)
+        slot.pop("role", None)
+    return slots
 
 def build_home_render_model(example_root: Path) -> dict:
     page_path = example_root / "assets" / "layouts" / "task26_examples" / "home_page.desktop_demo.json"
@@ -337,8 +389,8 @@ def build_training_contract_summary(example_root: Path) -> dict:
         "placeholder_sources": sorted(placeholder_sources),
         "game_canvas_card_status": _training_game_canvas_card_status(cards),
         "safe_stop_present": "live.safe_stop" in action_ids,
-        "training_slots_supported": False,
-        "training_injection_supported": False,
+        "training_slots_supported": True,
+        "training_injection_supported": True,
     }
 
 
@@ -347,6 +399,109 @@ def build_training_render_resource(example_root: Path) -> dict:
         "task26_training_summary": build_training_contract_summary(example_root),
         "task26_training_status": "ok",
         "task26_training_source": "assets/layouts/task26_examples/training_page.desktop_demo.json",
+    }
+
+
+def build_training_card_slots(example_root: Path, *, max_slots: int = 7) -> list[dict]:
+    return build_card_slots(build_training_render_model(example_root), max_slots=max_slots)
+
+
+def build_training_card_slots_injection_payload(slots: list[dict]) -> dict:
+    if not isinstance(slots, list):
+        raise ValueError("slots must be list")
+
+    payload: dict[str, Any] = {"slot_count": min(len(slots), 7)}
+    string_suffixes = {
+        "card_id",
+        "card_type",
+        "title",
+        "subtitle",
+        "rect_text",
+        "action_ids_text",
+        "source_roots_text",
+        "first_widget_labels_text",
+        "role",
+    }
+
+    for idx in range(1, 8):
+        slot = slots[idx - 1] if idx - 1 < len(slots) and isinstance(slots[idx - 1], dict) else {}
+        action_ids = slot.get("action_ids") if isinstance(slot.get("action_ids"), list) else []
+        source_roots = slot.get("source_roots") if isinstance(slot.get("source_roots"), list) else []
+        first_widget_labels = slot.get("first_widget_labels") if isinstance(slot.get("first_widget_labels"), list) else []
+
+        payload[f"slot{idx}_card_id"] = str(slot.get("card_id", "")) if slot else ""
+        payload[f"slot{idx}_card_type"] = str(slot.get("card_type", "")) if slot else ""
+        payload[f"slot{idx}_title"] = str(slot.get("title", "")) if slot else ""
+        payload[f"slot{idx}_subtitle"] = str(slot.get("subtitle", "")) if slot else ""
+        payload[f"slot{idx}_required"] = bool(slot.get("required", False)) if slot else False
+        payload[f"slot{idx}_locked"] = bool(slot.get("locked", False)) if slot else False
+        x = slot.get("x", 0) if slot else 0
+        y = slot.get("y", 0) if slot else 0
+        width = slot.get("width", 0) if slot else 0
+        height = slot.get("height", 0) if slot else 0
+        payload[f"slot{idx}_rect_text"] = f"x={x}, y={y}, w={width}, h={height}"
+        payload[f"slot{idx}_widget_count"] = int(slot.get("widget_count", 0)) if slot else 0
+        payload[f"slot{idx}_action_ids_text"] = ", ".join(str(x) for x in action_ids) if action_ids else "n/a"
+        payload[f"slot{idx}_source_roots_text"] = ", ".join(str(x) for x in source_roots) if source_roots else "n/a"
+        payload[f"slot{idx}_first_widget_labels_text"] = ", ".join(str(x) for x in first_widget_labels) if first_widget_labels else "n/a"
+        payload[f"slot{idx}_placeholder"] = bool(slot.get("placeholder", False)) if slot else False
+        payload[f"slot{idx}_role"] = str(slot.get("role", "")) if slot else ""
+
+    # Keeps local linters from marking the set unused while documenting field classes.
+    _ = string_suffixes
+    return payload
+
+
+def expected_training_slot_injection_fields() -> set[str]:
+    return set(TRAINING_SLOT_INJECTION_FIELDS)
+
+
+def validate_training_slot_injection_payload(payload: dict) -> None:
+    if not isinstance(payload, dict):
+        raise ValueError("payload must be dict")
+
+    required_fields = expected_training_slot_injection_fields()
+    missing = sorted(required_fields - set(payload.keys()))
+    if missing:
+        raise ValueError(f"missing injection field: {missing[0]}")
+
+    if not isinstance(payload.get("slot_count"), int):
+        raise ValueError("slot_count must be int")
+
+    string_suffixes = {
+        "card_id",
+        "card_type",
+        "title",
+        "subtitle",
+        "rect_text",
+        "action_ids_text",
+        "source_roots_text",
+        "first_widget_labels_text",
+        "role",
+    }
+    bool_suffixes = {"required", "locked", "placeholder"}
+
+    for i in range(1, 8):
+        for suffix in string_suffixes:
+            key = f"slot{i}_{suffix}"
+            if not isinstance(payload.get(key), str):
+                raise ValueError(f"{key} must be string")
+        for suffix in bool_suffixes:
+            key = f"slot{i}_{suffix}"
+            if not isinstance(payload.get(key), bool):
+                raise ValueError(f"{key} must be bool")
+        key = f"slot{i}_widget_count"
+        if not isinstance(payload.get(key), int):
+            raise ValueError(f"{key} must be int")
+
+
+def build_training_slots_render_resource(example_root: Path) -> dict:
+    payload = build_training_card_slots_injection_payload(build_training_card_slots(example_root, max_slots=7))
+    validate_training_slot_injection_payload(payload)
+    return {
+        "task26_training_slots_payload": payload,
+        "task26_training_slots_status": "ok",
+        "task26_training_slots_source": "assets/layouts/task26_examples/training_page.desktop_demo.json",
     }
 
 

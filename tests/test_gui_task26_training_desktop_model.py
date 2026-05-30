@@ -7,9 +7,13 @@ import pytest
 
 from gui.desktop_model import (
     build_page_render_model,
+    build_training_card_slots,
+    build_training_card_slots_injection_payload,
     build_training_contract_summary,
     build_training_render_model,
     build_training_render_model_summary,
+    build_training_slots_render_resource,
+    validate_training_slot_injection_payload,
 )
 from gui.desktop_schema import load_json
 
@@ -94,5 +98,19 @@ def test_build_training_contract_summary_guards() -> None:
     assert any(src.startswith("gameHudJson") for src in summary["placeholder_sources"])
     assert summary["game_canvas_card_status"]
     assert summary["safe_stop_present"] is True
-    assert summary["training_slots_supported"] is False
-    assert summary["training_injection_supported"] is False
+    assert summary["training_slots_supported"] is True
+    assert summary["training_injection_supported"] is True
+
+
+def test_build_training_card_slots_and_injection_payload() -> None:
+    slots = build_training_card_slots(ROOT)
+    assert len(slots) == 7
+    card_ids = {slot["card_id"] for slot in slots}
+    assert "training_control_card" in card_ids
+    assert "game_canvas_card" in card_ids
+    payload = build_training_card_slots_injection_payload(slots)
+    validate_training_slot_injection_payload(payload)
+    assert payload["slot_count"] == 7
+    resource = build_training_slots_render_resource(ROOT)
+    assert resource["task26_training_slots_status"] == "ok"
+    validate_training_slot_injection_payload(resource["task26_training_slots_payload"])

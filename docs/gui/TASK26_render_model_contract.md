@@ -94,8 +94,15 @@
 
 ## TASK26F-1 Training contract hardening + DeveloperLab summary preview
 - TASK26F-1 hardens the Training prototype by adding a contract summary (`task26_training_summary`) and showing that summary in DeveloperLab only.
-- Training slots and Training injection payloads are intentionally unsupported in this phase; `--page training --slots` and `--page training --injection` must fail clearly instead of generating partial payloads.
+- Training slots and Training injection payloads were intentionally unsupported in F-1; TASK26F-2 adds DeveloperLab-only slots and injection previews without changing TrainingPage.
 - `GameCanvasCard` / `ConfigGameWidget` remain future work and must be implemented separately from ordinary metric/text widgets.
 - `gameHudJson.status`, `gameHudJson.score`, and `gameHudJson.focus_index` are prototype fields and must be confirmed later against bridge/facade truth before any real Training page migration.
 - `TrainingPage.qml` remains unmodified, and legacy fallback is mandatory for later Training desktop phases.
 - DeveloperLab currently displays a summary preview only; it does not render real Training cards, execute `source`, invoke `action_id`, or attach `GameCanvas`.
+
+## TASK26F-2 Training card slots preview
+- TASK26F-2 adds Training card slots derived from the compiled Training render model and exposes them as `task26_training_slots_payload` in render resources.
+- Training `--slots` and `--injection` are supported starting in F-2; Home behavior is unchanged.
+- `TrainingCardSlotsPreview` is DeveloperLab-only and uses fixed slot bindings rather than dynamic rendering.
+- `TrainingPage.qml` remains unmodified, no real `GameCanvas` is attached, and `game_canvas_card` remains a placeholder slot.
+- `source` / `action_id` values remain preview metadata; no source evaluation and no action invocation occur in F-2.

@@ -63,6 +63,17 @@ The following actions must remain available in any future Training cardized path
 - TASK26F-1 does not connect `GameCanvas` QML and does not alter `ui_qml/components/GameCanvas.qml`.
 - Any future GameCanvas migration must be validated separately from the ordinary card/widget render-model pipeline.
 
-## Unsupported Training slots/injection
+## TASK26F-1 unsupported Training slots/injection
 
-Training slots and injection payloads are intentionally unsupported in TASK26F-1. CLI requests for `--page training --slots` or `--page training --injection` must fail with a clear error instead of producing partial payloads.
+Training slots and injection payloads were intentionally unsupported in TASK26F-1. TASK26F-2 supersedes that boundary by adding DeveloperLab-only slots and injection previews while still avoiding real TrainingPage or GameCanvas integration.
+
+## TASK26F-2 Training slots preview
+
+TASK26F-2 adds Python-generated Training card slots and a controlled `task26_training_slots_payload` injection payload for DeveloperLab only.
+
+- `python tools/build_task26_render_model.py --page training --slots` is now supported.
+- `python tools/build_task26_render_model.py --page training --slots --injection` is now supported.
+- `TrainingCardSlotsPreview` is a DeveloperLab prototype and does not render real Training cards.
+- `TrainingPage.qml` remains untouched and legacy fallback remains mandatory.
+- Real `GameCanvas` is still not connected; `game_canvas_card` is only a placeholder slot with role `game_canvas_placeholder`.
+- The slots payload carries action/source identifiers as text for preview; source/action values are not executed.

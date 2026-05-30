@@ -4,7 +4,7 @@ import subprocess
 from pathlib import Path
 
 from gui.desktop_coverage import validate_action_ids
-from gui.desktop_model import build_training_contract_summary
+from gui.desktop_model import build_training_card_slots, build_training_contract_summary
 from gui.desktop_schema import (
     collect_action_ids_from_obj,
     collect_sources_from_obj,
@@ -44,30 +44,30 @@ def test_training_contract_summary_shape_and_guards() -> None:
     assert REQUIRED_CARDS <= set(summary["required_card_ids"])
     assert "gameHudJson.status" in summary["placeholder_sources"] or "gameHudJson.score" in summary["placeholder_sources"]
     assert "placeholder" in summary["game_canvas_card_status"]
-    assert summary["training_slots_supported"] is False
-    assert summary["training_injection_supported"] is False
+    assert summary["training_slots_supported"] is True
+    assert summary["training_injection_supported"] is True
 
 
-def test_training_slots_cli_fails_with_task26f1_message() -> None:
+def test_training_slots_are_supported_in_task26f2_cli() -> None:
     result = subprocess.run(
         ["python", "tools/build_task26_render_model.py", "--page", "training", "--slots"],
-        check=False,
+        check=True,
         capture_output=True,
         text=True,
     )
-    assert result.returncode != 0
-    assert "training slots are not supported in TASK26F-1" in result.stderr + result.stdout
+    assert "training_desktop_render_model_slots.example.json" in result.stdout
+    slots = build_training_card_slots(ROOT)
+    assert len(slots) == 7
 
 
-def test_training_injection_cli_fails_with_task26f1_message() -> None:
+def test_training_injection_is_supported_in_task26f2_cli() -> None:
     result = subprocess.run(
-        ["python", "tools/build_task26_render_model.py", "--page", "training", "--injection"],
-        check=False,
+        ["python", "tools/build_task26_render_model.py", "--page", "training", "--slots", "--injection"],
+        check=True,
         capture_output=True,
         text=True,
     )
-    assert result.returncode != 0
-    assert "training slots are not supported in TASK26F-1" in result.stderr + result.stdout
+    assert "training_desktop_render_model_slots_injection.example.json" in result.stdout
 
 
 def test_task26_contract_gate_strict_includes_training() -> None:

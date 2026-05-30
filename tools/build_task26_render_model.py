@@ -14,6 +14,8 @@ from gui.desktop_model import (
     build_home_render_model,
     build_home_render_model_summary,
     build_page_render_model,
+    build_training_card_slots,
+    build_training_card_slots_injection_payload,
     build_training_render_model,
     build_training_render_model_summary,
     write_render_model,
@@ -37,9 +39,6 @@ def main() -> None:
 
     if args.page not in {"home", "training"}:
         raise SystemExit("only home and training are supported in TASK26 render model builds")
-
-    if args.page == "training" and (args.slots or args.injection):
-        raise SystemExit("training slots are not supported in TASK26F-1")
 
     example_root = ROOT
     if args.page == "home":
@@ -76,17 +75,27 @@ def main() -> None:
         print(f"TASK26 render model summary written: {summary_rel}")
 
     if args.slots:
-        slots = build_home_card_slots_from_examples(example_root, max_slots=4)
-        slots_payload = {"page_id": "home", "max_slots": 4, "slots": slots}
-        slots_output = ROOT / "assets/layouts/task26_examples/home_desktop_render_model_slots.example.json"
-        write_render_model(slots_payload, slots_output)
-        print("TASK26 render model slots written: assets/layouts/task26_examples/home_desktop_render_model_slots.example.json")
+        if args.page == "home":
+            slots = build_home_card_slots_from_examples(example_root, max_slots=4)
+            slots_payload = {"page_id": "home", "max_slots": 4, "slots": slots}
+            slots_rel = "assets/layouts/task26_examples/home_desktop_render_model_slots.example.json"
+        else:
+            slots = build_training_card_slots(example_root, max_slots=7)
+            slots_payload = {"page_id": "training", "max_slots": 7, "slots": slots}
+            slots_rel = "assets/layouts/task26_examples/training_desktop_render_model_slots.example.json"
+        write_render_model(slots_payload, ROOT / slots_rel)
+        print(f"TASK26 render model slots written: {slots_rel}")
 
     if args.injection:
-        injection = build_home_card_slots_injection_payload_from_examples(example_root)
-        injection_output = ROOT / "assets/layouts/task26_examples/home_desktop_render_model_slots_injection.example.json"
-        write_render_model(injection, injection_output)
-        print("TASK26 render model slots injection written: assets/layouts/task26_examples/home_desktop_render_model_slots_injection.example.json")
+        if args.page == "home":
+            injection = build_home_card_slots_injection_payload_from_examples(example_root)
+            injection_rel = "assets/layouts/task26_examples/home_desktop_render_model_slots_injection.example.json"
+        else:
+            training_slots = build_training_card_slots(example_root, max_slots=7)
+            injection = build_training_card_slots_injection_payload(training_slots)
+            injection_rel = "assets/layouts/task26_examples/training_desktop_render_model_slots_injection.example.json"
+        write_render_model(injection, ROOT / injection_rel)
+        print(f"TASK26 render model slots injection written: {injection_rel}")
 
 
 if __name__ == "__main__":
