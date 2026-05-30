@@ -1,0 +1,11 @@
+{
+  "background": "#FFFFFF",
+  "border": "#CBD5E1",
+  "border_width": 1,
+  "radius": 12,
+  "padding": 12,
+  "shadow_enabled": false,
+  "opacity": 0.96,
+  "background_asset_key": "",
+  "frame_asset_key": "ui.panel.frame"
+}

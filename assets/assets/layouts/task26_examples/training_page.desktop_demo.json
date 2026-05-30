@@ -1,0 +1,623 @@
+{
+  "page_id": "training",
+  "title": "Training Desktop",
+  "subtitle": "TASK26F-0A Training migration audit demo",
+  "layout": {
+    "mode": "grid",
+    "columns": 12,
+    "rows": 8,
+    "gap": 8,
+    "padding": 10
+  },
+  "cards": [
+    {
+      "id": "training_control_card",
+      "type": "actions",
+      "title": "Training Controls",
+      "subtitle": "Readiness, session, and safe stop actions",
+      "required": true,
+      "locked": true,
+      "preset": "danger_card",
+      "position": {
+        "col": 1,
+        "row": 1,
+        "col_span": 4,
+        "row_span": 2
+      },
+      "shape": "rounded_rect",
+      "style": {
+        "background_color": "#182235",
+        "background_opacity": 0.92,
+        "border_color": "#5D8CFF",
+        "border_width": 2,
+        "corner_radius": 18,
+        "shape_type": "rounded_rect",
+        "glass_enabled": true,
+        "glass_tint": "#BFDFFF",
+        "glass_opacity": 0.1,
+        "glass_highlight": true
+      },
+      "widgets": [
+        {
+          "type": "button",
+          "id": "start_session_btn",
+          "label": "Start Session",
+          "action_id": "session.start",
+          "args": {},
+          "variant": "primary",
+          "required": true,
+          "enabled_when": "readiness_ready",
+          "confirm": true,
+          "style": {
+            "preset": "button_primary"
+          }
+        },
+        {
+          "type": "button",
+          "id": "stop_session_btn",
+          "label": "Stop Session",
+          "action_id": "session.stop",
+          "args": {},
+          "variant": "secondary",
+          "required": true,
+          "enabled_when": "always",
+          "confirm": true,
+          "style": {
+            "preset": "button_secondary"
+          }
+        },
+        {
+          "type": "button",
+          "id": "safe_stop_btn",
+          "label": "Safe Stop",
+          "action_id": "live.safe_stop",
+          "args": {},
+          "variant": "danger",
+          "required": true,
+          "enabled_when": "always",
+          "confirm": true,
+          "style": {
+            "preset": "button_danger"
+          }
+        },
+        {
+          "type": "button",
+          "id": "session_status_btn",
+          "label": "Session Status",
+          "action_id": "session.status",
+          "args": {},
+          "variant": "secondary",
+          "required": false,
+          "enabled_when": "always",
+          "confirm": false,
+          "style": {
+            "preset": "button_secondary"
+          }
+        },
+        {
+          "type": "text",
+          "id": "current_user_id_source",
+          "label": "Current User",
+          "source": "controlStateJson.current_user_id",
+          "fallback": "none",
+          "format": "plain",
+          "unit": "",
+          "preset": "text_body",
+          "style": {},
+          "visible_when": "always"
+        }
+      ],
+      "card_policy": {
+        "allow_move": false,
+        "allow_resize": false,
+        "allow_remove": false,
+        "allow_collapse": false
+      }
+    },
+    {
+      "id": "session_card",
+      "type": "session",
+      "title": "Session Status",
+      "subtitle": "Active session identity and elapsed time",
+      "required": true,
+      "locked": true,
+      "preset": "normal_card",
+      "position": {
+        "col": 5,
+        "row": 1,
+        "col_span": 4,
+        "row_span": 2
+      },
+      "shape": "rounded_rect",
+      "style": {
+        "background_color": "#321B2B",
+        "background_opacity": 0.88,
+        "border_color": "#FF6680",
+        "border_width": 2,
+        "corner_radius": 20,
+        "shape_type": "rounded_rect",
+        "glass_enabled": true,
+        "glass_tint": "#FFDDE8",
+        "glass_opacity": 0.12,
+        "glass_highlight": true
+      },
+      "widgets": [
+        {
+          "type": "metric",
+          "id": "session_active",
+          "label": "Active",
+          "source": "sessionState.session_active",
+          "fallback": "false",
+          "format": "bool",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "metric",
+          "id": "current_session_id",
+          "label": "Session ID",
+          "source": "sessionState.current_session_id",
+          "fallback": "none",
+          "format": "plain",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "metric",
+          "id": "session_elapsed_ms",
+          "label": "Elapsed",
+          "source": "sessionState.session_elapsed_ms",
+          "fallback": "0",
+          "format": "duration_ms",
+          "unit": "ms",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        }
+      ],
+      "card_policy": {
+        "allow_move": false,
+        "allow_resize": false,
+        "allow_remove": false,
+        "allow_collapse": true
+      }
+    },
+    {
+      "id": "runtime_io_card",
+      "type": "runtime",
+      "title": "Runtime I/O",
+      "subtitle": "Stream, attention, and gyro freshness",
+      "required": true,
+      "locked": true,
+      "preset": "normal_card",
+      "position": {
+        "col": 9,
+        "row": 1,
+        "col_span": 4,
+        "row_span": 3
+      },
+      "shape": "rounded_rect",
+      "style": {
+        "background_color": "#183326",
+        "background_opacity": 0.82,
+        "border_color": "#67E8A5",
+        "border_width": 1,
+        "corner_radius": 16,
+        "shape_type": "rounded_rect",
+        "glass_enabled": false,
+        "glass_tint": "#E6FFF2",
+        "glass_opacity": 0.0,
+        "glass_highlight": false
+      },
+      "widgets": [
+        {
+          "type": "metric",
+          "id": "stream_alive",
+          "label": "Stream Alive",
+          "source": "runtimeSnapshot.stream_alive",
+          "fallback": "false",
+          "format": "bool",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "metric",
+          "id": "attention",
+          "label": "Attention",
+          "source": "runtimeSnapshot.attention",
+          "fallback": "n/a",
+          "format": "float_2",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "metric",
+          "id": "attention_age_ms",
+          "label": "Attention Age",
+          "source": "runtimeSnapshot.attention_age_ms",
+          "fallback": "n/a",
+          "format": "duration_ms",
+          "unit": "ms",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "metric",
+          "id": "gyro_x",
+          "label": "Gyro X",
+          "source": "runtimeSnapshot.gyro_x",
+          "fallback": "n/a",
+          "format": "float_2",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "metric",
+          "id": "gyro_y",
+          "label": "Gyro Y",
+          "source": "runtimeSnapshot.gyro_y",
+          "fallback": "n/a",
+          "format": "float_2",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "metric",
+          "id": "gyro_z",
+          "label": "Gyro Z",
+          "source": "runtimeSnapshot.gyro_z",
+          "fallback": "n/a",
+          "format": "float_2",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "metric",
+          "id": "gyro_age_ms",
+          "label": "Gyro Age",
+          "source": "runtimeSnapshot.gyro_age_ms",
+          "fallback": "n/a",
+          "format": "duration_ms",
+          "unit": "ms",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        }
+      ],
+      "card_policy": {
+        "allow_move": false,
+        "allow_resize": false,
+        "allow_remove": false,
+        "allow_collapse": true
+      }
+    },
+    {
+      "id": "calibration_status_card",
+      "type": "calibration",
+      "title": "Calibration Status",
+      "subtitle": "Readiness gate calibration coverage",
+      "required": true,
+      "locked": true,
+      "preset": "normal_card",
+      "position": {
+        "col": 1,
+        "row": 3,
+        "col_span": 4,
+        "row_span": 2
+      },
+      "shape": "rounded_rect",
+      "style": {
+        "background_color": "#241E36",
+        "background_opacity": 0.78,
+        "border_color": "#C4B5FD",
+        "border_width": 1,
+        "corner_radius": 24,
+        "shape_type": "pill",
+        "glass_enabled": true,
+        "glass_tint": "#F2ECFF",
+        "glass_opacity": 0.16,
+        "glass_highlight": true
+      },
+      "widgets": [
+        {
+          "type": "metric",
+          "id": "calibration_usable",
+          "label": "Calibration Usable",
+          "source": "controlState.calibration_usable",
+          "fallback": "unknown",
+          "format": "bool",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "metric",
+          "id": "last_calibration_id",
+          "label": "Last Calibration",
+          "source": "controlState.last_calibration_id",
+          "fallback": "none",
+          "format": "plain",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "button",
+          "id": "calibration_status_btn",
+          "label": "Calibration Status",
+          "action_id": "calibration.status",
+          "args": {},
+          "variant": "secondary",
+          "required": false,
+          "enabled_when": "always",
+          "confirm": false,
+          "style": {
+            "preset": "button_secondary"
+          }
+        }
+      ],
+      "card_policy": {
+        "allow_move": false,
+        "allow_resize": false,
+        "allow_remove": false,
+        "allow_collapse": true
+      }
+    },
+    {
+      "id": "game_hud_card",
+      "type": "hud",
+      "title": "Game HUD",
+      "subtitle": "TraceLock HUD and status placeholders",
+      "required": true,
+      "locked": true,
+      "preset": "glass_card",
+      "position": {
+        "col": 5,
+        "row": 3,
+        "col_span": 4,
+        "row_span": 3
+      },
+      "shape": "rounded_rect",
+      "style": {
+        "background_color": "#182235",
+        "background_opacity": 0.92,
+        "border_color": "#5D8CFF",
+        "border_width": 2,
+        "corner_radius": 18,
+        "shape_type": "rounded_rect",
+        "glass_enabled": true,
+        "glass_tint": "#BFDFFF",
+        "glass_opacity": 0.1,
+        "glass_highlight": true
+      },
+      "widgets": [
+        {
+          "type": "metric",
+          "id": "game_status",
+          "label": "Status",
+          "source": "gameHudJson.status",
+          "fallback": "unknown",
+          "format": "plain",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always",
+          "contract": {
+            "contract_status": "pending_bridge_validation",
+            "prototype": true
+          }
+        },
+        {
+          "type": "metric",
+          "id": "game_score",
+          "label": "Score",
+          "source": "gameHudJson.score",
+          "fallback": "0",
+          "format": "int",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always",
+          "contract": {
+            "contract_status": "pending_bridge_validation",
+            "prototype": true
+          }
+        },
+        {
+          "type": "metric",
+          "id": "game_focus_index",
+          "label": "Focus Index",
+          "source": "gameHudJson.focus_index",
+          "fallback": "n/a",
+          "format": "float_2",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always",
+          "contract": {
+            "contract_status": "pending_bridge_validation",
+            "prototype": true
+          }
+        },
+        {
+          "type": "button",
+          "id": "game_status_btn",
+          "label": "Game Status",
+          "action_id": "game.status",
+          "args": {},
+          "variant": "secondary",
+          "required": false,
+          "enabled_when": "always",
+          "confirm": false,
+          "style": {
+            "preset": "button_secondary"
+          }
+        }
+      ],
+      "card_policy": {
+        "allow_move": false,
+        "allow_resize": false,
+        "allow_remove": false,
+        "allow_collapse": true
+      },
+      "contract": {
+        "contract_status": "pending_bridge_validation",
+        "prototype": true,
+        "pending_sources": [
+          "gameHudJson.status",
+          "gameHudJson.score",
+          "gameHudJson.focus_index"
+        ]
+      }
+    },
+    {
+      "id": "game_canvas_card",
+      "type": "game",
+      "title": "Game Canvas",
+      "subtitle": "Placeholder declaration only; no QML GameCanvas hookup in TASK26F-0A",
+      "required": true,
+      "locked": true,
+      "preset": "image_card",
+      "position": {
+        "col": 1,
+        "row": 5,
+        "col_span": 8,
+        "row_span": 4
+      },
+      "shape": "rounded_rect",
+      "style": {
+        "background_color": "#321B2B",
+        "background_opacity": 0.88,
+        "border_color": "#FF6680",
+        "border_width": 2,
+        "corner_radius": 20,
+        "shape_type": "rounded_rect",
+        "glass_enabled": true,
+        "glass_tint": "#FFDDE8",
+        "glass_opacity": 0.12,
+        "glass_highlight": true
+      },
+      "widgets": [
+        {
+          "type": "game_placeholder",
+          "id": "game_canvas_placeholder",
+          "label": "GameCanvas Placeholder",
+          "source": "gameViewJson.game_id",
+          "fallback": "trace_lock",
+          "format": "game_canvas_placeholder",
+          "unit": "",
+          "preset": "game_canvas_placeholder",
+          "style": {},
+          "visible_when": "always",
+          "contract": {
+            "canvas_role": "game_canvas_placeholder",
+            "implementation_status": "placeholder_only",
+            "requires_legacy_fallback": true
+          }
+        }
+      ],
+      "card_policy": {
+        "allow_move": false,
+        "allow_resize": false,
+        "allow_remove": false,
+        "allow_collapse": false
+      },
+      "contract": {
+        "canvas_role": "game_canvas_placeholder",
+        "implementation_status": "placeholder_only",
+        "requires_legacy_fallback": true
+      }
+    },
+    {
+      "id": "diagnostics_summary_card",
+      "type": "diagnostics",
+      "title": "Diagnostics Summary",
+      "subtitle": "Warnings, errors, and manual refresh",
+      "required": true,
+      "locked": true,
+      "preset": "normal_card",
+      "position": {
+        "col": 9,
+        "row": 4,
+        "col_span": 4,
+        "row_span": 5
+      },
+      "shape": "rounded_rect",
+      "style": {
+        "background_color": "#183326",
+        "background_opacity": 0.82,
+        "border_color": "#67E8A5",
+        "border_width": 1,
+        "corner_radius": 16,
+        "shape_type": "rounded_rect",
+        "glass_enabled": false,
+        "glass_tint": "#E6FFF2",
+        "glass_opacity": 0.0,
+        "glass_highlight": false
+      },
+      "widgets": [
+        {
+          "type": "text",
+          "id": "warning_flags",
+          "label": "Warnings",
+          "source": "runtimeSnapshot.warning_flags",
+          "fallback": "none",
+          "format": "plain",
+          "unit": "",
+          "preset": "text_body",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "text",
+          "id": "error_flags",
+          "label": "Errors",
+          "source": "runtimeSnapshot.error_flags",
+          "fallback": "none",
+          "format": "plain",
+          "unit": "",
+          "preset": "text_body",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "button",
+          "id": "diagnostics_refresh_btn",
+          "label": "Refresh Diagnostics",
+          "action_id": "diagnostics.refresh",
+          "args": {},
+          "variant": "secondary",
+          "required": false,
+          "enabled_when": "always",
+          "confirm": false,
+          "style": {
+            "preset": "button_secondary"
+          }
+        }
+      ],
+      "card_policy": {
+        "allow_move": false,
+        "allow_resize": false,
+        "allow_remove": false,
+        "allow_collapse": true
+      }
+    }
+  ]
+}

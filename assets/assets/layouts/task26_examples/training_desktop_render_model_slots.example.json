@@ -1,0 +1,190 @@
+{
+  "page_id": "training",
+  "max_slots": 7,
+  "slots": [
+    {
+      "slot_index": 1,
+      "card_id": "training_control_card",
+      "card_type": "actions",
+      "title": "Training Controls",
+      "subtitle": "Readiness, session, and safe stop actions",
+      "required": true,
+      "locked": true,
+      "x": 10.0,
+      "y": 10.0,
+      "width": 388.0,
+      "height": 189.0,
+      "widget_count": 5,
+      "action_ids": [
+        "live.safe_stop",
+        "session.start",
+        "session.status",
+        "session.stop"
+      ],
+      "source_roots": [
+        "controlStateJson"
+      ],
+      "first_widget_labels": [
+        "Start Session",
+        "Stop Session",
+        "Safe Stop"
+      ],
+      "placeholder": false,
+      "role": "actions"
+    },
+    {
+      "slot_index": 2,
+      "card_id": "session_card",
+      "card_type": "session",
+      "title": "Session Status",
+      "subtitle": "Active session identity and elapsed time",
+      "required": true,
+      "locked": true,
+      "x": 406.0,
+      "y": 10.0,
+      "width": 388.0,
+      "height": 189.0,
+      "widget_count": 3,
+      "action_ids": [],
+      "source_roots": [
+        "sessionState"
+      ],
+      "first_widget_labels": [
+        "Active",
+        "Session ID",
+        "Elapsed"
+      ],
+      "placeholder": false,
+      "role": "session"
+    },
+    {
+      "slot_index": 3,
+      "card_id": "runtime_io_card",
+      "card_type": "runtime",
+      "title": "Runtime I/O",
+      "subtitle": "Stream, attention, and gyro freshness",
+      "required": true,
+      "locked": true,
+      "x": 802.0,
+      "y": 10.0,
+      "width": 388.0,
+      "height": 287.5,
+      "widget_count": 7,
+      "action_ids": [],
+      "source_roots": [
+        "runtimeSnapshot"
+      ],
+      "first_widget_labels": [
+        "Stream Alive",
+        "Attention",
+        "Attention Age"
+      ],
+      "placeholder": false,
+      "role": "runtime"
+    },
+    {
+      "slot_index": 4,
+      "card_id": "calibration_status_card",
+      "card_type": "calibration",
+      "title": "Calibration Status",
+      "subtitle": "Readiness gate calibration coverage",
+      "required": true,
+      "locked": true,
+      "x": 10.0,
+      "y": 207.0,
+      "width": 388.0,
+      "height": 189.0,
+      "widget_count": 3,
+      "action_ids": [
+        "calibration.status"
+      ],
+      "source_roots": [
+        "controlState"
+      ],
+      "first_widget_labels": [
+        "Calibration Usable",
+        "Last Calibration",
+        "Calibration Status"
+      ],
+      "placeholder": false,
+      "role": "calibration"
+    },
+    {
+      "slot_index": 5,
+      "card_id": "game_hud_card",
+      "card_type": "hud",
+      "title": "Game HUD",
+      "subtitle": "TraceLock HUD and status placeholders",
+      "required": true,
+      "locked": true,
+      "x": 406.0,
+      "y": 207.0,
+      "width": 388.0,
+      "height": 287.5,
+      "widget_count": 4,
+      "action_ids": [
+        "game.status"
+      ],
+      "source_roots": [
+        "gameHudJson"
+      ],
+      "first_widget_labels": [
+        "Status",
+        "Score",
+        "Focus Index"
+      ],
+      "placeholder": false,
+      "role": "hud"
+    },
+    {
+      "slot_index": 6,
+      "card_id": "game_canvas_card",
+      "card_type": "game",
+      "title": "Game Canvas",
+      "subtitle": "Placeholder declaration only; no QML GameCanvas hookup in TASK26F-0A",
+      "required": true,
+      "locked": true,
+      "x": 10.0,
+      "y": 404.0,
+      "width": 784.0,
+      "height": 386.0,
+      "widget_count": 1,
+      "action_ids": [],
+      "source_roots": [
+        "gameViewJson"
+      ],
+      "first_widget_labels": [
+        "GameCanvas Placeholder"
+      ],
+      "placeholder": true,
+      "role": "game_canvas_placeholder"
+    },
+    {
+      "slot_index": 7,
+      "card_id": "diagnostics_summary_card",
+      "card_type": "diagnostics",
+      "title": "Diagnostics Summary",
+      "subtitle": "Warnings, errors, and manual refresh",
+      "required": true,
+      "locked": true,
+      "x": 802.0,
+      "y": 305.5,
+      "width": 388.0,
+      "height": 484.5,
+      "widget_count": 3,
+      "action_ids": [
+        "diagnostics.refresh"
+      ],
+      "source_roots": [
+        "runtimeSnapshot"
+      ],
+      "first_widget_labels": [
+        "Warnings",
+        "Errors",
+        "Refresh Diagnostics"
+      ],
+      "placeholder": false,
+      "role": "diagnostics"
+    }
+  ]
+}

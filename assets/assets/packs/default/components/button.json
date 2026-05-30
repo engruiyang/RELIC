@@ -1,0 +1,23 @@
+{
+  "normal": {
+    "background": "#FFFFFF",
+    "border": "#CBD5E1",
+    "text": "#0F172A",
+    "asset_key": "ui.button.primary.normal"
+  },
+  "pressed": {
+    "background": "#DBEAFE",
+    "border": "#2563EB",
+    "text": "#0F172A",
+    "asset_key": "ui.button.primary.pressed"
+  },
+  "disabled": {
+    "background": "#F1F5F9",
+    "border": "#CBD5E1",
+    "text": "#94A3B8",
+    "asset_key": "ui.button.primary.disabled"
+  },
+  "radius": 8,
+  "padding_x": 12,
+  "padding_y": 8
+}

@@ -1,0 +1,18 @@
+{
+  "schema_version": "game_visual_manifest.v1",
+  "game_id": "fake_game",
+  "assets": {
+    "fake_game.target.primary": {"type": "shape", "url": null, "fallback_shape": "circle", "style_key": "target.primary", "description": "primary click target"},
+    "fake_game.focus_zone.default": {"type": "shape", "url": null, "fallback_shape": "ring", "style_key": "focus_zone.default", "description": "focus zone ring"},
+    "fake_game.progress_ring.default": {"type": "shape", "url": null, "fallback_shape": "ring", "style_key": "progress_ring.default", "description": "combo progress ring"}
+  },
+  "effects": {
+    "fake_game.effect.target_hit": {"type": "pulse", "effect_key": "target_hit", "style_key": "target.primary", "duration_ms": 180, "description": "target hit pulse"},
+    "fake_game.effect.background_click": {"type": "flash", "effect_key": "background_click", "style_key": "target.background", "duration_ms": 120, "description": "background click flash"}
+  },
+  "styles": {
+    "fake_game.style.target": "target.primary",
+    "fake_game.style.background": "target.background"
+  },
+  "supported_entities": ["target", "focus_zone", "progress_ring"]
+}

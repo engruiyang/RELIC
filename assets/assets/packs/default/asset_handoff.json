@@ -1,0 +1,91 @@
+{
+  "schema_version": "task25e0.asset_handoff.v1",
+  "pack_id": "default",
+  "stage": "TASK25E-0",
+  "summary": "Defines artist-replaceable asset slots and file placement rules. No real binary assets are required in this stage.",
+  "directories": {
+    "backgrounds": "images/backgrounds/",
+    "ui": "images/ui/",
+    "trace_lock": "images/trace_lock/",
+    "effects": "images/effects/",
+    "audio_ui": "audio/ui/",
+    "audio_trace_lock": "audio/trace_lock/",
+    "fonts": "fonts/"
+  },
+  "allowed_extensions": {
+    "images": [
+      ".png",
+      ".jpg",
+      ".jpeg",
+      ".webp"
+    ],
+    "audio": [
+      ".wav",
+      ".ogg"
+    ],
+    "fonts": [
+      ".ttf",
+      ".otf"
+    ]
+  },
+  "replacement_rules": [
+    "Do not change QML or control logic when replacing assets.",
+    "Prefer editing manifest.json url fields and design-pack JSON tokens.",
+    "Keep url null when no art is provided; fallback drawing must remain valid.",
+    "Use relative URLs under packs/default/ only.",
+    "Only commit assets with clear license or project ownership.",
+    "Do not commit font files unless their license explicitly permits redistribution."
+  ],
+  "required_slot_groups": {
+    "backgrounds": [
+      "background.app.main",
+      "background.home.main",
+      "background.user.main",
+      "background.calibration.main",
+      "background.training.main",
+      "background.report.main",
+      "background.diagnostics.main",
+      "background.developer_lab.main"
+    ],
+    "ui": [
+      "ui.logo.main",
+      "ui.header.decorator",
+      "ui.panel.frame",
+      "ui.button.primary.normal",
+      "ui.button.primary.pressed",
+      "ui.button.primary.disabled",
+      "ui.feedback.success",
+      "ui.feedback.warning",
+      "ui.feedback.error"
+    ],
+    "trace_lock": [
+      "tracelock.background.grid",
+      "tracelock.target.marked_trace",
+      "tracelock.target.noise_trace",
+      "tracelock.focus_zone.default",
+      "tracelock.progress_ring.default",
+      "tracelock.timer_bar.default"
+    ],
+    "effects": [
+      "tracelock.effect.trace_seal",
+      "tracelock.effect.lock_failed",
+      "tracelock.effect.trace_drop",
+      "tracelock.effect.combo_popup"
+    ],
+    "audio": [
+      "audio.ui.click",
+      "audio.tracelock.hit",
+      "audio.tracelock.miss"
+    ],
+    "fonts": [
+      "font.ui.primary"
+    ]
+  },
+  "fallback_contract": {
+    "backgrounds": "fallback to layered color/gradient/overlay",
+    "targets": "fallback to shape via fallback_shape",
+    "effects": "fallback to particle/color parameters in trace_lock_effects.json",
+    "audio": "silent fallback",
+    "fonts": "system font fallback"
+  }
+}

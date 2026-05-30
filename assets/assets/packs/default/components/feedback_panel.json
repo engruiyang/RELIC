@@ -1,0 +1,14 @@
+{
+  "background": "#FFFFFF",
+  "border": "#CBD5E1",
+  "border_width": 1,
+  "radius": 10,
+  "padding": 10,
+  "spacing": 2,
+  "opacity": 0.96,
+  "text": "#0F172A",
+  "text_muted": "#475569",
+  "success_asset_key": "ui.feedback.success",
+  "warning_asset_key": "ui.feedback.warning",
+  "error_asset_key": "ui.feedback.error"
+}

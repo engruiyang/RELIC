@@ -1,0 +1,46 @@
+{
+  "schema_version": "theme.v1",
+  "theme_id": "default",
+  "background": "#0f1720",
+  "panel": "#172330",
+  "panel_alt": "#223140",
+  "text": "#e6edf5",
+  "muted_text": "#9aacbd",
+  "accent": "#67d5ff",
+  "success": "#34c759",
+  "warning": "#ffcc00",
+  "error": "#ff4d4f",
+  "border": "#2f4253",
+  "font_family": "Sans Serif",
+  "font_size_body": 14,
+  "font_size_small": 12,
+  "font_size_title": 20,
+  "radius_card": 8,
+  "spacing_small": 4,
+  "spacing_medium": 8,
+  "spacing_large": 12,
+  "colors": {
+    "bg": "#10131A",
+    "fg": "#F5F7FA",
+    "accent": "#70E0FF",
+    "warn": "#FFD166"
+  },
+  "styles": {
+    "target.primary": {
+      "fill": "#70E0FF",
+      "stroke": "#1B2130",
+      "stroke_width": 2,
+      "opacity": 1.0,
+      "radius_scale": 1.0,
+      "debug_label": "target.primary"
+    },
+    "target.background": {
+      "fill": "#2B3342",
+      "stroke": "#10131A",
+      "stroke_width": 1,
+      "opacity": 0.85,
+      "radius_scale": 1.0,
+      "debug_label": "target.background"
+    }
+  }
+}
