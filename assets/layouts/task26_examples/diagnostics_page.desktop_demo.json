@@ -1,0 +1,312 @@
+{
+  "page_id": "diagnostics",
+  "title": "Diagnostics Desktop",
+  "subtitle": "TASK26G-3 Diagnostics desktop pilot",
+  "layout": {
+    "mode": "grid",
+    "columns": 12,
+    "rows": 8,
+    "gap": 8,
+    "padding": 8
+  },
+  "cards": [
+    {
+      "id": "runtime_io_card",
+      "type": "runtime",
+      "title": "Runtime I/O",
+      "subtitle": "Connection and stream health",
+      "required": true,
+      "locked": true,
+      "preset": "normal_card",
+      "position": {
+        "col": 1,
+        "row": 1,
+        "col_span": 4,
+        "row_span": 3
+      },
+      "shape": "rounded_rect",
+      "style": {
+        "background_color": "#162235",
+        "background_opacity": 0.88,
+        "border_color": "#5D8CFF",
+        "border_width": 2,
+        "corner_radius": 18,
+        "shape_type": "rounded_rect",
+        "background_image": "",
+        "glass_enabled": true,
+        "glass_tint": "#DDEEFF",
+        "glass_opacity": 0.1,
+        "glass_highlight": true
+      },
+      "widgets": [
+        {
+          "type": "metric",
+          "id": "connection_status",
+          "label": "Connection",
+          "source": "runtimeSnapshot.connection_status",
+          "fallback": "unknown",
+          "format": "plain",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "metric",
+          "id": "stream_alive",
+          "label": "Stream Alive",
+          "source": "runtimeSnapshot.stream_alive",
+          "fallback": "false",
+          "format": "plain",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "metric",
+          "id": "attention",
+          "label": "Attention",
+          "source": "runtimeSnapshot.attention",
+          "fallback": "n/a",
+          "format": "plain",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        }
+      ],
+      "card_policy": {
+        "allow_move": true,
+        "allow_resize": true,
+        "allow_remove": false,
+        "allow_collapse": true
+      }
+    },
+    {
+      "id": "diagnostics_actions_card",
+      "type": "actions",
+      "title": "Diagnostics Actions",
+      "subtitle": "Refresh and reconnect",
+      "required": true,
+      "locked": true,
+      "preset": "normal_card",
+      "position": {
+        "col": 5,
+        "row": 1,
+        "col_span": 4,
+        "row_span": 3
+      },
+      "shape": "rounded_rect",
+      "style": {
+        "background_color": "#321B2B",
+        "background_opacity": 0.88,
+        "border_color": "#FF6680",
+        "border_width": 2,
+        "corner_radius": 20,
+        "shape_type": "rounded_rect",
+        "background_image": "",
+        "glass_enabled": true,
+        "glass_tint": "#FFDDE8",
+        "glass_opacity": 0.12,
+        "glass_highlight": true
+      },
+      "widgets": [
+        {
+          "type": "button",
+          "id": "refresh",
+          "label": "Diagnostics Refresh",
+          "action_id": "diagnostics.refresh",
+          "args": {},
+          "variant": "primary",
+          "required": true,
+          "enabled_when": "always",
+          "confirm": false,
+          "style": {
+            "preset": "button_primary"
+          }
+        },
+        {
+          "type": "button",
+          "id": "refresh_snapshot",
+          "label": "Refresh Snapshot",
+          "action_id": "app.refresh_now",
+          "args": {},
+          "variant": "secondary",
+          "required": true,
+          "enabled_when": "always",
+          "confirm": false,
+          "style": {
+            "preset": "button_secondary"
+          }
+        },
+        {
+          "type": "button",
+          "id": "live_reconnect",
+          "label": "Live Reconnect",
+          "action_id": "live.reconnect",
+          "args": {},
+          "variant": "secondary",
+          "required": false,
+          "enabled_when": "always",
+          "confirm": false,
+          "style": {
+            "preset": "button_secondary"
+          }
+        }
+      ],
+      "card_policy": {
+        "allow_move": true,
+        "allow_resize": true,
+        "allow_remove": false,
+        "allow_collapse": true
+      }
+    },
+    {
+      "id": "runtime_quality_card",
+      "type": "quality",
+      "title": "Quality / Focus",
+      "subtitle": "Signal quality and focus state",
+      "required": true,
+      "locked": true,
+      "preset": "normal_card",
+      "position": {
+        "col": 9,
+        "row": 1,
+        "col_span": 4,
+        "row_span": 3
+      },
+      "shape": "rounded_rect",
+      "style": {
+        "background_color": "#183326",
+        "background_opacity": 0.82,
+        "border_color": "#67E8A5",
+        "border_width": 2,
+        "corner_radius": 16,
+        "shape_type": "rounded_rect",
+        "background_image": "",
+        "glass_enabled": false,
+        "glass_tint": "#DDEEFF",
+        "glass_opacity": 0.1,
+        "glass_highlight": false
+      },
+      "widgets": [
+        {
+          "type": "metric",
+          "id": "sqi",
+          "label": "SQI",
+          "source": "runtimeSnapshot.sqi",
+          "fallback": "n/a",
+          "format": "plain",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "metric",
+          "id": "fi",
+          "label": "FI",
+          "source": "runtimeSnapshot.fi",
+          "fallback": "n/a",
+          "format": "plain",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "metric",
+          "id": "control_state",
+          "label": "Control State",
+          "source": "runtimeSnapshot.control_state",
+          "fallback": "n/a",
+          "format": "plain",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        }
+      ],
+      "card_policy": {
+        "allow_move": true,
+        "allow_resize": true,
+        "allow_remove": false,
+        "allow_collapse": true
+      }
+    },
+    {
+      "id": "diagnostics_summary_card",
+      "type": "diagnostics",
+      "title": "Diagnostics Summary",
+      "subtitle": "Warnings, errors, and command state",
+      "required": true,
+      "locked": true,
+      "preset": "normal_card",
+      "position": {
+        "col": 1,
+        "row": 4,
+        "col_span": 8,
+        "row_span": 3
+      },
+      "shape": "rounded_rect",
+      "style": {
+        "background_color": "#221A33",
+        "background_opacity": 0.74,
+        "border_color": "#B58CFF",
+        "border_width": 2,
+        "corner_radius": 24,
+        "shape_type": "rounded_rect",
+        "background_image": "",
+        "glass_enabled": true,
+        "glass_tint": "#E8D7FF",
+        "glass_opacity": 0.16,
+        "glass_highlight": true
+      },
+      "widgets": [
+        {
+          "type": "metric",
+          "id": "warning_flags",
+          "label": "Warnings",
+          "source": "runtimeSnapshot.warning_flags",
+          "fallback": "[]",
+          "format": "plain",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "metric",
+          "id": "error_flags",
+          "label": "Errors",
+          "source": "runtimeSnapshot.error_flags",
+          "fallback": "[]",
+          "format": "plain",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "metric",
+          "id": "last_command",
+          "label": "Last Command",
+          "source": "controlStateJson.last_command",
+          "fallback": "n/a",
+          "format": "plain",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        }
+      ],
+      "card_policy": {
+        "allow_move": true,
+        "allow_resize": true,
+        "allow_remove": false,
+        "allow_collapse": true
+      }
+    }
+  ]
+}

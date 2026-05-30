@@ -1,0 +1,300 @@
+{
+  "page_id": "user",
+  "title": "User Desktop",
+  "subtitle": "TASK26G-3 User desktop pilot",
+  "layout": {
+    "mode": "grid",
+    "columns": 12,
+    "rows": 8,
+    "gap": 8,
+    "padding": 8
+  },
+  "cards": [
+    {
+      "id": "user_current_card",
+      "type": "user",
+      "title": "Current User",
+      "subtitle": "Loaded user and profile gate",
+      "required": true,
+      "locked": true,
+      "preset": "normal_card",
+      "position": {
+        "col": 1,
+        "row": 1,
+        "col_span": 4,
+        "row_span": 3
+      },
+      "shape": "rounded_rect",
+      "style": {
+        "background_color": "#162235",
+        "background_opacity": 0.88,
+        "border_color": "#5D8CFF",
+        "border_width": 2,
+        "corner_radius": 18,
+        "shape_type": "rounded_rect",
+        "background_image": "",
+        "glass_enabled": true,
+        "glass_tint": "#DDEEFF",
+        "glass_opacity": 0.1,
+        "glass_highlight": true
+      },
+      "widgets": [
+        {
+          "type": "metric",
+          "id": "current_user",
+          "label": "Current User",
+          "source": "controlStateJson.current_user_id",
+          "fallback": "none",
+          "format": "plain",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "metric",
+          "id": "profile_loaded",
+          "label": "Profile Loaded",
+          "source": "controlStateJson.profile_loaded",
+          "fallback": "false",
+          "format": "plain",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "metric",
+          "id": "last_calibration",
+          "label": "Last Calibration",
+          "source": "controlStateJson.last_calibration_id",
+          "fallback": "none",
+          "format": "plain",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        }
+      ],
+      "card_policy": {
+        "allow_move": true,
+        "allow_resize": true,
+        "allow_remove": false,
+        "allow_collapse": true
+      }
+    },
+    {
+      "id": "user_actions_card",
+      "type": "actions",
+      "title": "User Actions",
+      "subtitle": "Load, list, and inspect profiles",
+      "required": true,
+      "locked": true,
+      "preset": "normal_card",
+      "position": {
+        "col": 5,
+        "row": 1,
+        "col_span": 4,
+        "row_span": 3
+      },
+      "shape": "rounded_rect",
+      "style": {
+        "background_color": "#321B2B",
+        "background_opacity": 0.88,
+        "border_color": "#FF6680",
+        "border_width": 2,
+        "corner_radius": 20,
+        "shape_type": "rounded_rect",
+        "background_image": "",
+        "glass_enabled": true,
+        "glass_tint": "#FFDDE8",
+        "glass_opacity": 0.12,
+        "glass_highlight": true
+      },
+      "widgets": [
+        {
+          "type": "button",
+          "id": "list_users",
+          "label": "List Users",
+          "action_id": "user.list",
+          "args": {},
+          "variant": "secondary",
+          "required": true,
+          "enabled_when": "always",
+          "confirm": false,
+          "style": {
+            "preset": "button_secondary"
+          }
+        },
+        {
+          "type": "button",
+          "id": "load_user",
+          "label": "Load User",
+          "action_id": "user.load",
+          "args": {},
+          "variant": "primary",
+          "required": true,
+          "enabled_when": "always",
+          "confirm": false,
+          "style": {
+            "preset": "button_primary"
+          }
+        },
+        {
+          "type": "button",
+          "id": "show_profile",
+          "label": "Show Profile",
+          "action_id": "user.show_profile",
+          "args": {},
+          "variant": "secondary",
+          "required": true,
+          "enabled_when": "always",
+          "confirm": false,
+          "style": {
+            "preset": "button_secondary"
+          }
+        }
+      ],
+      "card_policy": {
+        "allow_move": true,
+        "allow_resize": true,
+        "allow_remove": false,
+        "allow_collapse": true
+      }
+    },
+    {
+      "id": "user_profile_card",
+      "type": "profile",
+      "title": "Profile Detail",
+      "subtitle": "Training thresholds and preferred game",
+      "required": true,
+      "locked": true,
+      "preset": "normal_card",
+      "position": {
+        "col": 9,
+        "row": 1,
+        "col_span": 4,
+        "row_span": 3
+      },
+      "shape": "rounded_rect",
+      "style": {
+        "background_color": "#183326",
+        "background_opacity": 0.82,
+        "border_color": "#67E8A5",
+        "border_width": 2,
+        "corner_radius": 16,
+        "shape_type": "rounded_rect",
+        "background_image": "",
+        "glass_enabled": false,
+        "glass_tint": "#DDEEFF",
+        "glass_opacity": 0.1,
+        "glass_highlight": false
+      },
+      "widgets": [
+        {
+          "type": "metric",
+          "id": "attention_low",
+          "label": "Attention Low",
+          "source": "controlStateJson.attention_low_threshold",
+          "fallback": "n/a",
+          "format": "plain",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "metric",
+          "id": "attention_high",
+          "label": "Attention High",
+          "source": "controlStateJson.attention_high_threshold",
+          "fallback": "n/a",
+          "format": "plain",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "metric",
+          "id": "preferred_game",
+          "label": "Preferred Game",
+          "source": "controlStateJson.preferred_game_id",
+          "fallback": "n/a",
+          "format": "plain",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        }
+      ],
+      "card_policy": {
+        "allow_move": true,
+        "allow_resize": true,
+        "allow_remove": false,
+        "allow_collapse": true
+      }
+    },
+    {
+      "id": "user_notes_card",
+      "type": "decoration",
+      "title": "User Notes",
+      "subtitle": "Optional desktop note card",
+      "required": false,
+      "locked": false,
+      "preset": "normal_card",
+      "position": {
+        "col": 1,
+        "row": 4,
+        "col_span": 6,
+        "row_span": 3
+      },
+      "shape": "rounded_rect",
+      "style": {
+        "background_color": "#221A33",
+        "background_opacity": 0.74,
+        "border_color": "#B58CFF",
+        "border_width": 2,
+        "corner_radius": 24,
+        "shape_type": "rounded_rect",
+        "background_image": "",
+        "glass_enabled": true,
+        "glass_tint": "#E8D7FF",
+        "glass_opacity": 0.16,
+        "glass_highlight": true
+      },
+      "widgets": [
+        {
+          "type": "text",
+          "id": "note",
+          "label": "Note",
+          "source": "appState.user_note",
+          "fallback": "User page desktop pilot",
+          "format": "plain",
+          "unit": "",
+          "preset": "text_body",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "text",
+          "id": "policy",
+          "label": "Policy",
+          "source": "renderResourcesJson.task26_user_layout_status",
+          "fallback": "editable optional card",
+          "format": "plain",
+          "unit": "",
+          "preset": "text_body",
+          "style": {},
+          "visible_when": "always"
+        }
+      ],
+      "card_policy": {
+        "allow_move": true,
+        "allow_resize": true,
+        "allow_remove": true,
+        "allow_collapse": true
+      }
+    }
+  ]
+}

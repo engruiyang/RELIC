@@ -1,0 +1,300 @@
+{
+  "page_id": "report",
+  "title": "Report Desktop",
+  "subtitle": "TASK26G-3 Report desktop pilot",
+  "layout": {
+    "mode": "grid",
+    "columns": 12,
+    "rows": 8,
+    "gap": 8,
+    "padding": 8
+  },
+  "cards": [
+    {
+      "id": "report_actions_card",
+      "type": "actions",
+      "title": "Report Actions",
+      "subtitle": "Refresh and inspect sessions",
+      "required": true,
+      "locked": true,
+      "preset": "normal_card",
+      "position": {
+        "col": 1,
+        "row": 1,
+        "col_span": 4,
+        "row_span": 3
+      },
+      "shape": "rounded_rect",
+      "style": {
+        "background_color": "#321B2B",
+        "background_opacity": 0.88,
+        "border_color": "#FF6680",
+        "border_width": 2,
+        "corner_radius": 20,
+        "shape_type": "rounded_rect",
+        "background_image": "",
+        "glass_enabled": true,
+        "glass_tint": "#FFDDE8",
+        "glass_opacity": 0.12,
+        "glass_highlight": true
+      },
+      "widgets": [
+        {
+          "type": "button",
+          "id": "latest_report",
+          "label": "Latest Report",
+          "action_id": "report.latest",
+          "args": {},
+          "variant": "primary",
+          "required": true,
+          "enabled_when": "always",
+          "confirm": false,
+          "style": {
+            "preset": "button_primary"
+          }
+        },
+        {
+          "type": "button",
+          "id": "list_sessions",
+          "label": "List Sessions",
+          "action_id": "report.list_sessions",
+          "args": {},
+          "variant": "secondary",
+          "required": true,
+          "enabled_when": "always",
+          "confirm": false,
+          "style": {
+            "preset": "button_secondary"
+          }
+        },
+        {
+          "type": "button",
+          "id": "show_session",
+          "label": "Show Session",
+          "action_id": "report.show_session",
+          "args": {},
+          "variant": "secondary",
+          "required": false,
+          "enabled_when": "always",
+          "confirm": false,
+          "style": {
+            "preset": "button_secondary"
+          }
+        }
+      ],
+      "card_policy": {
+        "allow_move": true,
+        "allow_resize": true,
+        "allow_remove": false,
+        "allow_collapse": true
+      }
+    },
+    {
+      "id": "report_list_card",
+      "type": "report",
+      "title": "Session List",
+      "subtitle": "Available session reports",
+      "required": true,
+      "locked": true,
+      "preset": "normal_card",
+      "position": {
+        "col": 5,
+        "row": 1,
+        "col_span": 4,
+        "row_span": 3
+      },
+      "shape": "rounded_rect",
+      "style": {
+        "background_color": "#162235",
+        "background_opacity": 0.88,
+        "border_color": "#5D8CFF",
+        "border_width": 2,
+        "corner_radius": 18,
+        "shape_type": "rounded_rect",
+        "background_image": "",
+        "glass_enabled": true,
+        "glass_tint": "#DDEEFF",
+        "glass_opacity": 0.1,
+        "glass_highlight": true
+      },
+      "widgets": [
+        {
+          "type": "metric",
+          "id": "current_user",
+          "label": "Current User",
+          "source": "controlStateJson.current_user_id",
+          "fallback": "none",
+          "format": "plain",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "metric",
+          "id": "session_count",
+          "label": "Session Count",
+          "source": "sessionState.session_count",
+          "fallback": "0",
+          "format": "plain",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "metric",
+          "id": "latest_session",
+          "label": "Latest Session",
+          "source": "sessionState.current_session_id",
+          "fallback": "none",
+          "format": "plain",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        }
+      ],
+      "card_policy": {
+        "allow_move": true,
+        "allow_resize": true,
+        "allow_remove": false,
+        "allow_collapse": true
+      }
+    },
+    {
+      "id": "report_detail_card",
+      "type": "detail",
+      "title": "Report Detail",
+      "subtitle": "Current report selection",
+      "required": true,
+      "locked": true,
+      "preset": "normal_card",
+      "position": {
+        "col": 9,
+        "row": 1,
+        "col_span": 4,
+        "row_span": 3
+      },
+      "shape": "rounded_rect",
+      "style": {
+        "background_color": "#183326",
+        "background_opacity": 0.82,
+        "border_color": "#67E8A5",
+        "border_width": 2,
+        "corner_radius": 16,
+        "shape_type": "rounded_rect",
+        "background_image": "",
+        "glass_enabled": false,
+        "glass_tint": "#DDEEFF",
+        "glass_opacity": 0.1,
+        "glass_highlight": false
+      },
+      "widgets": [
+        {
+          "type": "metric",
+          "id": "latest_report_path",
+          "label": "Latest Report",
+          "source": "sessionState.latest_report_path",
+          "fallback": "n/a",
+          "format": "plain",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "metric",
+          "id": "score",
+          "label": "Score",
+          "source": "gameHudJson.score",
+          "fallback": "n/a",
+          "format": "plain",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "metric",
+          "id": "status",
+          "label": "Status",
+          "source": "sessionState.status",
+          "fallback": "n/a",
+          "format": "plain",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        }
+      ],
+      "card_policy": {
+        "allow_move": true,
+        "allow_resize": true,
+        "allow_remove": false,
+        "allow_collapse": true
+      }
+    },
+    {
+      "id": "report_notes_card",
+      "type": "decoration",
+      "title": "Report Notes",
+      "subtitle": "Optional report card",
+      "required": false,
+      "locked": false,
+      "preset": "normal_card",
+      "position": {
+        "col": 1,
+        "row": 4,
+        "col_span": 8,
+        "row_span": 3
+      },
+      "shape": "rounded_rect",
+      "style": {
+        "background_color": "#221A33",
+        "background_opacity": 0.74,
+        "border_color": "#B58CFF",
+        "border_width": 2,
+        "corner_radius": 24,
+        "shape_type": "rounded_rect",
+        "background_image": "",
+        "glass_enabled": true,
+        "glass_tint": "#E8D7FF",
+        "glass_opacity": 0.16,
+        "glass_highlight": true
+      },
+      "widgets": [
+        {
+          "type": "text",
+          "id": "note",
+          "label": "Note",
+          "source": "appState.report_note",
+          "fallback": "Reports stay preview-only in this pilot.",
+          "format": "plain",
+          "unit": "",
+          "preset": "text_body",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "text",
+          "id": "path",
+          "label": "Path",
+          "source": "sessionState.report_path",
+          "fallback": "n/a",
+          "format": "plain",
+          "unit": "",
+          "preset": "text_body",
+          "style": {},
+          "visible_when": "always"
+        }
+      ],
+      "card_policy": {
+        "allow_move": true,
+        "allow_resize": true,
+        "allow_remove": true,
+        "allow_collapse": true
+      }
+    }
+  ]
+}

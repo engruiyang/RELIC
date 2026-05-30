@@ -26,7 +26,20 @@
       "width": 388.0,
       "height": 287.5,
       "preset": "normal_card",
-      "style": {},
+      "shape": "rounded_rect",
+      "style": {
+        "background_color": "#4A1F5C",
+        "background_opacity": 0.62,
+        "border_color": "#FFCC00",
+        "border_width": 4,
+        "corner_radius": 28,
+        "shape_type": "rounded_rect",
+        "background_image": "file:assets/packs/default/images/ui/buttons/button_primary.png",
+        "glass_enabled": true,
+        "glass_tint": "#FFF2B8",
+        "glass_opacity": 0.22,
+        "glass_highlight": true
+      },
       "widgets": [
         {
           "id": "runtime_text",
@@ -87,7 +100,19 @@
       "width": 388.0,
       "height": 287.5,
       "preset": "danger_card",
-      "style": {},
+      "shape": "rounded_rect",
+      "style": {
+        "background_color": "#321B2B",
+        "background_opacity": 0.88,
+        "border_color": "#FF6680",
+        "border_width": 2,
+        "corner_radius": 20,
+        "shape_type": "rounded_rect",
+        "glass_enabled": true,
+        "glass_tint": "#FFDDE8",
+        "glass_opacity": 0.12,
+        "glass_highlight": true
+      },
       "widgets": [
         {
           "id": "refresh_btn",
@@ -137,7 +162,19 @@
       "width": 586.0,
       "height": 287.5,
       "preset": "glass_card",
-      "style": {},
+      "shape": "rounded_rect",
+      "style": {
+        "background_color": "#183326",
+        "background_opacity": 0.82,
+        "border_color": "#67E8A5",
+        "border_width": 1,
+        "corner_radius": 16,
+        "shape_type": "rounded_rect",
+        "glass_enabled": false,
+        "glass_tint": "#E6FFF2",
+        "glass_opacity": 0.0,
+        "glass_highlight": false
+      },
       "widgets": [
         {
           "id": "session_active",
@@ -193,12 +230,24 @@
       "subtitle": "Brand and visual",
       "required": false,
       "locked": false,
-      "x": 802.0,
-      "y": 10.0,
+      "x": 505.0,
+      "y": 108.5,
       "width": 388.0,
-      "height": 583.0,
+      "height": 189.0,
       "preset": "image_card",
-      "style": {},
+      "shape": "image_frame",
+      "style": {
+        "background_color": "#241E36",
+        "background_opacity": 0.78,
+        "border_color": "#C4B5FD",
+        "border_width": 1,
+        "corner_radius": 24,
+        "shape_type": "pill",
+        "glass_enabled": true,
+        "glass_tint": "#F2ECFF",
+        "glass_opacity": 0.16,
+        "glass_highlight": true
+      },
       "widgets": [
         {
           "id": "identity_image",

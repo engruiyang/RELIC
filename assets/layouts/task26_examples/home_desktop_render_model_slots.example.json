@@ -80,10 +80,10 @@
       "subtitle": "Brand and visual",
       "required": false,
       "locked": false,
-      "x": 802.0,
-      "y": 10.0,
+      "x": 505.0,
+      "y": 108.5,
       "width": 388.0,
-      "height": 583.0,
+      "height": 189.0,
       "widget_count": 2,
       "action_ids": [],
       "source_roots": [

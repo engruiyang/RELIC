@@ -25,7 +25,19 @@
         "row_span": 3
       },
       "shape": "rounded_rect",
-      "style": {},
+      "style": {
+        "background_color": "#4A1F5C",
+        "background_opacity": 0.62,
+        "border_color": "#FFCC00",
+        "border_width": 4,
+        "corner_radius": 28,
+        "shape_type": "rounded_rect",
+        "background_image": "file:assets/packs/default/images/ui/buttons/button_primary.png",
+        "glass_enabled": true,
+        "glass_tint": "#FFF2B8",
+        "glass_opacity": 0.22,
+        "glass_highlight": true
+      },
       "widgets": [
         {
           "type": "text",
@@ -86,7 +98,18 @@
         "row_span": 3
       },
       "shape": "rounded_rect",
-      "style": {},
+      "style": {
+        "background_color": "#321B2B",
+        "background_opacity": 0.88,
+        "border_color": "#FF6680",
+        "border_width": 2,
+        "corner_radius": 20,
+        "shape_type": "rounded_rect",
+        "glass_enabled": true,
+        "glass_tint": "#FFDDE8",
+        "glass_opacity": 0.12,
+        "glass_highlight": true
+      },
       "widgets": [
         {
           "type": "button",
@@ -125,67 +148,6 @@
       }
     },
     {
-      "id": "recent_session_card",
-      "type": "session",
-      "title": "Recent Session",
-      "subtitle": "Session summary",
-      "required": false,
-      "locked": false,
-      "preset": "glass_card",
-      "position": {
-        "col": 1,
-        "row": 4,
-        "col_span": 6,
-        "row_span": 3
-      },
-      "shape": "rounded_rect",
-      "style": {},
-      "widgets": [
-        {
-          "type": "metric",
-          "id": "session_active",
-          "label": "Active",
-          "source": "sessionState.session_active",
-          "fallback": "false",
-          "format": "bool",
-          "unit": "",
-          "preset": "metric_default",
-          "style": {},
-          "visible_when": "always"
-        },
-        {
-          "type": "metric",
-          "id": "session_id",
-          "label": "Session ID",
-          "source": "sessionState.current_session_id",
-          "fallback": "none",
-          "format": "plain",
-          "unit": "",
-          "preset": "metric_default",
-          "style": {},
-          "visible_when": "always"
-        },
-        {
-          "type": "hud",
-          "id": "hud_inline",
-          "label": "HUD",
-          "source": "gameHudJson",
-          "fallback": "{}",
-          "format": "object",
-          "unit": "",
-          "preset": "hud_compact",
-          "style": {},
-          "visible_when": "always"
-        }
-      ],
-      "card_policy": {
-        "allow_move": true,
-        "allow_resize": true,
-        "allow_remove": true,
-        "allow_collapse": true
-      }
-    },
-    {
       "id": "relic_identity_card",
       "type": "identity",
       "title": "RELIC Identity",
@@ -194,13 +156,24 @@
       "locked": false,
       "preset": "image_card",
       "position": {
-        "col": 9,
-        "row": 1,
+        "col": 6,
+        "row": 2,
         "col_span": 4,
-        "row_span": 6
+        "row_span": 2
       },
       "shape": "image_frame",
-      "style": {},
+      "style": {
+        "background_color": "#241E36",
+        "background_opacity": 0.78,
+        "border_color": "#C4B5FD",
+        "border_width": 1,
+        "corner_radius": 24,
+        "shape_type": "pill",
+        "glass_enabled": true,
+        "glass_tint": "#F2ECFF",
+        "glass_opacity": 0.16,
+        "glass_highlight": true
+      },
       "widgets": [
         {
           "type": "image",
