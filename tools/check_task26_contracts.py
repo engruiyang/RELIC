@@ -23,11 +23,13 @@ from gui.desktop_model import (  # noqa: E402
     build_training_card_slots,
     build_training_card_slots_injection_payload,
     build_training_contract_summary,
+    build_task26_page_layout_preview_payload,
     build_training_render_model,
     diff_home_slot_injection_contract,
     expected_home_slot_injection_fields,
     expected_home_slot_qml_properties,
     validate_home_slot_injection_payload,
+    validate_task26_fixed_card_policy,
     validate_training_slot_injection_payload,
 )
 from gui.desktop_schema import (  # noqa: E402
@@ -75,15 +77,36 @@ def run(strict: bool = False, show_diff: bool = False) -> None:
     desktop = loaded["desktop.example.json"]
     home_page = loaded["home_page.desktop_demo.json"]
     training_page = loaded["training_page.desktop_demo.json"]
+    validate_task26_fixed_card_policy(ROOT)
+    optional_page_names = [
+        "user_page.desktop_demo.json",
+        "calibration_page.desktop_demo.json",
+        "report_page.desktop_demo.json",
+        "diagnostics_page.desktop_demo.json",
+    ]
+    extra_pages = [loaded[name] for name in optional_page_names if name in loaded]
 
     bindings = load_pipeline_bindings(ROOT / "assets/layouts/task26_examples/pipeline_ui_bindings.example.json")
-    inventory = collect_cards_fields_buttons_from_pages([home_page, training_page], desktop)
+    inventory = collect_cards_fields_buttons_from_pages([home_page, training_page, *extra_pages], desktop)
     validate_pipeline_coverage(bindings, inventory, strict=strict)
     validate_safe_stop_accessible(inventory)
 
     validate_page_config(training_page)
     validate_action_ids(collect_action_ids_from_obj(training_page))
     validate_source_roots(collect_sources_from_obj(training_page))
+    for page_id, json_name in [
+        ("user", "user_page.desktop_demo.json"),
+        ("calibration", "calibration_page.desktop_demo.json"),
+        ("report", "report_page.desktop_demo.json"),
+        ("diagnostics", "diagnostics_page.desktop_demo.json"),
+    ]:
+        page_config = loaded.get(json_name)
+        if page_config is None:
+            continue
+        validate_page_config(page_config)
+        validate_action_ids(collect_action_ids_from_obj(page_config))
+        validate_source_roots(collect_sources_from_obj(page_config))
+        build_task26_page_layout_preview_payload(ROOT, page_id)
     build_training_render_model(ROOT)
     training_summary = build_training_contract_summary(ROOT)
     required_training_cards = {
