@@ -16,7 +16,18 @@ from core.resource_managers import build_render_resource_bundle
 from storage.sqlite_store import SqliteStore
 from .command_registry import build_page_command_manifest
 from game.game_client_registry import create_game_client
-from .desktop_model import build_home_slots_render_resource, build_training_render_resource, build_training_slots_render_resource
+from .desktop_model import (
+    build_calibration_layout_render_resource,
+    build_diagnostics_layout_render_resource,
+    build_home_layout_render_resource,
+    build_home_slots_render_resource,
+    build_report_layout_render_resource,
+    build_task26_fixed_card_render_resource,
+    build_training_layout_render_resource,
+    build_training_render_resource,
+    build_training_slots_render_resource,
+    build_user_layout_render_resource,
+)
 
 
 class GuiFacade:
@@ -305,6 +316,72 @@ class GuiFacade:
                 "task26_home_slots_error": str(exc),
             }
 
+    def _build_task26_home_layout_resource(self) -> dict[str, Any]:
+        try:
+            return build_home_layout_render_resource(Path("."))
+        except Exception as exc:
+            return {
+                "task26_home_layout_payload": {},
+                "task26_home_layout_status": "missing",
+                "task26_home_layout_source": "assets/layouts/task26_examples/home_page.desktop_demo.json",
+                "task26_home_layout_error": str(exc),
+            }
+
+    def _build_task26_training_layout_resource(self) -> dict[str, Any]:
+        try:
+            return build_training_layout_render_resource(Path("."))
+        except Exception as exc:
+            return {
+                "task26_training_layout_payload": {},
+                "task26_training_layout_status": "missing",
+                "task26_training_layout_source": "assets/layouts/task26_examples/training_page.desktop_demo.json",
+                "task26_training_layout_error": str(exc),
+            }
+
+    def _build_task26_user_layout_resource(self) -> dict[str, Any]:
+        try:
+            return build_user_layout_render_resource(Path("."))
+        except Exception as exc:
+            return {
+                "task26_user_layout_payload": {},
+                "task26_user_layout_status": "missing",
+                "task26_user_layout_source": "assets/layouts/task26_examples/user_page.desktop_demo.json",
+                "task26_user_layout_error": str(exc),
+            }
+
+    def _build_task26_calibration_layout_resource(self) -> dict[str, Any]:
+        try:
+            return build_calibration_layout_render_resource(Path("."))
+        except Exception as exc:
+            return {
+                "task26_calibration_layout_payload": {},
+                "task26_calibration_layout_status": "missing",
+                "task26_calibration_layout_source": "assets/layouts/task26_examples/calibration_page.desktop_demo.json",
+                "task26_calibration_layout_error": str(exc),
+            }
+
+    def _build_task26_report_layout_resource(self) -> dict[str, Any]:
+        try:
+            return build_report_layout_render_resource(Path("."))
+        except Exception as exc:
+            return {
+                "task26_report_layout_payload": {},
+                "task26_report_layout_status": "missing",
+                "task26_report_layout_source": "assets/layouts/task26_examples/report_page.desktop_demo.json",
+                "task26_report_layout_error": str(exc),
+            }
+
+    def _build_task26_diagnostics_layout_resource(self) -> dict[str, Any]:
+        try:
+            return build_diagnostics_layout_render_resource(Path("."))
+        except Exception as exc:
+            return {
+                "task26_diagnostics_layout_payload": {},
+                "task26_diagnostics_layout_status": "missing",
+                "task26_diagnostics_layout_source": "assets/layouts/task26_examples/diagnostics_page.desktop_demo.json",
+                "task26_diagnostics_layout_error": str(exc),
+            }
+
     def _build_task26_training_resource(self) -> dict[str, Any]:
         try:
             return build_training_render_resource(Path("."))
@@ -327,11 +404,30 @@ class GuiFacade:
                 "task26_training_slots_error": str(exc),
             }
 
+
+    def _build_task26_fixed_card_resource(self) -> dict[str, Any]:
+        try:
+            return build_task26_fixed_card_render_resource(Path("."))
+        except Exception as exc:
+            return {
+                "task26_fixed_card_registry": {},
+                "task26_fixed_card_status": "missing",
+                "task26_fixed_card_source": "assets/layouts/task26_examples/*.desktop_demo.json",
+                "task26_fixed_card_error": str(exc),
+            }
+
     def get_render_resources(self) -> dict[str, Any]:
         resources = deepcopy(self._render_resources)
         resources.update(self._build_task26_home_slots_resource())
+        resources.update(self._build_task26_home_layout_resource())
         resources.update(self._build_task26_training_resource())
         resources.update(self._build_task26_training_slots_resource())
+        resources.update(self._build_task26_training_layout_resource())
+        resources.update(self._build_task26_user_layout_resource())
+        resources.update(self._build_task26_calibration_layout_resource())
+        resources.update(self._build_task26_report_layout_resource())
+        resources.update(self._build_task26_diagnostics_layout_resource())
+        resources.update(self._build_task26_fixed_card_resource())
         return resources
 
 

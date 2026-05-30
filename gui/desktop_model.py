@@ -151,6 +151,7 @@ def build_page_render_model(page_config: dict, *, page_width: int = 1200, page_h
                 "width": width,
                 "height": height,
                 "preset": card.get("preset", ""),
+                "shape": card.get("shape", ""),
                 "style": card.get("style", {}),
                 "widgets": widgets_out,
             }
@@ -630,6 +631,451 @@ def validate_home_slot_injection_payload(payload: dict) -> None:
             raise ValueError(f"{key} must be int")
 
     # Unknown extra fields are intentionally allowed in TASK26E-3B.
+
+
+
+LAYOUT_PREVIEW_MAX_CARDS = 7
+
+
+def _join_text_list(values: Any) -> str:
+    if isinstance(values, list):
+        items = [str(v) for v in values if str(v)]
+        return ", ".join(items) if items else "n/a"
+    return "n/a"
+
+
+def _style_text(style: dict[str, Any], keys: tuple[str, ...], fallback: str) -> str:
+    for key in keys:
+        value = style.get(key)
+        if isinstance(value, str) and value:
+            return value
+    return fallback
+
+
+def _style_number(style: dict[str, Any], keys: tuple[str, ...], fallback: float) -> float:
+    for key in keys:
+        value = style.get(key)
+        if isinstance(value, (int, float)):
+            return float(value)
+        if isinstance(value, str):
+            try:
+                return float(value)
+            except ValueError:
+                pass
+    return float(fallback)
+
+
+def _style_bool(style: dict[str, Any], keys: tuple[str, ...], fallback: bool) -> bool:
+    for key in keys:
+        value = style.get(key)
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            lowered = value.strip().lower()
+            if lowered in {"true", "yes", "1", "on"}:
+                return True
+            if lowered in {"false", "no", "0", "off"}:
+                return False
+    return bool(fallback)
+
+
+def _card_visual_style(card: dict[str, Any]) -> dict[str, Any]:
+    style = card.get("style") if isinstance(card.get("style"), dict) else {}
+    return {
+        "background_color": _style_text(style, ("background_color", "background", "color"), "#151B24"),
+        "background_opacity": _style_number(style, ("background_opacity", "opacity"), 0.92),
+        "border_color": _style_text(style, ("border_color", "border"), "#2B3A4C"),
+        "border_width": int(_style_number(style, ("border_width",), 1)),
+        "radius_value": int(_style_number(style, ("radius_value", "corner_radius", "radius"), 14)),
+        "shape_type": _style_text(style, ("shape_type", "shape"), str(card.get("shape") or "rounded_rect")),
+        "background_image": _style_text(style, ("background_image", "image"), ""),
+        "glass_enabled": _style_bool(style, ("glass_enabled", "glass"), False),
+        "glass_tint_color": _style_text(style, ("glass_tint_color", "glass_tint"), "#DDEEFF"),
+        "glass_opacity": _style_number(style, ("glass_opacity",), 0.0),
+        "glass_highlight": _style_bool(style, ("glass_highlight",), False),
+    }
+
+
+def build_desktop_layout_preview_payload(model: dict, *, max_cards: int = LAYOUT_PREVIEW_MAX_CARDS) -> dict:
+    if not isinstance(max_cards, int) or max_cards <= 0:
+        raise ValueError("max_cards must be positive integer")
+
+    layout = model.get("layout")
+    if not isinstance(layout, dict):
+        raise ValueError("render model layout must be object")
+
+    cards = model.get("cards")
+    if not isinstance(cards, list):
+        raise ValueError("render model cards must be list")
+
+    payload: dict[str, Any] = {
+        "page_id": str(model.get("page_id", "")),
+        "page_width": float(layout.get("page_width", 1200) or 1200),
+        "page_height": float(layout.get("page_height", 800) or 800),
+        "card_count": min(len(cards), max_cards),
+        "max_cards": max_cards,
+    }
+
+    for idx in range(1, max_cards + 1):
+        card = cards[idx - 1] if idx - 1 < len(cards) and isinstance(cards[idx - 1], dict) else {}
+        widgets = card.get("widgets") if isinstance(card.get("widgets"), list) else []
+        typed_widgets = [w for w in widgets if isinstance(w, dict)]
+        action_ids = sorted({w.get("action_id") for w in typed_widgets if isinstance(w.get("action_id"), str) and w.get("action_id")})
+        source_roots = sorted({str(w.get("source")).split(".", 1)[0] for w in typed_widgets if isinstance(w.get("source"), str) and w.get("source")})
+        first_widget_labels = _widget_labels(typed_widgets)
+        card_id = str(card.get("id", "")) if card else ""
+        card_type = str(card.get("type", "")) if card else ""
+        placeholder, role = _card_placeholder_role(card_id, card_type, typed_widgets) if card else (False, "")
+
+        payload[f"card{idx}_visible"] = bool(card)
+        payload[f"card{idx}_id"] = card_id
+        payload[f"card{idx}_type"] = card_type
+        payload[f"card{idx}_title"] = str(card.get("title", "")) if card else ""
+        payload[f"card{idx}_subtitle"] = str(card.get("subtitle", "")) if card else ""
+        payload[f"card{idx}_x"] = float(card.get("x", 0) or 0) if card else 0.0
+        payload[f"card{idx}_y"] = float(card.get("y", 0) or 0) if card else 0.0
+        payload[f"card{idx}_width"] = float(card.get("width", 0) or 0) if card else 0.0
+        payload[f"card{idx}_height"] = float(card.get("height", 0) or 0) if card else 0.0
+        payload[f"card{idx}_required"] = bool(card.get("required", False)) if card else False
+        payload[f"card{idx}_locked"] = bool(card.get("locked", False)) if card else False
+        payload[f"card{idx}_widget_count"] = len(typed_widgets)
+        payload[f"card{idx}_action_ids_text"] = _join_text_list(action_ids)
+        payload[f"card{idx}_source_roots_text"] = _join_text_list(source_roots)
+        payload[f"card{idx}_first_widget_labels_text"] = _join_text_list(first_widget_labels)
+        payload[f"card{idx}_placeholder"] = bool(placeholder)
+        payload[f"card{idx}_role"] = str(role)
+
+        visual_style = _card_visual_style(card) if card else _card_visual_style({})
+        payload[f"card{idx}_background_color"] = visual_style["background_color"]
+        payload[f"card{idx}_background_opacity"] = visual_style["background_opacity"]
+        payload[f"card{idx}_border_color"] = visual_style["border_color"]
+        payload[f"card{idx}_border_width"] = visual_style["border_width"]
+        payload[f"card{idx}_radius_value"] = visual_style["radius_value"]
+        payload[f"card{idx}_shape_type"] = visual_style["shape_type"]
+        payload[f"card{idx}_background_image"] = visual_style["background_image"]
+        payload[f"card{idx}_glass_enabled"] = visual_style["glass_enabled"]
+        payload[f"card{idx}_glass_tint_color"] = visual_style["glass_tint_color"]
+        payload[f"card{idx}_glass_opacity"] = visual_style["glass_opacity"]
+        payload[f"card{idx}_glass_highlight"] = visual_style["glass_highlight"]
+
+    return payload
+
+
+def validate_desktop_layout_preview_payload(payload: dict, *, max_cards: int = LAYOUT_PREVIEW_MAX_CARDS) -> None:
+    if not isinstance(payload, dict):
+        raise ValueError("layout preview payload must be dict")
+    for key in ("page_id",):
+        if not isinstance(payload.get(key), str):
+            raise ValueError(f"{key} must be string")
+    for key in ("page_width", "page_height"):
+        if not isinstance(payload.get(key), (int, float)) or float(payload.get(key)) <= 0:
+            raise ValueError(f"{key} must be positive number")
+    for key in ("card_count", "max_cards"):
+        if not isinstance(payload.get(key), int):
+            raise ValueError(f"{key} must be int")
+
+    for idx in range(1, max_cards + 1):
+        for suffix in ("visible", "required", "locked", "placeholder"):
+            key = f"card{idx}_{suffix}"
+            if not isinstance(payload.get(key), bool):
+                raise ValueError(f"{key} must be bool")
+        for suffix in ("id", "type", "title", "subtitle", "action_ids_text", "source_roots_text", "first_widget_labels_text", "role", "background_color", "border_color", "shape_type", "background_image", "glass_tint_color"):
+            key = f"card{idx}_{suffix}"
+            if not isinstance(payload.get(key), str):
+                raise ValueError(f"{key} must be string")
+        for suffix in ("x", "y", "width", "height", "background_opacity", "border_width", "radius_value", "glass_opacity"):
+            key = f"card{idx}_{suffix}"
+            if not isinstance(payload.get(key), (int, float)):
+                raise ValueError(f"{key} must be number")
+        key = f"card{idx}_widget_count"
+        if not isinstance(payload.get(key), int):
+            raise ValueError(f"{key} must be int")
+        for suffix in ("glass_enabled", "glass_highlight"):
+            key = f"card{idx}_{suffix}"
+            if not isinstance(payload.get(key), bool):
+                raise ValueError(f"{key} must be bool")
+
+
+def build_home_layout_preview_payload(example_root: Path) -> dict:
+    payload = build_desktop_layout_preview_payload(build_home_render_model(example_root), max_cards=4)
+    validate_desktop_layout_preview_payload(payload, max_cards=4)
+    return payload
+
+
+def build_training_layout_preview_payload(example_root: Path) -> dict:
+    payload = build_desktop_layout_preview_payload(build_training_render_model(example_root), max_cards=7)
+    validate_desktop_layout_preview_payload(payload, max_cards=7)
+    return payload
+
+
+def build_home_layout_render_resource(example_root: Path) -> dict:
+    return {
+        "task26_home_layout_payload": build_home_layout_preview_payload(example_root),
+        "task26_home_layout_status": "ok",
+        "task26_home_layout_source": "assets/layouts/task26_examples/home_page.desktop_demo.json",
+    }
+
+
+def build_training_layout_render_resource(example_root: Path) -> dict:
+    return {
+        "task26_training_layout_payload": build_training_layout_preview_payload(example_root),
+        "task26_training_layout_status": "ok",
+        "task26_training_layout_source": "assets/layouts/task26_examples/training_page.desktop_demo.json",
+    }
+
+
+
+TASK26_PAGE_DEMO_FILENAMES: dict[str, str] = {
+    "home": "home_page.desktop_demo.json",
+    "training": "training_page.desktop_demo.json",
+    "user": "user_page.desktop_demo.json",
+    "calibration": "calibration_page.desktop_demo.json",
+    "report": "report_page.desktop_demo.json",
+    "diagnostics": "diagnostics_page.desktop_demo.json",
+}
+
+TASK26_PAGE_LAYOUT_RESOURCE_KEYS: dict[str, str] = {
+    "home": "task26_home_layout",
+    "training": "task26_training_layout",
+    "user": "task26_user_layout",
+    "calibration": "task26_calibration_layout",
+    "report": "task26_report_layout",
+    "diagnostics": "task26_diagnostics_layout",
+}
+
+
+def task26_page_demo_path(example_root: Path, page_id: str) -> Path:
+    page_id = str(page_id or "").strip()
+    filename = TASK26_PAGE_DEMO_FILENAMES.get(page_id)
+    if not filename:
+        raise ValueError(f"unsupported TASK26 page_id: {page_id}")
+    return example_root / "assets" / "layouts" / "task26_examples" / filename
+
+
+def build_task26_page_render_model(example_root: Path, page_id: str) -> dict:
+    page_path = task26_page_demo_path(example_root, page_id)
+    with page_path.open("r", encoding="utf-8") as f:
+        config = json.load(f)
+    if not isinstance(config, dict):
+        raise ValueError(f"{page_path.name} must be object")
+    return build_page_render_model(config)
+
+
+def build_task26_page_layout_preview_payload(example_root: Path, page_id: str, *, max_cards: int = 7) -> dict:
+    payload = build_desktop_layout_preview_payload(
+        build_task26_page_render_model(example_root, page_id),
+        max_cards=max_cards,
+    )
+    validate_desktop_layout_preview_payload(payload, max_cards=max_cards)
+    return payload
+
+
+def build_task26_page_layout_render_resource(example_root: Path, page_id: str, *, max_cards: int = 7) -> dict:
+    resource_key = TASK26_PAGE_LAYOUT_RESOURCE_KEYS.get(page_id)
+    if not resource_key:
+        raise ValueError(f"unsupported TASK26 layout resource page_id: {page_id}")
+    return {
+        f"{resource_key}_payload": build_task26_page_layout_preview_payload(example_root, page_id, max_cards=max_cards),
+        f"{resource_key}_status": "ok",
+        f"{resource_key}_source": f"assets/layouts/task26_examples/{TASK26_PAGE_DEMO_FILENAMES[page_id]}",
+    }
+
+
+def build_user_layout_render_resource(example_root: Path) -> dict:
+    return build_task26_page_layout_render_resource(example_root, "user", max_cards=7)
+
+
+def build_calibration_layout_render_resource(example_root: Path) -> dict:
+    return build_task26_page_layout_render_resource(example_root, "calibration", max_cards=7)
+
+
+def build_report_layout_render_resource(example_root: Path) -> dict:
+    return build_task26_page_layout_render_resource(example_root, "report", max_cards=7)
+
+
+def build_diagnostics_layout_render_resource(example_root: Path) -> dict:
+    return build_task26_page_layout_render_resource(example_root, "diagnostics", max_cards=7)
+
+
+FIXED_CARD_REQUIRED_POLICY_KEYS: tuple[str, ...] = (
+    "allow_move",
+    "allow_resize",
+    "allow_remove",
+    "allow_collapse",
+)
+
+
+def _as_policy(card: dict[str, Any], *, page_id: str) -> dict[str, Any]:
+    card_id = str(card.get("id") or "")
+    policy = card.get("card_policy")
+    if not isinstance(policy, dict):
+        raise ValueError(f"{page_id}:{card_id}: card_policy must be object")
+    for key in FIXED_CARD_REQUIRED_POLICY_KEYS:
+        if key not in policy:
+            raise ValueError(f"{page_id}:{card_id}: card_policy missing {key}")
+        if not isinstance(policy.get(key), bool):
+            raise ValueError(f"{page_id}:{card_id}: card_policy.{key} must be bool")
+    return policy
+
+
+def _card_action_ids(card: dict[str, Any]) -> set[str]:
+    out: set[str] = set()
+    widgets = card.get("widgets") if isinstance(card.get("widgets"), list) else []
+    for widget in widgets:
+        if not isinstance(widget, dict):
+            continue
+        action_id = widget.get("action_id")
+        if isinstance(action_id, str) and action_id:
+            out.add(action_id)
+    return out
+
+
+def _card_has_required_widget(card: dict[str, Any]) -> bool:
+    widgets = card.get("widgets") if isinstance(card.get("widgets"), list) else []
+    return any(isinstance(widget, dict) and bool(widget.get("required", False)) for widget in widgets)
+
+
+def _fixed_card_reasons(card: dict[str, Any]) -> list[str]:
+    reasons: list[str] = []
+    if bool(card.get("required", False)):
+        reasons.append("required_card")
+    if bool(card.get("locked", False)):
+        reasons.append("locked_card")
+    if _card_has_required_widget(card):
+        reasons.append("required_widget")
+    action_ids = _card_action_ids(card)
+    if "live.safe_stop" in action_ids:
+        reasons.append("safe_stop_action")
+    return sorted(set(reasons))
+
+
+def is_task26_fixed_card(card: dict[str, Any]) -> bool:
+    return bool(_fixed_card_reasons(card))
+
+
+def validate_task26_page_fixed_card_policy(page_config: dict[str, Any]) -> None:
+    page_id = str(page_config.get("page_id") or "unknown")
+    cards = page_config.get("cards")
+    if not isinstance(cards, list) or not cards:
+        raise ValueError(f"{page_id}: cards must be non-empty list")
+
+    seen: set[str] = set()
+    fixed_count = 0
+    for card in cards:
+        if not isinstance(card, dict):
+            raise ValueError(f"{page_id}: card must be object")
+        card_id = str(card.get("id") or "")
+        if not card_id:
+            raise ValueError(f"{page_id}: card id is required")
+        if card_id in seen:
+            raise ValueError(f"{page_id}:{card_id}: duplicate card id")
+        seen.add(card_id)
+
+        policy = _as_policy(card, page_id=page_id)
+        reasons = _fixed_card_reasons(card)
+        fixed = bool(reasons)
+        if fixed:
+            fixed_count += 1
+            if card.get("required") is not True:
+                raise ValueError(f"{page_id}:{card_id}: fixed card must have required=true")
+            if card.get("locked") is not True:
+                raise ValueError(f"{page_id}:{card_id}: fixed card must have locked=true")
+            if policy.get("allow_remove") is not False:
+                raise ValueError(f"{page_id}:{card_id}: fixed card cannot allow_remove")
+        else:
+            if card.get("required") is True or card.get("locked") is True:
+                raise ValueError(f"{page_id}:{card_id}: optional card cannot be required/locked")
+            if policy.get("allow_remove") is not True:
+                raise ValueError(f"{page_id}:{card_id}: optional card must allow_remove")
+
+    if fixed_count <= 0:
+        raise ValueError(f"{page_id}: at least one fixed card is required")
+
+
+def build_task26_fixed_card_registry_from_configs(page_configs: list[dict[str, Any]]) -> dict[str, Any]:
+    pages: dict[str, Any] = {}
+    total_fixed = 0
+    total_optional = 0
+    forbidden_removal: list[str] = []
+
+    for page in page_configs:
+        page_id = str(page.get("page_id") or "unknown")
+        validate_task26_page_fixed_card_policy(page)
+        page_cards: list[dict[str, Any]] = []
+        fixed_card_ids: list[str] = []
+        optional_card_ids: list[str] = []
+        cards = page.get("cards") if isinstance(page.get("cards"), list) else []
+        for card in cards:
+            if not isinstance(card, dict):
+                continue
+            card_id = str(card.get("id") or "")
+            policy = _as_policy(card, page_id=page_id)
+            action_ids = sorted(_card_action_ids(card))
+            reasons = _fixed_card_reasons(card)
+            fixed = bool(reasons)
+            if fixed:
+                fixed_card_ids.append(card_id)
+                forbidden_removal.append(f"{page_id}:{card_id}")
+                total_fixed += 1
+            else:
+                optional_card_ids.append(card_id)
+                total_optional += 1
+            page_cards.append(
+                {
+                    "card_id": card_id,
+                    "fixed": fixed,
+                    "reasons": reasons,
+                    "required": bool(card.get("required", False)),
+                    "locked": bool(card.get("locked", False)),
+                    "allow_move": bool(policy.get("allow_move", False)),
+                    "allow_resize": bool(policy.get("allow_resize", False)),
+                    "allow_remove": bool(policy.get("allow_remove", False)),
+                    "allow_collapse": bool(policy.get("allow_collapse", False)),
+                    "action_ids": action_ids,
+                }
+            )
+        pages[page_id] = {
+            "fixed_card_ids": fixed_card_ids,
+            "optional_card_ids": optional_card_ids,
+            "fixed_count": len(fixed_card_ids),
+            "optional_count": len(optional_card_ids),
+            "cards": page_cards,
+        }
+
+    return {
+        "version": "task26.fixed_cards.v1",
+        "pages": pages,
+        "fixed_card_count": total_fixed,
+        "optional_card_count": total_optional,
+        "forbidden_removal_card_refs": sorted(forbidden_removal),
+    }
+
+
+def _load_task26_page_config(example_root: Path, page_id: str) -> dict[str, Any]:
+    page_path = task26_page_demo_path(example_root, page_id)
+    with page_path.open("r", encoding="utf-8") as f:
+        data = json.load(f)
+    if not isinstance(data, dict):
+        raise ValueError(f"{page_path.name} must be object")
+    return data
+
+
+def build_task26_fixed_card_registry(example_root: Path, *, page_ids: list[str] | None = None) -> dict[str, Any]:
+    page_ids = page_ids or list(TASK26_PAGE_DEMO_FILENAMES.keys())
+    page_configs = [_load_task26_page_config(example_root, page_id) for page_id in page_ids]
+    return build_task26_fixed_card_registry_from_configs(page_configs)
+
+
+def validate_task26_fixed_card_policy(example_root: Path, *, page_ids: list[str] | None = None) -> None:
+    build_task26_fixed_card_registry(example_root, page_ids=page_ids)
+
+
+def build_task26_fixed_card_render_resource(example_root: Path) -> dict[str, Any]:
+    return {
+        "task26_fixed_card_registry": build_task26_fixed_card_registry(example_root),
+        "task26_fixed_card_status": "ok",
+        "task26_fixed_card_source": "assets/layouts/task26_examples/*.desktop_demo.json",
+    }
 
 
 def write_render_model(model: dict, output_path: Path) -> None:

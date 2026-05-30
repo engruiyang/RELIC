@@ -23,6 +23,9 @@ def get_command_registry_action_ids() -> set[str]:
     action_ids: set[str] = set()
     for commands in pages.values():
         for cmd in commands:
+            command_id = cmd.get("command_id")
+            if isinstance(command_id, str) and command_id:
+                action_ids.add(command_id)
             native = cmd.get("native_action_id")
             if isinstance(native, str) and native:
                 action_ids.add(native)
