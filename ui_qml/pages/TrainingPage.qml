@@ -1,4 +1,4 @@
-﻿import QtQuick
+import QtQuick
 import QtQuick.Controls
 import "../components"
 
@@ -494,6 +494,14 @@ Item {
                     previewSubtitle: "style-capable training card layout"
                     payloadStatusText: trainingPage.task26TrainingLayoutStatus()
                     payloadSourceText: trainingPage.task26TrainingLayoutSource()
+                    guiBridge: typeof guiBridge === "undefined" ? null : guiBridge
+                    appStateObj: trainingPage.appStateObj
+                    runtimeSnapshotObj: trainingPage.runtimeObj
+                    sessionStateObj: trainingPage.controlStateObj
+                    controlStateObj: trainingPage.controlStateObj
+                    gameHudObj: trainingPage.gameHudObj
+                    gameViewObj: trainingPage.gameViewObj
+                    renderResourcesObj: trainingPage.renderResourcesObj
                 }
             }
 

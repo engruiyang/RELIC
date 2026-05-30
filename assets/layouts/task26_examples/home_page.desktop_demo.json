@@ -148,6 +148,78 @@
       }
     },
     {
+      "id": "recent_session_card",
+      "type": "session",
+      "title": "Recent Session",
+      "subtitle": "Session summary",
+      "required": false,
+      "locked": false,
+      "preset": "glass_card",
+      "position": {
+        "col": 1,
+        "row": 4,
+        "col_span": 6,
+        "row_span": 3
+      },
+      "shape": "rounded_rect",
+      "style": {
+        "background_color": "#183326",
+        "background_opacity": 0.82,
+        "border_color": "#67E8A5",
+        "border_width": 1,
+        "corner_radius": 16,
+        "shape_type": "rounded_rect",
+        "glass_enabled": false,
+        "glass_tint": "#E6FFF2",
+        "glass_opacity": 0.0,
+        "glass_highlight": false
+      },
+      "widgets": [
+        {
+          "type": "metric",
+          "id": "session_active",
+          "label": "Active",
+          "source": "sessionState.session_active",
+          "fallback": "false",
+          "format": "bool",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "metric",
+          "id": "session_id",
+          "label": "Session ID",
+          "source": "sessionState.current_session_id",
+          "fallback": "none",
+          "format": "plain",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "hud",
+          "id": "hud_inline",
+          "label": "HUD",
+          "source": "gameHudJson",
+          "fallback": "{}",
+          "format": "plain",
+          "unit": "",
+          "preset": "text_body",
+          "style": {},
+          "visible_when": "always"
+        }
+      ],
+      "card_policy": {
+        "allow_move": true,
+        "allow_resize": true,
+        "allow_remove": true,
+        "allow_collapse": true
+      }
+    },
+    {
       "id": "relic_identity_card",
       "type": "identity",
       "title": "RELIC Identity",

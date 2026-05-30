@@ -340,6 +340,13 @@ Item {
             previewSubtitle: "Full-area card desktop pilot · legacy fallback: " + String(root.task26LegacyFallbackVisible)
             payloadStatusText: String((root.renderResourcesObj || ({})).task26_calibration_layout_status || "n/a")
             payloadSourceText: String((root.renderResourcesObj || ({})).task26_calibration_layout_source || "n/a")
+            guiBridge: typeof guiBridge === "undefined" ? null : guiBridge
+            appStateObj: ({})
+            runtimeSnapshotObj: ({})
+            sessionStateObj: root.controlStateObj
+            controlStateObj: root.controlStateObj
+            gameHudObj: ({})
+            renderResourcesObj: root.renderResourcesObj
         }
     }
 

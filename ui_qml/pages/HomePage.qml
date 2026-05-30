@@ -108,6 +108,13 @@ Item {
                 previewSubtitle: "style-capable desktop card layout"
                 payloadStatusText: root.task26HomeLayoutStatus()
                 payloadSourceText: root.task26HomeLayoutSource()
+                guiBridge: typeof guiBridge === "undefined" ? null : guiBridge
+                appStateObj: ({})
+                runtimeSnapshotObj: root.runtimeObj
+                sessionStateObj: root.controlStateObj
+                controlStateObj: root.controlStateObj
+                gameHudObj: ({})
+                renderResourcesObj: root.renderResourcesObj
             }
         }
 

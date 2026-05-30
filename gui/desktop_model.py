@@ -696,6 +696,34 @@ def _card_visual_style(card: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+
+def _widget_preview_text(value: Any) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, str):
+        return value
+    if isinstance(value, (bool, int, float)):
+        return str(value)
+    return json.dumps(value, ensure_ascii=False, sort_keys=True)
+
+
+def _add_widget_preview_fields(payload: dict[str, Any], card_prefix: str, widgets: list[dict[str, Any]], *, max_widgets: int = 6) -> None:
+    typed_widgets = [w for w in widgets if isinstance(w, dict)]
+    payload[f"{card_prefix}_widget_count"] = len(typed_widgets)
+    for widget_idx in range(1, max_widgets + 1):
+        widget = typed_widgets[widget_idx - 1] if widget_idx - 1 < len(typed_widgets) else {}
+        prefix = f"{card_prefix}_widget{widget_idx}"
+        payload[f"{prefix}_type"] = _widget_preview_text(widget.get("type", "")) if widget else ""
+        payload[f"{prefix}_id"] = _widget_preview_text(widget.get("id", "")) if widget else ""
+        payload[f"{prefix}_label"] = _widget_preview_text(widget.get("label", "")) if widget else ""
+        payload[f"{prefix}_source"] = _widget_preview_text(widget.get("source", "")) if widget else ""
+        payload[f"{prefix}_fallback"] = _widget_preview_text(widget.get("fallback", "")) if widget else ""
+        payload[f"{prefix}_unit"] = _widget_preview_text(widget.get("unit", "")) if widget else ""
+        payload[f"{prefix}_action_id"] = _widget_preview_text(widget.get("action_id", "")) if widget else ""
+        payload[f"{prefix}_variant"] = _widget_preview_text(widget.get("variant", "")) if widget else ""
+        payload[f"{prefix}_required"] = bool(widget.get("required", False)) if widget else False
+        payload[f"{prefix}_value"] = _widget_preview_text(widget.get("value", "")) if widget else ""
+
 def build_desktop_layout_preview_payload(model: dict, *, max_cards: int = LAYOUT_PREVIEW_MAX_CARDS) -> dict:
     if not isinstance(max_cards, int) or max_cards <= 0:
         raise ValueError("max_cards must be positive integer")
@@ -738,7 +766,7 @@ def build_desktop_layout_preview_payload(model: dict, *, max_cards: int = LAYOUT
         payload[f"card{idx}_height"] = float(card.get("height", 0) or 0) if card else 0.0
         payload[f"card{idx}_required"] = bool(card.get("required", False)) if card else False
         payload[f"card{idx}_locked"] = bool(card.get("locked", False)) if card else False
-        payload[f"card{idx}_widget_count"] = len(typed_widgets)
+        _add_widget_preview_fields(payload, f"card{idx}", typed_widgets)
         payload[f"card{idx}_action_ids_text"] = _join_text_list(action_ids)
         payload[f"card{idx}_source_roots_text"] = _join_text_list(source_roots)
         payload[f"card{idx}_first_widget_labels_text"] = _join_text_list(first_widget_labels)
@@ -790,6 +818,14 @@ def validate_desktop_layout_preview_payload(payload: dict, *, max_cards: int = L
         key = f"card{idx}_widget_count"
         if not isinstance(payload.get(key), int):
             raise ValueError(f"{key} must be int")
+        for widget_idx in range(1, 7):
+            for suffix in ("type", "id", "label", "source", "fallback", "unit", "action_id", "variant", "value"):
+                widget_key = f"card{idx}_widget{widget_idx}_{suffix}"
+                if not isinstance(payload.get(widget_key), str):
+                    raise ValueError(f"{widget_key} must be string")
+            widget_required_key = f"card{idx}_widget{widget_idx}_required"
+            if not isinstance(payload.get(widget_required_key), bool):
+                raise ValueError(f"{widget_required_key} must be bool")
         for suffix in ("glass_enabled", "glass_highlight"):
             key = f"card{idx}_{suffix}"
             if not isinstance(payload.get(key), bool):
