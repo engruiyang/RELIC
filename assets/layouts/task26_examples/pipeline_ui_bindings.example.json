@@ -230,17 +230,22 @@
     "pipeline_id": "report",
     "mandatory": false,
     "required_cards": [
-      "report_entry_card"
+      "report_query_card"
     ],
     "required_fields": [
+      "controlStateJson.current_user_id",
       "sessionState.latest_report_path"
     ],
-    "required_buttons": [],
+    "required_buttons": [
+      "report.list",
+      "report.show",
+      "report.export_txt"
+    ],
     "allowed_pages": [
       "report",
       "home"
     ],
-    "fallback_card": "report_entry_card",
+    "fallback_card": "report_query_card",
     "coverage_policy": {
       "visibility": "conditional",
       "always_accessible": false,
