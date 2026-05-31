@@ -8,13 +8,10 @@ def _read(path: str) -> str:
 
 
 REQUIRED_CARD_TOKENS = [
-    "training_control_card",
-    "session_card",
-    "runtime_io_card",
-    "calibration_status_card",
-    "game_hud_card",
     "game_canvas_card",
-    "diagnostics_summary_card",
+    "game_hud_card",
+    "training_control_card",
+    "difficulty_control_card",
 ]
 
 

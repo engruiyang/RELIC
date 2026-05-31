@@ -16,13 +16,10 @@ from gui.desktop_schema import (
 ROOT = Path(".")
 CONFIG_PATH = ROOT / "assets" / "layouts" / "task26_examples" / "training_page.desktop_demo.json"
 REQUIRED_CARDS = {
-    "training_control_card",
-    "session_card",
-    "runtime_io_card",
-    "calibration_status_card",
-    "game_hud_card",
     "game_canvas_card",
-    "diagnostics_summary_card",
+    "game_hud_card",
+    "training_control_card",
+    "difficulty_control_card",
 }
 
 
@@ -78,21 +75,31 @@ def test_required_cards_are_locked() -> None:
 def test_training_control_actions_include_session_and_safe_stop() -> None:
     card = _card(_config(), "training_control_card")
     actions = _action_ids(card)
-    assert {"session.start", "session.stop", "live.safe_stop"} <= actions
+    assert {"session.start", "session.stop", "live.safe_stop", "game.status"} <= actions
 
 
-def test_runtime_io_sources_include_freshness_ages() -> None:
-    card = _card(_config(), "runtime_io_card")
+def test_difficulty_control_card_uses_existing_game_difficulty_action() -> None:
+    card = _card(_config(), "difficulty_control_card")
+    actions = _action_ids(card)
+    assert "game.difficulty" in actions
+    widget_ids = {w.get("id") for w in card.get("widgets", []) if isinstance(w, dict)}
+    assert {"difficulty_mode", "difficulty_level"} <= widget_ids
+
+
+def test_hud_card_sources_include_runtime_and_game_hud() -> None:
+    card = _card(_config(), "game_hud_card")
     sources = _sources(card)
-    assert "runtimeSnapshot.attention_age_ms" in sources
-    assert "runtimeSnapshot.gyro_age_ms" in sources
+    assert "runtimeSnapshot.attention" in sources
+    assert "gameHudJson.score" in sources
+    assert "gameHudJson.time_left_ms" in sources
 
 
-def test_game_canvas_card_declares_game_placeholder() -> None:
+def test_game_canvas_card_declares_live_canvas_widget() -> None:
     card = _card(_config(), "game_canvas_card")
     widget_types = {w.get("type") for w in card.get("widgets", []) if isinstance(w, dict)}
     widget_presets = {w.get("preset") for w in card.get("widgets", []) if isinstance(w, dict)}
-    assert card.get("type") == "game" or "game_placeholder" in widget_types or "game_canvas_placeholder" in widget_presets
+    assert card.get("type") == "game"
+    assert "game_canvas" in widget_types or "game_canvas_live" in widget_presets
 
 
 def test_training_page_schema_and_contracts_validate() -> None:
@@ -112,21 +119,19 @@ def test_safe_stop_widget_is_required_danger_and_confirmed() -> None:
     assert "confirm" in widget or "confirmEnabled" in widget
 
 
-def test_game_canvas_card_has_placeholder_contract_marker() -> None:
+def test_game_canvas_card_declares_live_embedded_contract_marker() -> None:
     card = _card(_config(), "game_canvas_card")
-    contract = card.get("contract", {})
-    assert contract.get("canvas_role") == "game_canvas_placeholder"
-    assert contract.get("implementation_status") == "placeholder_only"
-    assert contract.get("requires_legacy_fallback") is True
+    assert card.get("required") is True
+    assert card.get("locked") is True
+    assert card.get("type") == "game"
+    widget_types = {w.get("type") for w in card.get("widgets", []) if isinstance(w, dict)}
+    assert "game_canvas" in widget_types
 
 
-def test_game_hud_placeholder_fields_have_pending_contract_marker() -> None:
+def test_game_hud_card_is_formal_transparent_hud_contract() -> None:
     card = _card(_config(), "game_hud_card")
-    sources = {"gameHudJson.status", "gameHudJson.score", "gameHudJson.focus_index"}
-    found = 0
-    for widget in card.get("widgets", []):
-        if isinstance(widget, dict) and widget.get("source") in sources:
-            contract = widget.get("contract", {})
-            assert contract.get("contract_status") == "pending_bridge_validation" or contract.get("prototype") is True
-            found += 1
-    assert found == 3
+    assert card.get("type") == "hud_overlay"
+    style = card.get("style", {})
+    assert float(style.get("background_opacity", 1.0)) < 0.7
+    sources = _sources(card)
+    assert {"gameHudJson.score", "gameHudJson.combo", "gameHudJson.effective_level"} <= sources

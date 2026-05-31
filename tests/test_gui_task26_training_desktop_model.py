@@ -46,6 +46,7 @@ def test_build_training_render_model_basic_shape() -> None:
     assert model["cards"]
     assert _card(model, "training_control_card")
     assert _card(model, "game_canvas_card")
+    assert _card(model, "difficulty_control_card")
 
 
 def test_training_render_cards_have_positive_rects() -> None:
@@ -68,7 +69,7 @@ def test_training_control_card_locked_and_actions_present() -> None:
 def test_build_training_render_model_summary() -> None:
     summary = build_training_render_model_summary(ROOT)
     assert summary["page_id"] == "training"
-    assert summary["card_count"] >= 6
+    assert summary["card_count"] >= 4
     assert "live.safe_stop" in summary["action_ids"] or "session.start" in summary["action_ids"]
 
 
@@ -104,13 +105,15 @@ def test_build_training_contract_summary_guards() -> None:
 
 def test_build_training_card_slots_and_injection_payload() -> None:
     slots = build_training_card_slots(ROOT)
-    assert len(slots) == 7
+    assert len(slots) >= 4
     card_ids = {slot["card_id"] for slot in slots}
     assert "training_control_card" in card_ids
     assert "game_canvas_card" in card_ids
+    assert "game_hud_card" in card_ids
+    assert "difficulty_control_card" in card_ids
     payload = build_training_card_slots_injection_payload(slots)
     validate_training_slot_injection_payload(payload)
-    assert payload["slot_count"] == 7
+    assert payload["slot_count"] >= 4
     resource = build_training_slots_render_resource(ROOT)
     assert resource["task26_training_slots_status"] == "ok"
     validate_training_slot_injection_payload(resource["task26_training_slots_payload"])

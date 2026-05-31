@@ -17,7 +17,7 @@ def _read_page(name: str) -> str:
 def test_pages_pass_required_objects_to_desktop_layout_preview() -> None:
     expectations = {
         "HomePage.qml": ["guiBridge:", "runtimeSnapshotObj:"],
-        "TrainingPage.qml": ["guiBridge:", "runtimeSnapshotObj:", "sessionStateObj:", "gameHudObj:"],
+        "TrainingPage.qml": ["guiBridge:", "runtimeSnapshotObj:", "sessionStateObj:", "gameHudObj:", "gameViewObj:", "gameStyleObj:", "effectStyleObj:"],
         "UserPage.qml": ["guiBridge:", "controlStateObj:"],
         "CalibrationPage.qml": ["guiBridge:", "controlStateObj:"],
         "ReportPage.qml": ["guiBridge:"],

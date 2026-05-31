@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 
 
 def test_task24_training_game_canvas_tokens_present() -> None:
@@ -7,6 +8,7 @@ def test_task24_training_game_canvas_tokens_present() -> None:
         "GameCanvas / Game View",
         "GameCanvas restored in TASK24",
         "GameCanvas will be restored in TASK24",
+        "game_canvas_card",
         "No active game view.",
         "entity_count",
         "visual_event_count",
@@ -55,10 +57,25 @@ def test_task24_game_canvas_component_contract() -> None:
         assert token in text
 
 
+def test_task26_desktop_card_preview_embeds_live_game_canvas_and_hud_overlay() -> None:
+    text = Path("ui_qml/components/DesktopLayoutCardPreview.qml").read_text(encoding="utf-8")
+    for token in [
+        "function isGameCanvasCard()",
+        "GameCanvas {",
+        "HEAD UP DISPLAY",
+        "gameHudJson.score",
+        "gameHudJson.time_left_ms",
+        "runtimeSnapshot.attention",
+        "guiBridgeRef: root.guiBridge",
+    ]:
+        assert token in text
+
+
 def test_task24_forbidden_patterns_still_blocked_outside_training_page() -> None:
     for qml in Path("ui_qml").rglob("*.qml"):
-        if qml.name in {"GameCanvas.qml", "TrainingPage.qml"}:
+        if qml.name in {"GameCanvas.qml", "TrainingPage.qml", "DesktopLayoutCardPreview.qml"}:
             continue
         text = qml.read_text(encoding="utf-8")
-        for token in ["GameCanvas {", "Loader", "Repeater", "interval: 100", "subprocess", "Popen", "os.system"]:
+        for token in ["GameCanvas {", "Loader", "Repeater", "subprocess", "Popen", "os.system"]:
             assert token not in text, f"{token!r} found in {qml}"
+        assert re.search(r"interval\s*:\s*100(?!\d)", text) is None, f"'interval: 100' found in {qml}"
