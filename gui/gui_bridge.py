@@ -270,6 +270,14 @@ class GuiBridge(QObject):
             payload = {}
         result = self._facade.invoke_action(action_id, payload)
         self.update_state_from_facade()
+        # Desktop card buttons depend on stateChanged to make MinimalGui pull fresh
+        # control/session/runtime objects after an action. Some actions only update
+        # last_command_result, which does not always change the app/runtime/session
+        # JSON enough to trigger update_state_from_facade's normal changed path.
+        self.stateChanged.emit()
+        self.controlStateJsonChanged.emit()
+        self.sessionStateChanged.emit()
+        self.runtimeSnapshotChanged.emit()
         return dumps(result, ensure_ascii=False)
 
     @Slot(str, str)

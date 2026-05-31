@@ -130,6 +130,8 @@ def build_page_render_model(page_config: dict, *, page_width: int = 1200, page_h
                     "fallback": w.get("fallback", ""),
                     "unit": w.get("unit", ""),
                     "action_id": action_id,
+                    "args": w.get("args", {}),
+                    "options": w.get("options", []),
                     "variant": w.get("variant", ""),
                     "required": bool(w.get("required", False)),
                     "style": w.get("style", {}),
@@ -693,6 +695,19 @@ def _card_visual_style(card: dict[str, Any]) -> dict[str, Any]:
         "glass_tint_color": _style_text(style, ("glass_tint_color", "glass_tint"), "#DDEEFF"),
         "glass_opacity": _style_number(style, ("glass_opacity",), 0.0),
         "glass_highlight": _style_bool(style, ("glass_highlight",), False),
+        "title_pixel_size": int(_style_number(style, ("title_pixel_size", "title_size"), 15)),
+        "subtitle_pixel_size": int(_style_number(style, ("subtitle_pixel_size", "subtitle_size"), 10)),
+        "widget_label_pixel_size": int(_style_number(style, ("widget_label_pixel_size", "label_pixel_size", "label_size"), 10)),
+        "widget_value_pixel_size": int(_style_number(style, ("widget_value_pixel_size", "value_pixel_size", "value_size"), 12)),
+        "widget_meta_pixel_size": int(_style_number(style, ("widget_meta_pixel_size", "meta_pixel_size", "meta_size"), 9)),
+        "widget_row_height": int(_style_number(style, ("widget_row_height", "row_height"), 22)),
+        "button_height": int(_style_number(style, ("button_height",), 28)),
+        "widget_spacing": int(_style_number(style, ("widget_spacing",), 3)),
+        "body_top_margin": int(_style_number(style, ("body_top_margin",), 2)),
+        "feedback_height": int(_style_number(style, ("feedback_height",), 34)),
+        "feedback_pixel_size": int(_style_number(style, ("feedback_pixel_size",), 9)),
+        "header_spacing": int(_style_number(style, ("header_spacing",), 2)),
+        "content_spacing": int(_style_number(style, ("content_spacing",), 4)),
     }
 
 
@@ -705,6 +720,14 @@ def _widget_preview_text(value: Any) -> str:
     if isinstance(value, (bool, int, float)):
         return str(value)
     return json.dumps(value, ensure_ascii=False, sort_keys=True)
+
+
+def _widget_options_text(value: Any) -> str:
+    if isinstance(value, list):
+        return "|".join(str(v) for v in value if str(v))
+    if isinstance(value, str):
+        return value
+    return ""
 
 
 def _add_widget_preview_fields(payload: dict[str, Any], card_prefix: str, widgets: list[dict[str, Any]], *, max_widgets: int = 6) -> None:
@@ -720,6 +743,8 @@ def _add_widget_preview_fields(payload: dict[str, Any], card_prefix: str, widget
         payload[f"{prefix}_fallback"] = _widget_preview_text(widget.get("fallback", "")) if widget else ""
         payload[f"{prefix}_unit"] = _widget_preview_text(widget.get("unit", "")) if widget else ""
         payload[f"{prefix}_action_id"] = _widget_preview_text(widget.get("action_id", "")) if widget else ""
+        payload[f"{prefix}_args_json"] = _widget_preview_text(widget.get("args", {})) if widget else "{}"
+        payload[f"{prefix}_options_text"] = _widget_options_text(widget.get("options", [])) if widget else ""
         payload[f"{prefix}_variant"] = _widget_preview_text(widget.get("variant", "")) if widget else ""
         payload[f"{prefix}_required"] = bool(widget.get("required", False)) if widget else False
         payload[f"{prefix}_value"] = _widget_preview_text(widget.get("value", "")) if widget else ""
@@ -785,6 +810,19 @@ def build_desktop_layout_preview_payload(model: dict, *, max_cards: int = LAYOUT
         payload[f"card{idx}_glass_tint_color"] = visual_style["glass_tint_color"]
         payload[f"card{idx}_glass_opacity"] = visual_style["glass_opacity"]
         payload[f"card{idx}_glass_highlight"] = visual_style["glass_highlight"]
+        payload[f"card{idx}_title_pixel_size"] = visual_style["title_pixel_size"]
+        payload[f"card{idx}_subtitle_pixel_size"] = visual_style["subtitle_pixel_size"]
+        payload[f"card{idx}_widget_label_pixel_size"] = visual_style["widget_label_pixel_size"]
+        payload[f"card{idx}_widget_value_pixel_size"] = visual_style["widget_value_pixel_size"]
+        payload[f"card{idx}_widget_meta_pixel_size"] = visual_style["widget_meta_pixel_size"]
+        payload[f"card{idx}_widget_row_height"] = visual_style["widget_row_height"]
+        payload[f"card{idx}_button_height"] = visual_style["button_height"]
+        payload[f"card{idx}_widget_spacing"] = visual_style["widget_spacing"]
+        payload[f"card{idx}_body_top_margin"] = visual_style["body_top_margin"]
+        payload[f"card{idx}_feedback_height"] = visual_style["feedback_height"]
+        payload[f"card{idx}_feedback_pixel_size"] = visual_style["feedback_pixel_size"]
+        payload[f"card{idx}_header_spacing"] = visual_style["header_spacing"]
+        payload[f"card{idx}_content_spacing"] = visual_style["content_spacing"]
 
     return payload
 
@@ -811,7 +849,7 @@ def validate_desktop_layout_preview_payload(payload: dict, *, max_cards: int = L
             key = f"card{idx}_{suffix}"
             if not isinstance(payload.get(key), str):
                 raise ValueError(f"{key} must be string")
-        for suffix in ("x", "y", "width", "height", "background_opacity", "border_width", "radius_value", "glass_opacity"):
+        for suffix in ("x", "y", "width", "height", "background_opacity", "border_width", "radius_value", "glass_opacity", "title_pixel_size", "subtitle_pixel_size", "widget_label_pixel_size", "widget_value_pixel_size", "widget_meta_pixel_size", "widget_row_height", "button_height", "widget_spacing", "body_top_margin", "feedback_height", "feedback_pixel_size", "header_spacing", "content_spacing"):
             key = f"card{idx}_{suffix}"
             if not isinstance(payload.get(key), (int, float)):
                 raise ValueError(f"{key} must be number")
@@ -819,7 +857,7 @@ def validate_desktop_layout_preview_payload(payload: dict, *, max_cards: int = L
         if not isinstance(payload.get(key), int):
             raise ValueError(f"{key} must be int")
         for widget_idx in range(1, 7):
-            for suffix in ("type", "id", "label", "source", "fallback", "unit", "action_id", "variant", "value"):
+            for suffix in ("type", "id", "label", "source", "fallback", "unit", "action_id", "args_json", "options_text", "variant", "value"):
                 widget_key = f"card{idx}_widget{widget_idx}_{suffix}"
                 if not isinstance(payload.get(widget_key), str):
                     raise ValueError(f"{widget_key} must be string")
@@ -1104,6 +1142,59 @@ def build_task26_fixed_card_registry(example_root: Path, *, page_ids: list[str] 
 
 def validate_task26_fixed_card_policy(example_root: Path, *, page_ids: list[str] | None = None) -> None:
     build_task26_fixed_card_registry(example_root, page_ids=page_ids)
+
+
+def _grid_rect_for_card(card: dict[str, Any], *, page_id: str) -> tuple[str, int, int, int, int]:
+    card_id = str(card.get("id") or "")
+    pos = card.get("position")
+    if not isinstance(pos, dict):
+        raise ValueError(f"{page_id}:{card_id}: position must be object")
+
+    col = _as_pos_int(pos.get("col"), field="col", card_id=card_id)
+    row = _as_pos_int(pos.get("row"), field="row", card_id=card_id)
+    col_span = _as_pos_int(pos.get("col_span"), field="col_span", card_id=card_id)
+    row_span = _as_pos_int(pos.get("row_span"), field="row_span", card_id=card_id)
+    return (card_id, col, row, col + col_span - 1, row + row_span - 1)
+
+
+def _grid_rects_overlap(a: tuple[str, int, int, int, int], b: tuple[str, int, int, int, int]) -> bool:
+    return not (
+        a[3] < b[1]
+        or b[3] < a[1]
+        or a[4] < b[2]
+        or b[4] < a[2]
+    )
+
+
+def validate_task26_page_layout_no_overlap(page_config: dict[str, Any]) -> None:
+    if not isinstance(page_config, dict):
+        raise ValueError("page_config must be object")
+
+    page_id = str(page_config.get("page_id") or "unknown")
+    cards = page_config.get("cards")
+    if not isinstance(cards, list):
+        raise ValueError(f"{page_id}: cards must be list")
+
+    rects: list[tuple[str, int, int, int, int]] = []
+    for card in cards:
+        if not isinstance(card, dict):
+            continue
+        rects.append(_grid_rect_for_card(card, page_id=page_id))
+
+    for i, a in enumerate(rects):
+        for b in rects[i + 1:]:
+            if _grid_rects_overlap(a, b):
+                raise ValueError(
+                    f"{page_id}: desktop cards overlap: "
+                    f"{a[0]}({a[1]},{a[2]}-{a[3]},{a[4]}) "
+                    f"overlaps {b[0]}({b[1]},{b[2]}-{b[3]},{b[4]})"
+                )
+
+
+def validate_task26_layout_no_overlap(example_root: Path, *, page_ids: list[str] | None = None) -> None:
+    page_ids = page_ids or list(TASK26_PAGE_DEMO_FILENAMES.keys())
+    for page_id in page_ids:
+        validate_task26_page_layout_no_overlap(_load_task26_page_config(example_root, page_id))
 
 
 def build_task26_fixed_card_render_resource(example_root: Path) -> dict[str, Any]:

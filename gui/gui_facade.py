@@ -59,6 +59,7 @@ class GuiFacade:
         self.last_platform_result = ""
 
         self._render_resources = self._build_safe_render_resources(game_id=game_id)
+        self._current_user_override = str(user_id or "")
         self._started_at_ms = int(time.time() * 1000)
         self._last_command_error = ""
         self._active_session_started_at_ms: int | None = None
@@ -340,7 +341,11 @@ class GuiFacade:
 
     def _build_task26_user_layout_resource(self) -> dict[str, Any]:
         try:
-            return build_user_layout_render_resource(Path("."))
+            resource = build_user_layout_render_resource(Path("."))
+            payload = resource.get("task26_user_layout_payload")
+            if isinstance(payload, dict):
+                self._hydrate_layout_payload_from_control_state(payload, self.get_control_state())
+            return resource
         except Exception as exc:
             return {
                 "task26_user_layout_payload": {},
@@ -351,7 +356,11 @@ class GuiFacade:
 
     def _build_task26_calibration_layout_resource(self) -> dict[str, Any]:
         try:
-            return build_calibration_layout_render_resource(Path("."))
+            resource = build_calibration_layout_render_resource(Path("."))
+            payload = resource.get("task26_calibration_layout_payload")
+            if isinstance(payload, dict):
+                self._hydrate_calibration_layout_payload(payload, self.get_control_state())
+            return resource
         except Exception as exc:
             return {
                 "task26_calibration_layout_payload": {},
@@ -416,6 +425,89 @@ class GuiFacade:
                 "task26_fixed_card_error": str(exc),
             }
 
+
+    def _build_task26_user_profile_context_resource(self) -> dict[str, Any]:
+        try:
+            state = self.get_control_state()
+            keys = (
+                "current_user_id",
+                "profile_loaded",
+                "last_calibration_id",
+                "attention_low_threshold",
+                "attention_high_threshold",
+                "preferred_game_id",
+                "difficulty_level",
+                "attention_baseline",
+                "calibration_usable",
+                "gyro_noise_rms",
+            )
+            context = {key: state.get(key, "n/a") for key in keys}
+            # Backward-compatible alias used by the formal Calibration page tests.
+            # The canonical field remains calibration_progress_phase.
+            if context.get("calibration_phase", "n/a") in (None, "", "n/a"):
+                context["calibration_phase"] = context.get("calibration_progress_phase", "n/a")
+            return {
+                "task26_user_profile_context": context,
+                "task26_user_profile_context_status": "ok",
+                "task26_user_profile_context_source": "GuiFacade.get_control_state",
+            }
+        except Exception as exc:
+            return {
+                "task26_user_profile_context": {},
+                "task26_user_profile_context_status": "missing",
+                "task26_user_profile_context_error": str(exc),
+            }
+
+    def _build_task26_calibration_context_resource(self) -> dict[str, Any]:
+        try:
+            state = self.get_control_state()
+            keys = (
+                "current_user_id",
+                "calibration_status",
+                "calibration_usable",
+                "latest_valid",
+                "last_calibration_id",
+                "calibration_id",
+                "attention_baseline",
+                "attention_std",
+                "attention_low_threshold",
+                "attention_high_threshold",
+                "gyro_noise_rms",
+                "failure_reason",
+                "calibration_progress_status",
+                "calibration_progress_running",
+                "calibration_running",
+                "calibration_progress_phase",
+                "calibration_phase",
+                "calibration_progress_exit_code",
+                "calibration_progress_output_count",
+                "calibration_progress_elapsed_sec",
+                "calibration_progress_remaining_sec",
+                "calibration_phase_remaining_sec",
+                "calibration_total_remaining_sec",
+                "calibration_progress_fraction",
+                "calibration_progress_percent",
+                "calibration_phase_prompt_text",
+                "calibration_operator_guidance",
+                "calibration_active_prompt_text",
+                "calibration_phase_title",
+                "calibration_phase_instruction",
+                "calibration_phase_avoid_instruction",
+                "calibration_phase_duration_hint",
+            )
+            context = {key: state.get(key, "n/a") for key in keys}
+            return {
+                "task26_calibration_context": context,
+                "task26_calibration_context_status": "ok",
+                "task26_calibration_context_source": "GuiFacade.get_control_state",
+            }
+        except Exception as exc:
+            return {
+                "task26_calibration_context": {},
+                "task26_calibration_context_status": "missing",
+                "task26_calibration_context_error": str(exc),
+            }
+
     def get_render_resources(self) -> dict[str, Any]:
         resources = deepcopy(self._render_resources)
         resources.update(self._build_task26_home_slots_resource())
@@ -425,8 +517,10 @@ class GuiFacade:
         resources.update(self._build_task26_training_layout_resource())
         resources.update(self._build_task26_user_layout_resource())
         resources.update(self._build_task26_calibration_layout_resource())
+        resources.update(self._build_task26_calibration_context_resource())
         resources.update(self._build_task26_report_layout_resource())
         resources.update(self._build_task26_diagnostics_layout_resource())
+        resources.update(self._build_task26_user_profile_context_resource())
         resources.update(self._build_task26_fixed_card_resource())
         return resources
 
@@ -453,24 +547,103 @@ class GuiFacade:
             profile = store.get_user_profile(user_id)
             if not profile:
                 return {"status": "profile_not_found", "message": "profile_not_found", "current_user_id": user_id, "user_type": user.get("user_type", "local_user"), "profile_loaded": False, "last_calibration_id": "n/a", "attention_low_threshold": "n/a", "attention_high_threshold": "n/a", "preferred_game_id": "n/a", "difficulty_level": "n/a"}
-            return {"status": "accepted", "message": "profile_loaded", "current_user_id": user_id, "user_type": user.get("user_type", "local_user"), "profile_loaded": True, "last_calibration_id": profile.get("last_calibration_id") or "n/a", "attention_low_threshold": profile.get("attention_low_threshold", "n/a"), "attention_high_threshold": profile.get("attention_high_threshold", "n/a"), "preferred_game_id": profile.get("preferred_game_id", "n/a"), "difficulty_level": profile.get("difficulty_level", "n/a")}
+            low = profile.get("attention_low_threshold")
+            high = profile.get("attention_high_threshold")
+            difficulty = profile.get("difficulty_level")
+            return {"status": "accepted", "message": "profile_loaded", "current_user_id": user_id, "user_type": user.get("user_type", "local_user"), "profile_loaded": True, "last_calibration_id": profile.get("last_calibration_id") or "n/a", "attention_low_threshold": 40 if low is None or low == "" else low, "attention_high_threshold": 70 if high is None or high == "" else high, "preferred_game_id": profile.get("preferred_game_id", "n/a"), "difficulty_level": 1 if difficulty is None or difficulty == "" else difficulty}
         finally:
             store.close()
 
     def _fetch_calibration_status(self, user_id: str) -> dict[str, Any]:
+        user_id = str(user_id or "").strip()
+        if not user_id:
+            return {
+                "status": "missing_user",
+                "calibration_status": "missing_user",
+                "last_calibration_id": "n/a",
+                "calibration_usable": False,
+                "latest_valid": False,
+                "failure_reason": "missing_user",
+                "source": "profile",
+                "bound_calibration_user_matches": False,
+                "binding_consistent": False,
+            }
+
         store = SqliteStore(self.db_path)
         store.connect()
         try:
             profile = store.get_user_profile(user_id)
             if not profile:
-                return {"status": "profile_without_calibration", "calibration_status": "profile_without_calibration", "last_calibration_id": "n/a", "calibration_usable": False, "latest_valid": False, "failure_reason": "profile_not_found", "source": "profile"}
-            cal_id = profile.get("last_calibration_id")
-            if not cal_id:
-                return {"status": "no_calibration", "calibration_status": "no_calibration", "last_calibration_id": "n/a", "calibration_usable": False, "latest_valid": False, "failure_reason": "no_calibration", "source": "profile"}
-            cp = store.get_calibration_profile(str(cal_id))
+                return {
+                    "status": "profile_without_calibration",
+                    "calibration_status": "profile_without_calibration",
+                    "last_calibration_id": "n/a",
+                    "calibration_usable": False,
+                    "latest_valid": False,
+                    "failure_reason": "profile_not_found",
+                    "source": "profile",
+                    "bound_calibration_user_matches": False,
+                    "binding_consistent": False,
+                }
+            cal_id = str(profile.get("last_calibration_id") or "").strip()
+            if not cal_id or cal_id == "n/a":
+                return {
+                    "status": "no_calibration",
+                    "calibration_status": "no_calibration",
+                    "last_calibration_id": "n/a",
+                    "calibration_usable": False,
+                    "latest_valid": False,
+                    "failure_reason": "no_calibration",
+                    "source": "profile",
+                    "bound_calibration_user_matches": False,
+                    "binding_consistent": True,
+                }
+            cp = store.get_calibration_profile(cal_id)
             if not cp:
-                return {"status": "no_calibration", "calibration_status": "no_calibration", "last_calibration_id": cal_id, "calibration_usable": False, "latest_valid": False, "failure_reason": "calibration_id_not_found", "source": "profile"}
-            return {"status": "accepted", "calibration_status": "available", "last_calibration_id": cal_id, "calibration_usable": bool(cp.get("valid")), "latest_valid": bool(cp.get("valid")), "failure_reason": cp.get("failure_reason") or "", "source": cp.get("calibration_type") or "calibration_profile", "attention_baseline": cp.get("attention_baseline") if cp.get("attention_baseline") is not None else "n/a", "gyro_noise_rms": cp.get("gyro_noise_rms") if cp.get("gyro_noise_rms") is not None else "n/a"}
+                return {
+                    "status": "no_calibration",
+                    "calibration_status": "no_calibration",
+                    "last_calibration_id": cal_id,
+                    "calibration_usable": False,
+                    "latest_valid": False,
+                    "failure_reason": "calibration_id_not_found",
+                    "source": "profile",
+                    "bound_calibration_user_matches": False,
+                    "binding_consistent": False,
+                }
+
+            cp_user_id = str(cp.get("user_id") or "").strip()
+            if cp_user_id and cp_user_id != user_id:
+                return {
+                    "status": "binding_inconsistent",
+                    "calibration_status": "binding_inconsistent",
+                    "last_calibration_id": cal_id,
+                    "calibration_usable": False,
+                    "latest_valid": False,
+                    "failure_reason": "calibration_user_mismatch",
+                    "source": cp.get("calibration_type") or cp.get("source") or "calibration_profile",
+                    "bound_calibration_user_matches": False,
+                    "binding_consistent": False,
+                    "calibration_user_id": cp_user_id,
+                    "user_recovery_hint": "检测到历史绑定不一致。请为当前用户重新完成或重新绑定有效校准。",
+                    "attention_baseline": "n/a",
+                    "gyro_noise_rms": "n/a",
+                }
+
+            return {
+                "status": "accepted",
+                "calibration_status": "available",
+                "last_calibration_id": cal_id,
+                "calibration_usable": bool(cp.get("valid")),
+                "latest_valid": bool(cp.get("valid")),
+                "failure_reason": cp.get("failure_reason") or "",
+                "source": cp.get("calibration_type") or cp.get("source") or "calibration_profile",
+                "bound_calibration_user_matches": True,
+                "binding_consistent": True,
+                "calibration_user_id": cp_user_id or user_id,
+                "attention_baseline": cp.get("attention_baseline") if cp.get("attention_baseline") is not None else "n/a",
+                "gyro_noise_rms": cp.get("gyro_noise_rms") if cp.get("gyro_noise_rms") is not None else "n/a",
+            }
         finally:
             store.close()
 
@@ -553,26 +726,29 @@ class GuiFacade:
     def _fetch_calibration_list(self, user_id: str) -> dict[str, Any]:
         user_id = str(user_id or "").strip()
         if not user_id:
-            return {"status": "missing_user", "message": "missing_user", "items": [], "items_count": 0}
+            return {"status": "missing_user", "message": "missing_user", "items": [], "items_count": 0, "calibrations": []}
         conn = self._connect_readonly_db()
         try:
             table_name = self._calibration_table_name(conn)
             if not table_name:
-                return {"status": "accepted", "message": "no_calibration_table", "items": [], "items_count": 0, "calibrations": []}
+                return {"status": "accepted", "message": "no_calibration_table", "user_id": user_id, "items": [], "items_count": 0, "calibration_count": 0, "calibrations": []}
             columns = self._table_columns(conn, table_name)
             order_sql = " ORDER BY created_at DESC" if "created_at" in columns else " ORDER BY rowid DESC"
             if "user_id" in columns:
                 rows = conn.execute(f"SELECT * FROM {table_name} WHERE user_id=?" + order_sql, (user_id,)).fetchall()
             else:
                 rows = conn.execute(f"SELECT * FROM {table_name}" + order_sql).fetchall()
+
             items = [self._normalize_calibration_record(dict(row)) for row in rows]
-            if not items:
-                status = self._fetch_calibration_status(user_id)
-                bound_id = status.get("last_calibration_id")
-                if bound_id and bound_id != "n/a":
-                    detail = self._fetch_calibration_detail(str(bound_id))
-                    if detail.get("status") == "accepted":
-                        items.append(detail)
+            # Hard safety boundary: the calibration page is scoped by the current
+            # User page selection. Never fall back to profile.last_calibration_id
+            # here, because a polluted profile binding can point to another user's
+            # calibration and poison the selector/bind path.
+            items = [
+                item for item in items
+                if str(item.get("user_id") or "").strip() == user_id
+            ]
+
             return {
                 "status": "accepted",
                 "message": "calibration_list",
@@ -605,6 +781,17 @@ class GuiFacade:
         detail = self._fetch_calibration_detail(calibration_id)
         if detail.get("status") != "accepted":
             return {"status": detail.get("status", "calibration_not_found"), "message": detail.get("message", "calibration_not_found"), "user_id": user_id, "calibration_id": calibration_id}
+        detail_user_id = str(detail.get("user_id") or "").strip()
+        if detail_user_id and detail_user_id != user_id:
+            return {
+                "status": "calibration_user_mismatch",
+                "message": "calibration_user_mismatch",
+                "user_id": user_id,
+                "calibration_id": calibration_id,
+                "calibration_user_id": detail_user_id,
+                "accepted": False,
+                "detail": detail,
+            }
         if not bool(detail.get("valid")):
             return {"status": "invalid_calibration", "message": "invalid_calibration", "user_id": user_id, "calibration_id": calibration_id, "detail": detail}
         conn = sqlite3.connect(self.db_path)
@@ -638,9 +825,40 @@ class GuiFacade:
     def _cancel_calibration_summary(self, user_id: str) -> dict[str, Any]:
         if not user_id:
             return {"status": "missing_user", "message": "missing_user"}
-        return {"status": "cancelled", "message": "cancelled_by_user", "user_id": user_id, "valid": False, "failure_reason": "cancelled_by_user"}
+        if self._calibration_process is not None and self._calibration_process.poll() is None:
+            try:
+                self._calibration_process.terminate()
+            except Exception:
+                pass
+        self._calibration_process = None
+        self._calibration_started_at_ms = None
+        self._calibration_exit_code = None
+        self._calibration_current_phase = ""
+        self._calibration_user_id = user_id
+        self._calibration_output_lines = ["[gui] Calibration guidance cancelled by user."]
+        return {
+            "status": "cancelled",
+            "message": "cancelled_by_user",
+            "user_id": user_id,
+            "valid": False,
+            "failure_reason": "cancelled_by_user",
+            "progress": self._calibration_progress_summary(),
+        }
 
 
+    def _calibration_phase_durations_ms(self) -> list[int]:
+        # Keep the durations aligned with the original no-head calibration prompts.
+        # Phase 3 is intentionally allowed to use the upper bound from "8 to 12 seconds".
+        return [2000, 3000, 12000, 1000]
+
+    def _initial_calibration_progress_detail(self) -> dict[str, Any]:
+        return {
+            "phase": "n/a",
+            "title": "等待校准",
+            "user_instruction": "点击 Start Calibration 开始校准提示。",
+            "avoid_instruction": "校准开始前请确认头环连接与佩戴状态。",
+            "duration_hint": "n/a",
+        }
 
     def _calibration_phase_prompts(self) -> list[dict[str, Any]]:
         return [
@@ -704,40 +922,135 @@ class GuiFacade:
             polled = process.poll()
             if polled is not None:
                 self._calibration_exit_code = int(polled)
+                self._calibration_process = None
+                self._calibration_started_at_ms = None
+                self._calibration_current_phase = ""
+                self._calibration_output_lines.append(
+                    "[gui] Calibration process completed." if self._calibration_exit_code == 0 else f"[gui] Calibration process exited: {self._calibration_exit_code}"
+                )
+                if len(self._calibration_output_lines) > 300:
+                    self._calibration_output_lines = self._calibration_output_lines[-300:]
 
-        running = process is not None and process.poll() is None
-        if running:
-            status = "running"
-        elif self._calibration_exit_code is None and self._calibration_started_at_ms is None:
-            status = "idle"
-        elif self._calibration_exit_code == 0:
-            status = "completed"
-        else:
-            status = "failed"
+        process_running = self._calibration_process is not None and self._calibration_process.poll() is None
+        guidance_active = self._calibration_process is None and self._calibration_started_at_ms is not None and self._calibration_exit_code is None
+
+        prompts = self._calibration_phase_prompts()
+        durations_ms = self._calibration_phase_durations_ms()
+        total_ms = sum(durations_ms) if durations_ms else 0
+        elapsed_ms = 0
+        if self._calibration_started_at_ms is not None:
+            elapsed_ms = max(0, int(time.time() * 1000) - int(self._calibration_started_at_ms))
 
         output_tail = self._calibration_output_lines[-120:]
         phase_lines = [line for line in output_tail if line.startswith("[phase")]
         if phase_lines:
             self._calibration_current_phase = phase_lines[-1].split("]", 1)[0].strip("[") if "]" in phase_lines[-1] else phase_lines[-1]
 
+        # Desktop/core guidance is a finite state machine: it advances through the
+        # original four prompt phases once, then returns to idle. It must never loop.
+        # Live-control/process mode uses the same phase clock for visible countdown;
+        # the real subprocess remains the authority for actual completion.
+        if guidance_active and total_ms > 0 and elapsed_ms >= total_ms:
+            self._calibration_started_at_ms = None
+            self._calibration_exit_code = None
+            self._calibration_current_phase = ""
+            self._calibration_process = None
+            guidance_active = False
+            elapsed_ms = 0
+
+        running = bool(process_running or guidance_active)
+        if process_running:
+            status = "running"
+        elif guidance_active:
+            status = "guidance_running"
+        else:
+            status = "idle"
+
+        current_phase_detail: dict[str, Any] = {}
+        phase_elapsed_ms = 0
+        phase_duration_ms = 0
+        phase_remaining_ms = 0
+        remaining_ms = 0
+        progress_fraction = 0.0
+
+        if running and prompts and total_ms > 0:
+            # Use a clamped finite cursor for both real subprocess and GUI guidance.
+            # This keeps the UI countdown meaningful when a real headset is connected,
+            # while avoiding the old modulo-loop behavior.
+            cursor = min(max(0, elapsed_ms), max(0, total_ms - 1))
+            remaining_ms = max(0, total_ms - elapsed_ms)
+            progress_fraction = min(1.0, max(0.0, elapsed_ms / float(total_ms)))
+            acc = 0
+            idx = len(prompts) - 1
+            for i, duration in enumerate(durations_ms):
+                if cursor < acc + duration:
+                    idx = i
+                    phase_elapsed_ms = max(0, cursor - acc)
+                    phase_duration_ms = duration
+                    phase_remaining_ms = max(0, duration - phase_elapsed_ms)
+                    break
+                acc += duration
+            idx = min(idx, len(prompts) - 1)
+            if phase_duration_ms == 0 and durations_ms:
+                phase_duration_ms = durations_ms[idx]
+                phase_elapsed_ms = min(phase_duration_ms, max(0, cursor - sum(durations_ms[:idx])))
+                phase_remaining_ms = max(0, phase_duration_ms - phase_elapsed_ms)
+            current_phase_detail = dict(prompts[idx])
+            self._calibration_current_phase = str(current_phase_detail.get("phase") or f"phase {idx + 1}/{len(prompts)}")
+        else:
+            current_phase_detail = self._initial_calibration_progress_detail()
+            self._calibration_current_phase = ""
+
+        current_phase = str(current_phase_detail.get("phase") or (self._calibration_current_phase if running else "n/a") or "n/a")
+        title = str(current_phase_detail.get("title") or "等待校准")
+        user_instruction = str(current_phase_detail.get("user_instruction") or "点击 Start Calibration 开始校准提示。")
+        avoid_instruction = str(current_phase_detail.get("avoid_instruction") or "校准开始前请确认头环连接与佩戴状态。")
+        duration_hint = str(current_phase_detail.get("duration_hint") or "n/a")
+        remaining_sec = round(phase_remaining_ms / 1000.0, 1) if running else 0.0
+        total_remaining_sec = round(remaining_ms / 1000.0, 1) if running else 0.0
+        elapsed_sec = round(elapsed_ms / 1000.0, 1) if running else 0.0
+
+        if running:
+            active_prompt_text = (
+                f"[{current_phase}] {title}\n"
+                f"{user_instruction}\n"
+                f"{avoid_instruction}\n"
+                f"本阶段剩余约 {remaining_sec:.1f} 秒；总剩余约 {total_remaining_sec:.1f} 秒。\n"
+                f"{duration_hint}"
+            )
+        else:
+            active_prompt_text = "[idle] 等待校准\n点击 Start Calibration 开始校准提示。\n校准结束或取消后会回到此状态。"
+
         phase_prompt_text = self._format_calibration_phase_prompts()
-        output_text = "\n".join(output_tail) if output_tail else "No calibration CLI output yet."
-        current_phase = self._calibration_current_phase or ("phase 1/4" if running else "n/a")
-        current_phase_detail = self._current_calibration_phase_detail()
+        output_text = "\n".join(output_tail) if running and output_tail else active_prompt_text
+
         return {
             "status": status,
             "running": running,
+            "guidance_running": bool(guidance_active),
+            "process_running": bool(process_running),
             "user_id": self._calibration_user_id,
             "started_at_ms": self._calibration_started_at_ms,
+            "elapsed_ms": elapsed_ms if running else 0,
+            "elapsed_sec": elapsed_sec,
+            "remaining_ms": phase_remaining_ms if running else 0,
+            "remaining_sec": remaining_sec,
+            "total_remaining_ms": remaining_ms if running else 0,
+            "total_remaining_sec": total_remaining_sec,
+            "phase_elapsed_ms": phase_elapsed_ms if running else 0,
+            "phase_duration_ms": phase_duration_ms if running else 0,
+            "progress_fraction": round(progress_fraction, 3) if running else 0.0,
+            "progress_percent": round(progress_fraction * 100.0, 1) if running else 0.0,
             "exit_code": self._calibration_exit_code,
             "current_phase": current_phase,
             "current_phase_detail": current_phase_detail,
-            "phase_prompts": self._calibration_phase_prompts(),
+            "phase_prompts": prompts,
             "phase_prompt_text": phase_prompt_text,
+            "active_prompt_text": active_prompt_text,
             "output_count": len(self._calibration_output_lines),
             "output_tail": output_tail,
             "output_text": output_text,
-            "operator_guidance": phase_prompt_text,
+            "operator_guidance": active_prompt_text,
             "command": " ".join(self._calibration_command) if self._calibration_command else "n/a",
         }
 
@@ -762,7 +1075,21 @@ class GuiFacade:
                 "progress": self._calibration_progress_summary(),
             }
 
+        self._set_current_user_context(user_id)
         calibration_type = str(payload.get("calibration_type") or "auto").strip() or "auto"
+        if calibration_type == "auto":
+            profile = self._fetch_profile_summary(user_id)
+            status = self._fetch_calibration_status(user_id)
+            last_calibration_id = str(status.get("last_calibration_id") or profile.get("last_calibration_id") or "").strip()
+            profile_loaded = bool(profile.get("profile_loaded", False))
+            has_usable_bound_calibration = (
+                profile_loaded
+                and status.get("status") == "accepted"
+                and bool(status.get("calibration_usable", False))
+                and last_calibration_id
+                and last_calibration_id != "n/a"
+            )
+            calibration_type = "quick_check" if has_usable_bound_calibration else "first_profile"
         source = str(payload.get("source") or ("ipc if self.mode == live-control else mock")).strip()
         if source == "ipc if self.mode == live-control else mock":
             source = "ipc" if self.mode == "live-control" else "mock"
@@ -1243,6 +1570,101 @@ class GuiFacade:
             item("diagnostics.refresh", "Refresh Diagnostics", "diagnostics", True, True, False, "refresh diagnostics")
         ]
 
+    def _current_user_id_for_control_state(self, app: dict[str, Any]) -> str:
+        override = str(getattr(self, "_current_user_override", "") or "").strip()
+        if override:
+            return override
+        return str(app.get("current_user_id") or app.get("user_id") or "").strip()
+
+    def _baseline_user_profile_context(self, user_id: str) -> dict[str, Any]:
+        user_id = str(user_id or "").strip()
+        if not user_id:
+            return {}
+        profile = self._fetch_profile_summary(user_id)
+        calibration = self._fetch_calibration_status(user_id)
+        merged: dict[str, Any] = {}
+        if isinstance(profile, dict):
+            merged.update(profile)
+        if isinstance(calibration, dict):
+            merged.update({
+                "calibration_status": calibration.get("calibration_status", calibration.get("status", "")),
+                "calibration_usable": calibration.get("calibration_usable", calibration.get("latest_valid", "")),
+                "latest_valid": calibration.get("latest_valid", calibration.get("valid", "")),
+                "attention_baseline": calibration.get("attention_baseline", "n/a"),
+                "gyro_noise_rms": calibration.get("gyro_noise_rms", "n/a"),
+                "failure_reason": calibration.get("failure_reason", ""),
+            })
+            if not merged.get("last_calibration_id") or merged.get("last_calibration_id") == "n/a":
+                merged["last_calibration_id"] = calibration.get("last_calibration_id", "n/a")
+        return merged
+
+    def _calibration_options_text_for_user(self, user_id: str) -> tuple[str, str]:
+        user_id = str(user_id or "").strip()
+        options: list[str] = []
+        if user_id:
+            listing = self._fetch_calibration_list(user_id)
+            raw_items = listing.get("items") or listing.get("calibrations") or []
+            if isinstance(raw_items, list):
+                for item in raw_items:
+                    if not isinstance(item, dict):
+                        continue
+                    if str(item.get("user_id") or "").strip() != user_id:
+                        continue
+                    cal_id = str(item.get("calibration_id") or "").strip()
+                    if cal_id and cal_id not in options:
+                        options.append(cal_id)
+        if "manual" not in options:
+            options.append("manual")
+        selected = next((item for item in options if item != "manual"), "manual")
+        return "|".join(options), selected
+
+    def _hydrate_calibration_layout_payload(self, payload: dict[str, Any], control_state: dict[str, Any]) -> None:
+        if not isinstance(payload, dict) or not isinstance(control_state, dict):
+            return
+        self._hydrate_layout_payload_from_control_state(payload, control_state)
+        current_user_id = str(control_state.get("current_user_id") or self._current_user_id_for_control_state(self.get_app_state()) or "").strip()
+        options_text, default_calibration_id = self._calibration_options_text_for_user(current_user_id)
+        options = [item for item in options_text.split("|") if item]
+
+        # The active selector value must be one of the current user's own records.
+        # Do not insert controlStateJson.last_calibration_id into the selector when
+        # it is not part of this user's list; that is exactly how TEST_NEW can be
+        # offered TEST's calibration after a polluted binding.
+        candidate = str(control_state.get("calibration_id") or control_state.get("last_calibration_id") or "").strip()
+        if candidate not in options or candidate == "n/a":
+            candidate = default_calibration_id if default_calibration_id in options else "manual"
+        active_calibration_id = candidate or "manual"
+
+        card_count = int(payload.get("card_count") or 0)
+        for card_index in range(1, card_count + 1):
+            for widget_index in range(1, 7):
+                prefix = f"card{card_index}_widget{widget_index}"
+                widget_id = str(payload.get(f"{prefix}_id") or "")
+                if widget_id == "calibration_user_id":
+                    payload[f"{prefix}_value"] = current_user_id
+                    payload[f"{prefix}_fallback"] = current_user_id or "current user"
+                elif widget_id == "selected_calibration_id":
+                    payload[f"{prefix}_options_text"] = options_text
+                    payload[f"{prefix}_value"] = active_calibration_id
+                    payload[f"{prefix}_fallback"] = active_calibration_id
+                elif widget_id == "manual_calibration_id":
+                    payload[f"{prefix}_value"] = "" if active_calibration_id == "manual" else active_calibration_id
+                    payload[f"{prefix}_fallback"] = "Paste calibration id"
+
+    def _hydrate_layout_payload_from_control_state(self, payload: dict[str, Any], control_state: dict[str, Any]) -> None:
+        if not isinstance(payload, dict) or not isinstance(control_state, dict):
+            return
+        card_count = int(payload.get("card_count") or 0)
+        for card_index in range(1, card_count + 1):
+            for widget_index in range(1, 7):
+                prefix = f"card{card_index}_widget{widget_index}"
+                source = str(payload.get(f"{prefix}_source") or "")
+                if source.startswith("controlStateJson.") or source.startswith("controlState."):
+                    field_name = source.split(".", 1)[1]
+                    value = control_state.get(field_name)
+                    if value is not None and value != "":
+                        payload[f"{prefix}_value"] = str(value)
+
     def get_control_state(self) -> dict[str, Any]:
         app = self.get_app_state()
         session = self.get_session_state()
@@ -1253,35 +1675,93 @@ class GuiFacade:
             base_start = self._active_session_started_at_ms or session.get("started_at_ms")
             if base_start:
                 session_elapsed_ms = max(0, now - int(base_start))
+        last_result = self.last_command_result if isinstance(self.last_command_result, dict) else {}
+        last_command_id = self.last_command.get("command", "") if isinstance(self.last_command, dict) else ""
+        detail = last_result.get("detail") if isinstance(last_result.get("detail"), dict) else {}
+        calibration_detail = last_result.get("calibration") if isinstance(last_result.get("calibration"), dict) else {}
+        profile_detail = last_result.get("profile") if isinstance(last_result.get("profile"), dict) else {}
+        report_detail = last_result.get("report") if isinstance(last_result.get("report"), dict) else {}
+        result_detail = last_result.get("result") if isinstance(last_result.get("result"), dict) else {}
+        progress_detail = last_result.get("progress") if isinstance(last_result.get("progress"), dict) else {}
+        current_user_id = self._current_user_id_for_control_state(app)
+        baseline_detail = self._baseline_user_profile_context(current_user_id)
+        progress_baseline = self._calibration_progress_summary()
+        merged_detail: dict[str, Any] = {}
+        for src in (baseline_detail, progress_baseline, result_detail, progress_detail, detail, calibration_detail, profile_detail, report_detail, last_result):
+            if isinstance(src, dict):
+                src_user = str(src.get("user_id") or src.get("current_user_id") or "").strip()
+                if src_user and current_user_id and src_user != current_user_id:
+                    continue
+                merged_detail.update(src)
+
         return {
             "mode": self.mode,
             "control_enabled": self.mode != "core",
             "readonly": self.mode in {"core", "live-readonly"},
-            "current_user_id": app.get("current_user_id", ""),
+            "current_user_id": current_user_id,
             "current_session_id": session.get("session_id", "") or ("session_id_unavailable" if session_active else ""),
             "current_game_id": app.get("current_game_id", session.get("game_id", "")),
             "session_active": session_active,
-            "calibration_active": False,
+            "calibration_active": bool(progress_baseline.get("running", False)),
             "live_connected": app.get("connection_status") == "connected" or app.get("source") in {"live_readonly", "live_control"},
             "last_command": self.last_command.get("command", "") if isinstance(self.last_command, dict) else "",
             "last_command_result": self.last_command_result.get("status", "") if isinstance(self.last_command_result, dict) else "",
             "last_command_error": self._last_command_error,
             "command_count": self.command_count,
-            "latest_report_path": session.get("latest_report_path") or session.get("report_path") or "",
+            "last_action_id": last_command_id,
+            "last_action_status": str(last_result.get("status", "")),
+            "last_action_message": str(last_result.get("message", last_result.get("reason", ""))),
+            "last_action_accepted": bool(last_result.get("accepted", False)),
+            "last_action_result": str(last_result.get("result", ""))[:240],
+            "latest_report_path": merged_detail.get("latest_report_path", session.get("latest_report_path") or session.get("report_path") or ""),
             "app_elapsed_ms": now - self._started_at_ms,
             "session_elapsed_ms": session_elapsed_ms if session_active else "n/a",
             "last_session_status": session.get("training_status", "none"),
-            "profile_status": self.last_command_result.get("status", "") if isinstance(self.last_command_result, dict) and self.last_command.get("command") == "user.show_profile" else "",
-            "user_type": self.last_command_result.get("profile", {}).get("user_type", "") if isinstance(self.last_command_result, dict) else "",
-            "profile_loaded": self.last_command_result.get("profile", {}).get("profile_loaded", "") if isinstance(self.last_command_result, dict) else "",
-            "last_calibration_id": self.last_command_result.get("calibration", {}).get("last_calibration_id", self.last_command_result.get("profile", {}).get("last_calibration_id", "n/a")) if isinstance(self.last_command_result, dict) else "n/a",
-            "calibration_status": self.last_command_result.get("calibration", {}).get("calibration_status", "") if isinstance(self.last_command_result, dict) else "",
-            "calibration_usable": self.last_command_result.get("calibration", {}).get("calibration_usable", "") if isinstance(self.last_command_result, dict) else "",
+            "profile_status": merged_detail.get("profile_status", str(last_result.get("status", "")) if last_command_id == "user.show_profile" else ""),
+            "user_type": merged_detail.get("user_type", ""),
+            "profile_loaded": merged_detail.get("profile_loaded", ""),
+            "attention_low_threshold": merged_detail.get("attention_low_threshold", "n/a"),
+            "attention_high_threshold": merged_detail.get("attention_high_threshold", "n/a"),
+            "preferred_game_id": merged_detail.get("preferred_game_id", "n/a"),
+            "difficulty_level": merged_detail.get("difficulty_level", "n/a"),
+            "last_calibration_id": merged_detail.get("last_calibration_id", merged_detail.get("calibration_id", "n/a")),
+            "calibration_id": merged_detail.get("calibration_id", merged_detail.get("last_calibration_id", "n/a")),
+            "calibration_status": merged_detail.get("calibration_status", str(last_result.get("status", "")) if str(last_command_id).startswith("calibration.") else ""),
+            "calibration_usable": merged_detail.get("calibration_usable", merged_detail.get("latest_valid", merged_detail.get("valid", ""))),
+            "latest_valid": merged_detail.get("latest_valid", merged_detail.get("valid", "")),
+            "failure_reason": merged_detail.get("failure_reason", ""),
+            "attention_baseline": merged_detail.get("attention_baseline", ""),
+            "attention_std": merged_detail.get("attention_std", ""),
+            "gyro_noise_rms": merged_detail.get("gyro_noise_rms", ""),
+            "calibration_progress_status": progress_baseline.get("status", progress_detail.get("status", "idle")),
+            "calibration_progress_running": progress_baseline.get("running", progress_detail.get("running", False)),
+            "calibration_running": progress_baseline.get("running", progress_detail.get("running", False)),
+            "calibration_progress_phase": progress_baseline.get("current_phase", progress_detail.get("current_phase", "n/a")),
+            "calibration_phase": progress_baseline.get("current_phase", progress_detail.get("current_phase", "n/a")),
+            "calibration_progress_exit_code": progress_baseline.get("exit_code", progress_detail.get("exit_code", "n/a")),
+            "calibration_progress_output_count": progress_baseline.get("output_count", progress_detail.get("output_count", 0)),
+            "calibration_progress_elapsed_sec": progress_baseline.get("elapsed_sec", progress_detail.get("elapsed_sec", "n/a")),
+            "calibration_progress_remaining_sec": progress_baseline.get("remaining_sec", progress_detail.get("remaining_sec", "n/a")),
+            "calibration_phase_remaining_sec": progress_baseline.get("remaining_sec", progress_detail.get("remaining_sec", "n/a")),
+            "calibration_total_remaining_sec": progress_baseline.get("total_remaining_sec", progress_detail.get("total_remaining_sec", "n/a")),
+            "calibration_progress_fraction": progress_baseline.get("progress_fraction", progress_detail.get("progress_fraction", 0.0)),
+            "calibration_progress_percent": progress_baseline.get("progress_percent", progress_detail.get("progress_percent", 0.0)),
+            "calibration_phase_prompt_text": progress_baseline.get("phase_prompt_text", progress_detail.get("phase_prompt_text", "")),
+            "calibration_operator_guidance": progress_baseline.get("operator_guidance", progress_detail.get("operator_guidance", progress_baseline.get("phase_prompt_text", ""))),
+            "calibration_active_prompt_text": progress_baseline.get("active_prompt_text", progress_detail.get("active_prompt_text", "")),
+            "calibration_phase_title": (progress_baseline.get("current_phase_detail") or progress_detail.get("current_phase_detail") or {}).get("title", "n/a") if isinstance(progress_baseline.get("current_phase_detail") or progress_detail.get("current_phase_detail"), dict) else "n/a",
+            "calibration_phase_instruction": (progress_baseline.get("current_phase_detail") or progress_detail.get("current_phase_detail") or {}).get("user_instruction", "n/a") if isinstance(progress_baseline.get("current_phase_detail") or progress_detail.get("current_phase_detail"), dict) else "n/a",
+            "calibration_phase_avoid_instruction": (progress_baseline.get("current_phase_detail") or progress_detail.get("current_phase_detail") or {}).get("avoid_instruction", "n/a") if isinstance(progress_baseline.get("current_phase_detail") or progress_detail.get("current_phase_detail"), dict) else "n/a",
+            "calibration_phase_duration_hint": (progress_baseline.get("current_phase_detail") or progress_detail.get("current_phase_detail") or {}).get("duration_hint", "n/a") if isinstance(progress_baseline.get("current_phase_detail") or progress_detail.get("current_phase_detail"), dict) else "n/a",
+            "items_count": merged_detail.get("items_count", merged_detail.get("session_count", merged_detail.get("user_count", merged_detail.get("calibration_count", "")))),
+            "session_count": merged_detail.get("session_count", merged_detail.get("items_count", "")),
+            "latest_session_id": merged_detail.get("latest_session_id", merged_detail.get("session_id", session.get("session_id", ""))),
         }
 
     def _set_current_user_context(self, user_id: str, display_name: str | None = None, user_type: str = "local_user") -> None:
         if not user_id:
             return
+        self._current_user_override = str(user_id)
         if self._live_control_source:
             self._live_control_source.user_id = user_id
             return
@@ -1393,6 +1873,13 @@ class GuiFacade:
 
     def invoke_action(self, action_id: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
         payload = payload or {}
+        alias_map = {
+            "report.latest": "report.refresh",
+            "report.list_sessions": "report.list",
+            "report.show_session": "report.show",
+            "user.load_current": "user.load_current",
+        }
+        action_id = alias_map.get(action_id, action_id)
         self.last_command = {"command": action_id, "args": deepcopy(payload), "type": "action_id"}
         self.command_count += 1
         map_cmd = {
@@ -1411,15 +1898,37 @@ class GuiFacade:
             result = {"action_id": action_id, "status": "accepted", "result": "quit_requested", "accepted": True}
         elif action_id == "user.show_profile":
             app = self.get_app_state()
-            user_id = str(payload.get("user_id") or app.get("current_user_id") or "").strip()
+            raw_user_id = payload.get("user_id") if "user_id" in payload else (self._current_user_override or app.get("current_user_id"))
+            user_id = str(raw_user_id or "").strip()
             if not user_id:
                 result = {"action_id": action_id, "status": "missing_user", "result": "missing_user", "message": "missing_user", "accepted": False}
             else:
                 ps = self._fetch_profile_summary(user_id)
-                result = {"action_id": action_id, "status": ps.get("status", "profile_not_available"), "result": "profile", "message": ps.get("message", ""), "accepted": ps.get("status") == "accepted", "user_id": user_id, "detail": ps, "profile": ps}
+                cs = self._fetch_calibration_status(user_id)
+                detail = dict(ps)
+                detail.update({
+                    "calibration_status": cs.get("calibration_status", cs.get("status", "n/a")),
+                    "calibration_usable": cs.get("calibration_usable", "n/a"),
+                    "latest_valid": cs.get("latest_valid", "n/a"),
+                    "attention_baseline": cs.get("attention_baseline", "n/a"),
+                    "gyro_noise_rms": cs.get("gyro_noise_rms", "n/a"),
+                    "calibration_failure_reason": cs.get("failure_reason", ""),
+                })
+                result = {
+                    "action_id": action_id,
+                    "status": ps.get("status", "profile_not_available"),
+                    "result": "profile",
+                    "message": ps.get("message", ""),
+                    "accepted": ps.get("status") == "accepted",
+                    "user_id": user_id,
+                    "detail": detail,
+                    "profile": ps,
+                    "calibration": cs,
+                }
         elif action_id == "calibration.status":
             app = self.get_app_state()
-            user_id = str(payload.get("user_id") or app.get("current_user_id") or "").strip()
+            raw_user_id = payload.get("user_id") if "user_id" in payload else (self._current_user_override or app.get("current_user_id"))
+            user_id = str(raw_user_id or "").strip()
             if not user_id:
                 result = {"action_id": action_id, "status": "missing_user", "result": "missing_user", "message": "missing_user", "accepted": False, "calibration": {"calibration_status": "missing_user"}}
             else:
@@ -1487,22 +1996,38 @@ class GuiFacade:
             result = {"action_id": action_id, "status": "accepted", "result": "cleared", "accepted": True}
         elif action_id == "calibration.start":
             # Keep the TASK23A/TASK23B contract boundary: only live-control may start
-            # the real calibration process. Readonly/core modes still report the
-            # workflow as not implemented, while mock keeps deterministic progress
-            # guidance for GUI tests and page preview.
+            # the real calibration process. Readonly/core modes still expose operator
+            # guidance and a visible progress state so the desktop calibration card can
+            # explain what is blocking the run.
             if self.mode in {"core", "core-control", "live-readonly"}:
+                app = self.get_app_state()
+                raw_user_id = payload.get("user_id") if "user_id" in payload else (self._current_user_override or app.get("current_user_id"))
+                user_id = str(raw_user_id or "").strip()
+                self._set_current_user_context(user_id)
+                self._calibration_user_id = user_id
+                self._calibration_started_at_ms = int(time.time() * 1000)
+                self._calibration_exit_code = None
+                self._calibration_current_phase = "phase 1/4"
+                self._calibration_output_lines = [
+                    "[gui] Calibration start requested from desktop card.",
+                    "[gui] Real calibration requires live-control mode and a connected device.",
+                ] + self._format_calibration_phase_prompts().splitlines()
+                progress = self._calibration_progress_summary()
                 result = {
                     "action_id": action_id,
-                    "status": "not_implemented",
-                    "result": "not_implemented",
+                    "status": "live_control_required",
+                    "result": "calibration_progress",
                     "message": "calibration_start_requires_live_control",
                     "accepted": False,
-                    "progress": self._calibration_progress_summary(),
+                    "user_id": user_id,
+                    "progress": progress,
+                    "detail": progress,
                 }
             else:
                 app = self.get_app_state()
-                raw_user_id = payload.get("user_id") if "user_id" in payload else app.get("current_user_id")
+                raw_user_id = payload.get("user_id") if "user_id" in payload else (self._current_user_override or app.get("current_user_id"))
                 user_id = str(raw_user_id or "").strip()
+                self._set_current_user_context(user_id)
                 summary = self._start_calibration_summary(user_id, payload)
                 status = summary.get("status", "started")
                 result = {
@@ -1574,7 +2099,7 @@ class GuiFacade:
             # A payload that explicitly provides user_id must be respected even when it is blank.
             # This keeps validation predictable: {"user_id": ""} means missing_user instead of
             # silently falling back to the current mock/live user.
-            raw_user_id = payload.get("user_id") if "user_id" in payload else app.get("current_user_id")
+            raw_user_id = payload.get("user_id") if "user_id" in payload else (self._current_user_override or app.get("current_user_id"))
             user_id = str(raw_user_id or "").strip()
             calibration_id = str(payload.get("calibration_id") or "").strip()
             if not user_id and action_id != "calibration.show":
@@ -1590,13 +2115,23 @@ class GuiFacade:
                     result = {"action_id": action_id, "status": "missing_input", "result": "missing_calibration_id", "message": "missing_calibration_id", "accepted": False, "user_id": user_id}
                 else:
                     summary = self._fetch_calibration_detail(calibration_id)
-                    result = {"action_id": action_id, "status": summary.get("status", "calibration_not_found"), "result": summary, "message": summary.get("message", "calibration_detail"), "accepted": summary.get("status") == "accepted", "detail": summary, "calibration": summary, "user_id": user_id, "calibration_id": calibration_id}
+                    detail_user_id = str(summary.get("user_id") or "").strip() if isinstance(summary, dict) else ""
+                    if summary.get("status") == "accepted" and user_id and detail_user_id and detail_user_id != user_id:
+                        summary = {
+                            "status": "calibration_user_mismatch",
+                            "message": "calibration_user_mismatch",
+                            "user_id": user_id,
+                            "calibration_id": calibration_id,
+                            "calibration_user_id": detail_user_id,
+                            "detail": summary,
+                        }
+                    result = {"action_id": action_id, "status": summary.get("status", "calibration_not_found"), "result": summary, "message": summary.get("message", "calibration_detail"), "accepted": summary.get("status") == "accepted", "detail": summary.get("detail", summary) if isinstance(summary, dict) else summary, "calibration": summary, "user_id": user_id, "calibration_id": calibration_id}
             elif action_id == "calibration.bind":
                 summary = self._bind_calibration_summary(user_id, calibration_id)
                 result = {"action_id": action_id, "status": summary.get("status", "unknown"), "result": summary, "message": summary.get("message", ""), "accepted": summary.get("status") == "accepted", "detail": summary.get("detail", summary), "calibration": summary.get("calibration", {}), "user_id": user_id, "calibration_id": calibration_id}
             else:
                 summary = self._cancel_calibration_summary(user_id)
-                result = {"action_id": action_id, "status": summary.get("status", "cancelled"), "result": summary, "message": summary.get("message", "cancelled_by_user"), "accepted": summary.get("status") == "cancelled", "detail": summary, "user_id": user_id}
+                result = {"action_id": action_id, "status": summary.get("status", "cancelled"), "result": summary, "message": summary.get("message", "cancelled_by_user"), "accepted": summary.get("status") == "cancelled", "detail": summary, "progress": summary.get("progress", self._calibration_progress_summary()), "user_id": user_id}
         elif action_id in {"report.refresh", "report.list", "report.show", "report.export"}:
             app = self.get_app_state()
             raw_user_id = payload.get("user_id") if "user_id" in payload else app.get("current_user_id")
