@@ -40,6 +40,10 @@ Item {
     property var sessionDetailObj: ({})
     property string selectedSessionId: ""
     property string reportActionText: "No report action yet."
+    property string selectedReportPath: ""
+    property string latestReportPath: ""
+    property string exportPath: ""
+    property string reportPreviewText: ""
 
     function s(v) {
         return (v === undefined || v === null || v === "") ? "n/a" : String(v)
@@ -141,6 +145,48 @@ Item {
             + "\nreason: " + s(src.reason || src.message)
     }
 
+    function firstReportPath(obj) {
+        var src = obj || {}
+        var nested = (src.result && typeof src.result === "object") ? src.result : ({})
+        var detail = (src.detail && typeof src.detail === "object") ? src.detail : ({})
+        var report = (src.report && typeof src.report === "object") ? src.report : ({})
+        return s(detail.report_path || report.report_path || nested.report_path || src.report_path ||
+                 detail.latest_report_path || report.latest_report_path || nested.latest_report_path || src.latest_report_path ||
+                 sessionObj.latest_report_path || sessionObj.report_path || controlStateObj.report_selected_report_path || controlStateObj.latest_report_path)
+    }
+
+    function firstExportPath(obj) {
+        var src = obj || {}
+        var nested = (src.result && typeof src.result === "object") ? src.result : ({})
+        var detail = (src.detail && typeof src.detail === "object") ? src.detail : ({})
+        return s(src.export_path || nested.export_path || detail.export_path || controlStateObj.report_export_path)
+    }
+
+    function firstReportPreview(obj) {
+        var src = obj || {}
+        var nested = (src.result && typeof src.result === "object") ? src.result : ({})
+        var detail = (src.detail && typeof src.detail === "object") ? src.detail : ({})
+        var report = (src.report && typeof src.report === "object") ? src.report : ({})
+        return s(detail.report_preview || report.report_preview || nested.report_preview || src.report_preview)
+    }
+
+    function refreshReportLocalState(obj) {
+        var pathText = firstReportPath(obj)
+        if (pathText !== "n/a") {
+            selectedReportPath = pathText
+            latestReportPath = pathText
+        }
+        var exp = firstExportPath(obj)
+        if (exp !== "n/a") {
+            exportPath = exp
+        }
+        var preview = firstReportPreview(obj)
+        if (preview !== "n/a") {
+            reportPreviewText = preview
+        }
+    }
+
+
     function formatSessionDetail(obj) {
         var d = obj || {}
         if (d.result && typeof d.result === "object") {
@@ -175,14 +221,16 @@ Item {
 
         var obj = safeJsonParse(raw)
         actionResultObj = obj
+        refreshReportLocalState(obj)
         reportActionText = pretty(obj)
         selectedCommandId = actionId
         selectedStatus = s(obj.status)
         selectedExecutionMode = "native"
         selectedNativeActionId = actionId
 
-        if (actionId === "report.refresh") {
+        if (actionId === "report.refresh" || actionId === "report.latest") {
             reportSummaryObj = obj.result || obj.detail || obj.report || obj
+            sessionDetailObj = obj.detail || obj.report || obj.result || obj
             activePanel = "summary"
         } else if (actionId === "report.list") {
             var items = reportItemsFrom(obj)
@@ -191,6 +239,9 @@ Item {
         } else if (actionId === "report.show") {
             sessionDetailObj = obj.detail || obj.result || obj.report || obj
             activePanel = "detail"
+        } else if (actionId === "report.export" || actionId === "report.export_txt") {
+            sessionDetailObj = obj.detail || obj.result || obj.report || obj
+            activePanel = "result"
         } else {
             activePanel = "result"
         }
@@ -199,6 +250,10 @@ Item {
 
     function refreshReport() {
         invokeReport("report.refresh", {"user_id": currentUserId()})
+    }
+
+    function latestReport() {
+        invokeReport("report.latest", {"user_id": currentUserId()})
     }
 
     function listSessions() {
@@ -229,7 +284,7 @@ Item {
     function exportReport() {
         if (selectedSessionId === "" || selectedSessionId === "n/a") {
             var obj = {
-                "action_id": "report.export",
+                "action_id": "report.export_txt",
                 "status": "missing_input",
                 "result": "missing_session_id",
                 "message": "missing_session_id",
@@ -237,14 +292,14 @@ Item {
             }
             actionResultObj = obj
             reportActionText = pretty(obj)
-            selectedCommandId = "report.export"
+            selectedCommandId = "report.export_txt"
             selectedStatus = "missing_input"
             selectedExecutionMode = "native"
-            selectedNativeActionId = "report.export"
+            selectedNativeActionId = "report.export_txt"
             activePanel = "result"
             return
         }
-        invokeReport("report.export", {"user_id": currentUserId(), "session_id": selectedSessionId})
+        invokeReport("report.export_txt", {"user_id": currentUserId(), "session_id": selectedSessionId})
     }
 
     DesignBackground {
@@ -290,6 +345,19 @@ Item {
         visible: reportPage.task26LegacyFallbackVisible
         enabled: reportPage.task26LegacyFallbackVisible
         clip: true
+        ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+        ScrollBar.vertical: ScrollBar {
+            policy: ScrollBar.AsNeeded
+            width: 7
+            padding: 1
+            contentItem: Rectangle {
+                implicitWidth: 7
+                radius: 4
+                color: parent.pressed ? "#AEEBFF" : "#4B6A86"
+                opacity: parent.active ? 0.72 : 0.38
+            }
+            background: Rectangle { color: "transparent" }
+        }
 
         Column {
             width: reportPage.width - 16
@@ -312,9 +380,9 @@ Item {
                     spacing: 4
                     Label { text: "current_user_id: " + s(reportPage.currentUserId()) }
                     Label { text: "latest_session_id: " + s(sessionObj.session_id || controlStateObj.current_session_id) }
-                    Label { text: "latest_report_path: " + s(sessionObj.latest_report_path || sessionObj.report_path || controlStateObj.latest_report_path) }
-                    Label { text: "report_available: " + (s(sessionObj.latest_report_path || sessionObj.report_path || controlStateObj.latest_report_path) !== "n/a") }
-                    Label { text: "reason: " + (s(sessionObj.latest_report_path || sessionObj.report_path || controlStateObj.latest_report_path) === "n/a" ? "no_report_available" : "report_available") }
+                    Label { text: "latest_report_path: " + s(reportPage.latestReportPath || sessionObj.latest_report_path || sessionObj.report_path || controlStateObj.latest_report_path); wrapMode: Text.WrapAnywhere; width: parent.width }
+                    Label { text: "report_available: " + (s(reportPage.latestReportPath || sessionObj.latest_report_path || sessionObj.report_path || controlStateObj.latest_report_path) !== "n/a") }
+                    Label { text: "export_path: " + s(reportPage.exportPath || controlStateObj.report_export_path); wrapMode: Text.WrapAnywhere; width: parent.width }
                 }
             }
 
@@ -337,28 +405,18 @@ Item {
                     }
 
                     DesignButton { buttonStyleObj: reportPage.componentStyleObj.button || ({}); themeObj: reportPage.designThemeObj; renderResourcesObj: reportPage.renderResourcesObj;
-                        text: "Show Session"
-                        onClicked: reportPage.showSelectedSession()
-                    }
-
-                    DesignButton { buttonStyleObj: reportPage.componentStyleObj.button || ({}); themeObj: reportPage.designThemeObj; renderResourcesObj: reportPage.renderResourcesObj;
-                        text: "Show Selected Session"
+                        text: "Show Selected"
                         onClicked: reportPage.showSelectedSession()
                     }
 
                     DesignButton { buttonStyleObj: reportPage.componentStyleObj.button || ({}); themeObj: reportPage.designThemeObj; renderResourcesObj: reportPage.renderResourcesObj;
                         text: "Latest Report"
-                        onClicked: reportPage.refreshReport()
+                        onClicked: reportPage.latestReport()
                     }
 
                     DesignButton { buttonStyleObj: reportPage.componentStyleObj.button || ({}); themeObj: reportPage.designThemeObj; renderResourcesObj: reportPage.renderResourcesObj;
                         text: "Export Report"
                         onClicked: reportPage.exportReport()
-                    }
-
-                    DesignButton { buttonStyleObj: reportPage.componentStyleObj.button || ({}); themeObj: reportPage.designThemeObj; renderResourcesObj: reportPage.renderResourcesObj;
-                        text: "Open Path Manual"
-                        onClicked: reportPage.pick("report.open_path_manual", "manual", "manual", "")
                     }
                 }
             }
@@ -472,3 +530,6 @@ Item {
 }
 
 // Page Feedback
+
+// Report formal desktop tokens: report_query_card report_detail_card report_actions_card report_popup_card
+// Legacy compatibility tokens: Report Readiness Latest Report Session List Session Detail Report Action Result Refresh Report List Sessions Show Selected selected_session_id No sessions found. missing_session_id latest_report_path Page Commands Page Feedback export_path

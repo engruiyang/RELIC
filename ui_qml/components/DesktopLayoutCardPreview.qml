@@ -17,6 +17,10 @@ Item {
     property var designThemeObj: ({})
     property var gameStyleObj: ({})
     property var effectStyleObj: ({})
+    property string sharedReportActionRaw: ""
+    property string sharedSelectedReportSessionId: ""
+    signal reportActionResultReady(string raw)
+    signal reportSelectionChanged(string sessionId)
 
     property string cardId: ""
     property string cardType: ""
@@ -85,6 +89,7 @@ Item {
     property string lastDesktopActionRaw: ""
     property string lastProfileActionRaw: ""
     property string lastCalibrationActionRaw: ""
+    property string lastReportActionRaw: ""
 
     x: Math.round(modelX * previewScale)
     y: Math.round(modelY * previewScale)
@@ -143,9 +148,28 @@ Item {
         return safeText(obj[fieldName], fallbackValue)
     }
 
-    function widgetDisplayText(type, label, source, fallback, unit, value) {
+    function widgetDisplayText(type, label, source, fallback, unit, value, widgetId) {
         if (type === "input") return safeText(fallback, "")
         if (type === "select") return safeText(value, fallback)
+        if (safeText(widgetId, "") === "current_selected_session_id") {
+            var shared = safeText(root.sharedSelectedReportSessionId, "").trim()
+            if (isValidReportSessionText(shared)) return shared
+        }
+        var reportKey = reportKeyFromWidget(widgetId, source, label)
+        if (reportKey.length > 0) {
+            var stateFallback = sourceValue(source, fallback)
+            if (reportKey === "report_path") return reportValue("report_path", reportValue("latest_report_path", stateFallback))
+            if (reportKey === "latest_report_path") return reportValue("latest_report_path", reportValue("report_path", stateFallback))
+            if (reportKey === "export_path") return reportExportPathValue("n/a")
+            if (reportKey === "report_list_text") return reportListText(stateFallback)
+            if (reportKey === "session_id") return reportValue("session_id", reportValue("latest_session_id", stateFallback))
+            if (reportKey === "report_preview_available") {
+                var previewText = reportValue("report_preview", "")
+                if (previewText.length > 0 && previewText !== "n/a") return "true"
+                return reportValue("report_preview_available", stateFallback)
+            }
+            return reportValue(reportKey, stateFallback)
+        }
         var resolved = value && value.length > 0 ? value : sourceValue(source, fallback)
         var unitText = unit && unit.length > 0 && resolved !== fallback ? " " + unit : ""
         return safeText(resolved, fallback) + unitText
@@ -176,6 +200,23 @@ Item {
         return root.widgetRowHeight
     }
 
+    function reportListPanelVisible() {
+        if (root.cardId !== "report_detail_card") return false
+        var obj = currentReportRawObject()
+        if (reportActionIdFromObject(obj) !== "report.list") return false
+        var text = reportListText("")
+        return text.length > 0 && text !== "n/a" && text.indexOf("Click Refresh Report List") < 0
+    }
+
+    function reportListPanelText() {
+        return reportListText("No reports found for current user.")
+    }
+
+    function isReportPathKey(key) {
+        var text = safeText(key, "").toLowerCase()
+        return text.indexOf("path") >= 0 || text.indexOf("preview") >= 0
+    }
+
     function buttonLabel(label, actionId, required) {
         var base = label && label.length > 0 ? label : actionId
         if (required) return base + " *"
@@ -202,13 +243,138 @@ Item {
         return String(text).split(needle).join(value)
     }
 
+    function isReportAction(actionId) {
+        return safeText(actionId, "").indexOf("report.") === 0
+    }
+
+    function reportKeyFromWidget(widgetId, source, label) {
+        var idText = safeText(widgetId, "").toLowerCase()
+        var sourceText = safeText(source, "").toLowerCase()
+        var labelText = safeText(label, "").toLowerCase()
+        var combined = idText + " " + sourceText + " " + labelText
+        if (idText === "selected_report_path" || idText === "popup_current_path" || sourceText.indexOf("report_selected_report_path") >= 0) return "report_path"
+        if (idText === "latest_report_path" || sourceText.indexOf("latest_report_path") >= 0) return "latest_report_path"
+        if (idText === "export_path" || sourceText.indexOf("report_export_path") >= 0) return "export_path"
+        if (idText === "popup_preview_text" || sourceText.indexOf("report_selected_report_preview") >= 0 || sourceText.indexOf("report_preview") >= 0) return "report_preview"
+        if (idText === "report_list_text" || sourceText.indexOf("report_list_text") >= 0 || combined.indexOf("current user reports") >= 0) return "report_list_text"
+        if (idText === "selected_session_id" || idText === "current_selected_session_id" || sourceText.indexOf("report_selected_session_id") >= 0) return "session_id"
+        if (idText === "selected_report_user" || sourceText.indexOf("report_selected_user_id") >= 0) return "user_id"
+        if (idText === "report_available" || sourceText.indexOf("report_available") >= 0) return "report_available"
+        if (idText === "preview_loaded" || idText === "report_preview_available" || sourceText.indexOf("report_preview_available") >= 0) return "report_preview_available"
+        if (combined.indexOf("report path") >= 0) return "report_path"
+        if (combined.indexOf("export path") >= 0) return "export_path"
+        if (combined.indexOf("preview") >= 0 && combined.indexOf("report") >= 0) return "report_preview"
+        return ""
+    }
+
+    function reportListOptionsFromObject(obj, depth) {
+        if (!obj || depth <= 0) return []
+        var out = []
+        function addCandidate(value) {
+            var text = safeText(value, "").trim()
+            if (text.length === 0 || text === "n/a" || text === "no_report_available") return
+            if (out.indexOf(text) < 0) out.push(text)
+        }
+        function scanArray(arr) {
+            if (!arr || !Array.isArray(arr)) return
+            for (var i = 0; i < arr.length; i++) {
+                var item = arr[i]
+                if (item && typeof item === "object") {
+                    var available = item.report_available
+                    var pathText = safeText(item.report_path || item.latest_report_path || item.source_report_path || "", "")
+                    // Report selector must prefer actual report records.  A current-user
+                    // session without report_path was the reason Show Selected kept
+                    // opening a no-preview/no-path result after switching users.
+                    if (available === false || pathText.length === 0 || pathText === "n/a" || pathText === "null") {
+                        continue
+                    }
+                    addCandidate(item.session_id || item.report_id || item.id)
+                } else {
+                    addCandidate(item)
+                }
+            }
+        }
+        scanArray(obj.items)
+        scanArray(obj.sessions)
+        var priority = ["result", "detail", "report", "summary"]
+        for (var p = 0; p < priority.length; p++) {
+            var name = priority[p]
+            if (obj[name] && typeof obj[name] === "object") {
+                var nested = reportListOptionsFromObject(obj[name], depth - 1)
+                for (var n = 0; n < nested.length; n++) addCandidate(nested[n])
+            }
+        }
+        return out
+    }
+
+    function reportSelectorOptionsText(staticOptionsText) {
+        var raw = root.lastReportActionRaw.length > 0 ? root.lastReportActionRaw : (root.sharedReportActionRaw.length > 0 ? root.sharedReportActionRaw : root.lastDesktopActionRaw)
+        try {
+            var obj = JSON.parse(raw || "{}")
+            var options = reportListOptionsFromObject(obj, 4)
+            if (options.length > 0) return options.join("|")
+        } catch (e) {
+        }
+        var contextOptions = reportContextValue("report_options_text", "")
+        if (contextOptions.length > 0 && contextOptions !== "n/a") return contextOptions
+        return staticOptionsText
+    }
+
+    function isValidReportSessionText(value) {
+        var text = safeText(value, "").trim()
+        return text.length > 0 && text !== "n/a" && text !== "no_report_available" && text !== "manual" && text !== "null"
+    }
+
+    function rememberReportSelection(value) {
+        var text = safeText(value, "").trim()
+        if (isValidReportSessionText(text) && text !== root.sharedSelectedReportSessionId) {
+            root.reportSelectionChanged(text)
+        }
+    }
+
+    function reportPrimarySessionId(fallbackValue) {
+        var shared = safeText(root.sharedSelectedReportSessionId, "").trim()
+        if (isValidReportSessionText(shared)) return shared
+        var fromRaw = reportValue("session_id", reportValue("latest_session_id", ""))
+        if (isValidReportSessionText(fromRaw)) return fromRaw
+        var fromState = sourceValue("controlStateJson.report_selected_session_id", sourceValue("controlStateJson.latest_session_id", fallbackValue))
+        if (isValidReportSessionText(fromState)) return fromState
+        return safeText(fallbackValue, "")
+    }
+
+    function sanitizeReportPayloadText(actionId, payloadText, widgetId) {
+        if (!isReportAction(actionId)) return payloadText
+        var obj = ({})
+        try {
+            obj = JSON.parse(payloadText && payloadText.length > 0 ? payloadText : "{}")
+        } catch (e) {
+            obj = ({})
+        }
+        // User switching is owned by GuiFacade.  Do not override the current loaded user
+        // with a stale controlStateJson.current_user_id captured by an old report card.
+        if (obj.user_id !== undefined) delete obj.user_id
+        if (actionId === "report.show" || actionId === "report.export" || actionId === "report.export_txt") {
+            var sid = safeText(obj.session_id || obj.report_id || "", "")
+            if (sid === "n/a" || sid === "no_report_available" || sid.length === 0) {
+                sid = reportPrimarySessionId("")
+            }
+            if (sid.length > 0 && sid !== "n/a" && sid !== "no_report_available") {
+                obj.session_id = sid
+            } else {
+                delete obj.session_id
+            }
+            obj.allow_latest_fallback = true
+        }
+        return JSON.stringify(obj)
+    }
+
     function widgetCurrentValue(widgetId) {
-        if (widgetId === root.widget1Id) return root.widget1Type === "select" ? root.widget1SelectText : (root.widget1Type === "input" ? root.widget1InputText : widgetDisplayText(root.widget1Type, root.widget1Label, root.widget1Source, root.widget1Fallback, root.widget1Unit, root.widget1Value))
-        if (widgetId === root.widget2Id) return root.widget2Type === "select" ? root.widget2SelectText : (root.widget2Type === "input" ? root.widget2InputText : widgetDisplayText(root.widget2Type, root.widget2Label, root.widget2Source, root.widget2Fallback, root.widget2Unit, root.widget2Value))
-        if (widgetId === root.widget3Id) return root.widget3Type === "select" ? root.widget3SelectText : (root.widget3Type === "input" ? root.widget3InputText : widgetDisplayText(root.widget3Type, root.widget3Label, root.widget3Source, root.widget3Fallback, root.widget3Unit, root.widget3Value))
-        if (widgetId === root.widget4Id) return root.widget4Type === "select" ? root.widget4SelectText : (root.widget4Type === "input" ? root.widget4InputText : widgetDisplayText(root.widget4Type, root.widget4Label, root.widget4Source, root.widget4Fallback, root.widget4Unit, root.widget4Value))
-        if (widgetId === root.widget5Id) return root.widget5Type === "select" ? root.widget5SelectText : (root.widget5Type === "input" ? root.widget5InputText : widgetDisplayText(root.widget5Type, root.widget5Label, root.widget5Source, root.widget5Fallback, root.widget5Unit, root.widget5Value))
-        if (widgetId === root.widget6Id) return root.widget6Type === "select" ? root.widget6SelectText : (root.widget6Type === "input" ? root.widget6InputText : widgetDisplayText(root.widget6Type, root.widget6Label, root.widget6Source, root.widget6Fallback, root.widget6Unit, root.widget6Value))
+        if (widgetId === root.widget1Id) return root.widget1Type === "select" ? root.widget1SelectText : (root.widget1Type === "input" ? root.widget1InputText : widgetDisplayText(root.widget1Type, root.widget1Label, root.widget1Source, root.widget1Fallback, root.widget1Unit, root.widget1Value, root.widget1Id))
+        if (widgetId === root.widget2Id) return root.widget2Type === "select" ? root.widget2SelectText : (root.widget2Type === "input" ? root.widget2InputText : widgetDisplayText(root.widget2Type, root.widget2Label, root.widget2Source, root.widget2Fallback, root.widget2Unit, root.widget2Value, root.widget2Id))
+        if (widgetId === root.widget3Id) return root.widget3Type === "select" ? root.widget3SelectText : (root.widget3Type === "input" ? root.widget3InputText : widgetDisplayText(root.widget3Type, root.widget3Label, root.widget3Source, root.widget3Fallback, root.widget3Unit, root.widget3Value, root.widget3Id))
+        if (widgetId === root.widget4Id) return root.widget4Type === "select" ? root.widget4SelectText : (root.widget4Type === "input" ? root.widget4InputText : widgetDisplayText(root.widget4Type, root.widget4Label, root.widget4Source, root.widget4Fallback, root.widget4Unit, root.widget4Value, root.widget4Id))
+        if (widgetId === root.widget5Id) return root.widget5Type === "select" ? root.widget5SelectText : (root.widget5Type === "input" ? root.widget5InputText : widgetDisplayText(root.widget5Type, root.widget5Label, root.widget5Source, root.widget5Fallback, root.widget5Unit, root.widget5Value, root.widget5Id))
+        if (widgetId === root.widget6Id) return root.widget6Type === "select" ? root.widget6SelectText : (root.widget6Type === "input" ? root.widget6InputText : widgetDisplayText(root.widget6Type, root.widget6Label, root.widget6Source, root.widget6Fallback, root.widget6Unit, root.widget6Value, root.widget6Id))
         return ""
     }
 
@@ -226,7 +392,7 @@ Item {
         return text
     }
 
-    function actionArgsJson(actionId, argsJson) {
+    function actionArgsJson(actionId, argsJson, widgetId) {
         var currentUser = sourceValue("controlStateJson.current_user_id", sourceValue("appState.current_user_id", ""))
         var calibrationId = sourceValue("controlStateJson.last_calibration_id", "")
         var sessionId = sourceValue("sessionState.current_session_id", sourceValue("controlState.current_session_id", ""))
@@ -237,7 +403,7 @@ Item {
             // Preserve those args, but always attach the current GUI user unless the
             // card deliberately provided user_id. This prevents calibration.bind/show
             // from relying on stale facade fallback after switching users.
-            if (currentUser && currentUser !== "n/a" && resolved.indexOf("\"user_id\"") < 0) {
+            if (!isReportAction(actionId) && currentUser && currentUser !== "n/a" && resolved.indexOf("\"user_id\"") < 0) {
                 var trimmed = String(resolved).trim()
                 if (trimmed === "{}" || trimmed.length === 0) {
                     return "{\"user_id\":\"" + jsonEscapeText(currentUser) + "\"}"
@@ -249,9 +415,9 @@ Item {
             return resolved
         }
         var payload = ({})
-        if (currentUser && currentUser !== "n/a") payload.user_id = currentUser
+        if (!isReportAction(actionId) && currentUser && currentUser !== "n/a") payload.user_id = currentUser
         if ((actionId === "calibration.show" || actionId === "calibration.bind") && calibrationId && calibrationId !== "n/a") payload.calibration_id = calibrationId
-        if ((actionId === "report.show" || actionId === "report.show_session") && sessionId && sessionId !== "n/a") payload.session_id = sessionId
+        if ((actionId === "report.show" || actionId === "report.show_session" || actionId === "report.export" || actionId === "report.export_txt") && sessionId && sessionId !== "n/a" && sessionId !== "no_report_available") payload.session_id = sessionId
         if (actionId === "session.start") {
             payload.game_id = root.widgetCurrentValue("selected_game_id") || sourceValue("gameHudJson.game_id", sourceValue("controlStateJson.current_game_id", "trace_lock"))
             if (!payload.game_id || payload.game_id === "n/a") payload.game_id = "trace_lock"
@@ -348,6 +514,197 @@ Item {
         return safeText(fallbackValue, "n/a")
     }
 
+    function extractNestedJsonValueFromObject(obj, key, depth) {
+        if (!obj || depth <= 0) return ""
+        if (obj[key] !== undefined && obj[key] !== null && obj[key] !== "") return safeText(obj[key], "")
+
+        var priority = ["detail", "report", "result", "session", "summary"]
+        for (var i = 0; i < priority.length; i++) {
+            var name = priority[i]
+            if (obj[name] && typeof obj[name] === "object" && !Array.isArray(obj[name])) {
+                var direct = extractNestedJsonValueFromObject(obj[name], key, depth - 1)
+                if (direct.length > 0) return direct
+            }
+        }
+
+        for (var prop in obj) {
+            if (!obj.hasOwnProperty(prop)) continue
+            var value = obj[prop]
+            if (value && typeof value === "object" && !Array.isArray(value)) {
+                var nested = extractNestedJsonValueFromObject(value, key, depth - 1)
+                if (nested.length > 0) return nested
+            }
+        }
+        return ""
+    }
+
+    function extractJsonObjectValue(raw, key, fallbackValue) {
+        var text = safeText(raw, "")
+        if (text.length === 0 || key.length === 0) return safeText(fallbackValue, "")
+        try {
+            var obj = JSON.parse(text)
+            var value = extractNestedJsonValueFromObject(obj, key, 5)
+            if (value.length > 0) return value
+        } catch (e) {
+            return safeText(fallbackValue, "")
+        }
+        return safeText(fallbackValue, "")
+    }
+
+    function currentReportRawObject() {
+        var raw = root.lastReportActionRaw.length > 0 ? root.lastReportActionRaw : (root.sharedReportActionRaw.length > 0 ? root.sharedReportActionRaw : root.lastDesktopActionRaw)
+        try {
+            return JSON.parse(raw || "{}")
+        } catch (e) {
+            return ({})
+        }
+    }
+
+    function reportActionIdFromObject(obj) {
+        if (!obj || typeof obj !== "object") return ""
+        return safeText(obj.action_id || "", "")
+    }
+
+    function reportSessionIdFromObject(obj) {
+        if (!obj || typeof obj !== "object") return ""
+        var result = (obj.result && typeof obj.result === "object") ? obj.result : ({})
+        var detail = (obj.detail && typeof obj.detail === "object") ? obj.detail : ({})
+        var report = (obj.report && typeof obj.report === "object") ? obj.report : ({})
+        var resultDetail = (result.detail && typeof result.detail === "object") ? result.detail : ({})
+        var candidates = [
+            obj.session_id, result.session_id, detail.session_id, report.session_id, resultDetail.session_id,
+            obj.latest_session_id, result.latest_session_id
+        ]
+        for (var i = 0; i < candidates.length; i += 1) {
+            var text = safeText(candidates[i], "").trim()
+            if (isValidReportSessionText(text)) return text
+        }
+        return ""
+    }
+
+    function reportExportPathValue(fallbackValue) {
+        var obj = currentReportRawObject()
+        var actionId = reportActionIdFromObject(obj)
+        var selected = safeText(root.sharedSelectedReportSessionId, "").trim()
+        var rawSession = reportSessionIdFromObject(obj)
+        var raw = root.lastReportActionRaw.length > 0 ? root.lastReportActionRaw : (root.sharedReportActionRaw.length > 0 ? root.sharedReportActionRaw : root.lastDesktopActionRaw)
+        var exportPath = meaningfulProfileText(extractJsonObjectValue(raw, "export_path", ""))
+        if (exportPath.length === 0) exportPath = meaningfulProfileText(extractJsonString(raw, "export_path", ""))
+        if (exportPath.length > 0) {
+            if (!isValidReportSessionText(selected) || !isValidReportSessionText(rawSession) || selected === rawSession) {
+                return exportPath
+            }
+        }
+        // A report.show/report.latest/report.list result intentionally clears the export path.
+        // Export path belongs to a concrete export action; keeping the old global last_export_path
+        // after selecting another report made the detail card show a stale TXT path.
+        if (actionId === "report.show" || actionId === "report.latest" || actionId === "report.refresh" || actionId === "report.list") {
+            return "n/a"
+        }
+        return safeText(fallbackValue, "n/a")
+    }
+
+    function reportListTextFromArray(arr) {
+        if (!arr || !Array.isArray(arr) || arr.length === 0) return ""
+        var lines = []
+        for (var i = 0; i < arr.length; i += 1) {
+            var item = arr[i]
+            if (!item || typeof item !== "object") continue
+            var sid = safeText(item.session_id || item.report_id || item.id || "", "").trim()
+            if (!isValidReportSessionText(sid)) continue
+            var score = safeText(item.score, "n/a")
+            var created = safeText(item.ended_at || item.created_at || item.started_at || "", "n/a")
+            var path = safeText(item.report_path || item.latest_report_path || item.source_report_path || "", "n/a")
+            // Keep every current-user report in the panel. Do not silently cap to the
+            // first ten; the Flickable below handles long lists without inflating the
+            // card height.
+            lines.push(String(lines.length + 1) + ". " + sid + " | score=" + score + " | time=" + created + "\n   " + path)
+        }
+        return lines.join("\n")
+    }
+
+    function reportListCountFromArray(arr) {
+        if (!arr || !Array.isArray(arr) || arr.length === 0) return 0
+        var count = 0
+        for (var i = 0; i < arr.length; i += 1) {
+            var item = arr[i]
+            if (!item || typeof item !== "object") continue
+            var sid = safeText(item.session_id || item.report_id || item.id || "", "").trim()
+            if (isValidReportSessionText(sid)) count += 1
+        }
+        return count
+    }
+
+    function reportListCountFromObject(obj) {
+        if (!obj || typeof obj !== "object") return 0
+        var count = reportListCountFromArray(obj.items)
+        if (count > 0) return count
+        count = reportListCountFromArray(obj.sessions)
+        if (count > 0) return count
+        var result = (obj.result && typeof obj.result === "object") ? obj.result : ({})
+        count = reportListCountFromArray(result.items)
+        if (count > 0) return count
+        count = reportListCountFromArray(result.sessions)
+        if (count > 0) return count
+        var n = Number(obj.items_count || result.items_count || obj.session_count || result.session_count || 0)
+        return isNaN(n) ? 0 : n
+    }
+
+    function reportListCountText() {
+        var count = reportListCountFromObject(currentReportRawObject())
+        if (count <= 0) return ""
+        return String(count) + " reports"
+    }
+
+    function reportListTextFromObject(obj) {
+        if (!obj || typeof obj !== "object") return ""
+        var direct = reportListTextFromArray(obj.items)
+        if (direct.length > 0) return direct
+        direct = reportListTextFromArray(obj.sessions)
+        if (direct.length > 0) return direct
+        var result = (obj.result && typeof obj.result === "object") ? obj.result : ({})
+        direct = reportListTextFromArray(result.items)
+        if (direct.length > 0) return direct
+        direct = reportListTextFromArray(result.sessions)
+        if (direct.length > 0) return direct
+        return ""
+    }
+
+    function reportListText(fallbackValue) {
+        var obj = currentReportRawObject()
+        var text = reportListTextFromObject(obj)
+        if (text.length > 0) return text
+        var contextText = meaningfulProfileText(reportContextValue("report_list_text", ""))
+        if (contextText.length > 0) return contextText
+        return safeText(fallbackValue, "n/a")
+    }
+
+    function reportContextValue(key, fallbackValue) {
+        var context = null
+        if (root.renderResourcesObj && root.renderResourcesObj.task26_report_context !== undefined) {
+            context = root.renderResourcesObj.task26_report_context
+        }
+        if (context && context[key] !== undefined && context[key] !== null && context[key] !== "") {
+            return safeText(context[key], fallbackValue)
+        }
+        return safeText(fallbackValue, "")
+    }
+
+    function reportValue(key, fallbackValue) {
+        var raw = root.lastReportActionRaw.length > 0 ? root.lastReportActionRaw : (root.sharedReportActionRaw.length > 0 ? root.sharedReportActionRaw : root.lastDesktopActionRaw)
+        var objectValue = meaningfulProfileText(extractJsonObjectValue(raw, key, ""))
+        if (objectValue.length > 0) return objectValue
+        var textValue = meaningfulProfileText(extractJsonString(raw, key, ""))
+        if (textValue.length > 0) return textValue
+        var numberValue = meaningfulProfileText(extractJsonNumber(raw, key, ""))
+        if (numberValue.length > 0) return numberValue
+        var boolValue = meaningfulProfileText(extractJsonBool(raw, key, ""))
+        if (boolValue.length > 0) return boolValue
+        var contextValue = meaningfulProfileText(reportContextValue(key, ""))
+        if (contextValue.length > 0) return contextValue
+        return safeText(fallbackValue, "n/a")
+    }
+
     function summarizeActionResult(raw, actionId) {
         var status = extractJsonString(raw, "status", "accepted")
         var message = extractJsonString(raw, "message", "")
@@ -377,7 +734,11 @@ Item {
             root.lastDesktopActionMessage = "empty action_id"
             return ""
         }
-        var payloadText = actionArgsJson(actionId, argsJson)
+        var payloadText = sanitizeReportPayloadText(actionId, actionArgsJson(actionId, argsJson, widgetId), widgetId)
+        if ((actionId === "report.show" || actionId === "report.export" || actionId === "report.export_txt") && payloadText.indexOf("no_report_available") >= 0) {
+            payloadText = payloadText.replace(/"session_id"\s*:\s*"no_report_available"\s*,?/, "")
+            payloadText = payloadText.replace(/,\s*}/g, "}").replace(/{\s*,/g, "{")
+        }
         root.lastDesktopActionId = actionId
         root.lastDesktopActionStatus = "clicked"
         root.lastDesktopActionMessage = widgetId && widgetId.length > 0 ? widgetId : "desktop card button"
@@ -397,10 +758,14 @@ Item {
             if (actionId.indexOf("calibration.") === 0) {
                 root.lastCalibrationActionRaw = root.lastDesktopActionRaw
             }
+            if (actionId.indexOf("report.") === 0) {
+                root.lastReportActionRaw = root.lastDesktopActionRaw
+                root.reportActionResultReady(root.lastReportActionRaw)
+            }
             var statusText = extractJsonString(raw, "status", raw && raw.length > 0 ? "returned" : "accepted")
             root.lastDesktopActionStatus = statusText
             root.lastDesktopActionMessage = summarizeActionResult(raw, actionId)
-            console.log("[DESKTOP CARD ACTION] action_id=" + actionId + " result=" + raw)
+            console.log("[DESKTOP CARD ACTION] action_id=" + actionId + " status=" + statusText + " summary=" + root.lastDesktopActionMessage + " raw_len=" + String(raw ? raw.length : 0))
             if (actionId === "user.show_profile" || (widgetId && widgetId.indexOf("profile_popup") >= 0)) {
                 profilePopup.open()
             }
@@ -410,6 +775,15 @@ Item {
                     || (widgetId && widgetId.indexOf("show_manual_calibration") >= 0)
                     || (widgetId && widgetId.indexOf("latest_calibration") >= 0)) {
                 calibrationPopup.open()
+            }
+            if (actionId === "report.show"
+                    || actionId === "report.latest"
+                    || actionId === "report.export"
+                    || actionId === "report.export_txt"
+                    || (widgetId && widgetId.indexOf("show_selected_report") >= 0)
+                    || (widgetId && widgetId.indexOf("latest_report") >= 0)
+                    || (widgetId && widgetId.indexOf("export_report") >= 0)) {
+                reportPopup.open()
             }
             return raw
         } catch (e) {
@@ -631,7 +1005,7 @@ Item {
                     visible: root.widget1Type === "select"
                     width: parent.width
                     height: root.buttonHeight
-                    optionsText: root.widget1OptionsText
+                    optionsText: root.widget1Id === "report_selector" ? root.reportSelectorOptionsText(root.widget1OptionsText) : root.widget1OptionsText
                     fallbackText: root.widget1Fallback
                     textPixelSize: root.widgetValuePixelSize
                     itemHeight: Math.max(24, root.buttonHeight)
@@ -641,13 +1015,19 @@ Item {
                     borderColor: root.cardBorderColor.length > 0 ? root.cardBorderColor : "#465A78"
                     popupBackgroundColor: "#121926"
                     popupBorderColor: root.cardBorderColor.length > 0 ? root.cardBorderColor : "#465A78"
-                    onCurrentTextChanged: root.widget1SelectText = currentText
-                    Component.onCompleted: root.widget1SelectText = currentText
+                    onCurrentTextChanged: {
+                        root.widget1SelectText = currentText
+                        if (root.widget1Id === "report_selector") root.rememberReportSelection(currentText)
+                    }
+                    Component.onCompleted: {
+                        root.widget1SelectText = currentText
+                        if (root.widget1Id === "report_selector") root.rememberReportSelection(currentText)
+                    }
                 }
 
                 Text { visible: root.widget1Type !== "button" && root.widget1Type !== "input" && root.widget1Type !== "select" && root.widget1Type !== "text"; width: parent.width * 0.40; anchors.left: parent.left; anchors.verticalCenter: parent.verticalCenter; text: root.widget1Label.length > 0 ? root.widget1Label : root.widget1Id; color: "#8EA4BF"; font.pixelSize: root.widgetLabelPixelSize; maximumLineCount: 1; wrapMode: Text.NoWrap; elide: Text.ElideRight }
-                Text { visible: root.widget1Type !== "button" && root.widget1Type !== "input" && root.widget1Type !== "select" && root.widget1Type !== "text"; width: parent.width * 0.58; anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; text: root.widgetDisplayText(root.widget1Type, root.widget1Label, root.widget1Source, root.widget1Fallback, root.widget1Unit, root.widget1Value); color: "#EAF2FF"; font.pixelSize: root.widgetValuePixelSize; font.bold: root.widget1Type === "metric"; horizontalAlignment: Text.AlignRight; maximumLineCount: 1; wrapMode: Text.NoWrap; elide: Text.ElideRight }
-                Text { visible: root.widget1Type === "text"; width: parent.width; anchors.left: parent.left; anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; text: (root.widget1Label.length > 0 ? root.widget1Label + ": " : "") + root.widgetDisplayText(root.widget1Type, root.widget1Label, root.widget1Source, root.widget1Fallback, root.widget1Unit, root.widget1Value); color: "#DDEBFF"; font.pixelSize: root.widgetValuePixelSize; maximumLineCount: 4; wrapMode: Text.Wrap; elide: Text.ElideRight }
+                Text { visible: root.widget1Type !== "button" && root.widget1Type !== "input" && root.widget1Type !== "select" && root.widget1Type !== "text"; width: parent.width * 0.58; anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; text: root.widgetDisplayText(root.widget1Type, root.widget1Label, root.widget1Source, root.widget1Fallback, root.widget1Unit, root.widget1Value, root.widget1Id); color: "#EAF2FF"; font.pixelSize: root.widgetValuePixelSize; font.bold: root.widget1Type === "metric"; horizontalAlignment: Text.AlignRight; maximumLineCount: 1; wrapMode: Text.NoWrap; elide: Text.ElideRight }
+                Text { visible: root.widget1Type === "text"; width: parent.width; anchors.left: parent.left; anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; text: (root.widget1Label.length > 0 ? root.widget1Label + ": " : "") + root.widgetDisplayText(root.widget1Type, root.widget1Label, root.widget1Source, root.widget1Fallback, root.widget1Unit, root.widget1Value, root.widget1Id); color: "#DDEBFF"; font.pixelSize: root.widgetValuePixelSize; maximumLineCount: 4; wrapMode: Text.Wrap; elide: Text.ElideRight }
             }
 
             Item {
@@ -699,7 +1079,7 @@ Item {
                     visible: root.widget2Type === "select"
                     width: parent.width
                     height: root.buttonHeight
-                    optionsText: root.widget2OptionsText
+                    optionsText: root.widget2Id === "report_selector" ? root.reportSelectorOptionsText(root.widget2OptionsText) : root.widget2OptionsText
                     fallbackText: root.widget2Fallback
                     textPixelSize: root.widgetValuePixelSize
                     itemHeight: Math.max(24, root.buttonHeight)
@@ -709,13 +1089,19 @@ Item {
                     borderColor: root.cardBorderColor.length > 0 ? root.cardBorderColor : "#465A78"
                     popupBackgroundColor: "#121926"
                     popupBorderColor: root.cardBorderColor.length > 0 ? root.cardBorderColor : "#465A78"
-                    onCurrentTextChanged: root.widget2SelectText = currentText
-                    Component.onCompleted: root.widget2SelectText = currentText
+                    onCurrentTextChanged: {
+                        root.widget2SelectText = currentText
+                        if (root.widget2Id === "report_selector") root.rememberReportSelection(currentText)
+                    }
+                    Component.onCompleted: {
+                        root.widget2SelectText = currentText
+                        if (root.widget2Id === "report_selector") root.rememberReportSelection(currentText)
+                    }
                 }
 
                 Text { visible: root.widget2Type !== "button" && root.widget2Type !== "input" && root.widget2Type !== "select" && root.widget2Type !== "text"; width: parent.width * 0.40; anchors.left: parent.left; anchors.verticalCenter: parent.verticalCenter; text: root.widget2Label.length > 0 ? root.widget2Label : root.widget2Id; color: "#8EA4BF"; font.pixelSize: root.widgetLabelPixelSize; maximumLineCount: 1; wrapMode: Text.NoWrap; elide: Text.ElideRight }
-                Text { visible: root.widget2Type !== "button" && root.widget2Type !== "input" && root.widget2Type !== "select" && root.widget2Type !== "text"; width: parent.width * 0.58; anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; text: root.widgetDisplayText(root.widget2Type, root.widget2Label, root.widget2Source, root.widget2Fallback, root.widget2Unit, root.widget2Value); color: "#EAF2FF"; font.pixelSize: root.widgetValuePixelSize; font.bold: root.widget2Type === "metric"; horizontalAlignment: Text.AlignRight; maximumLineCount: 1; wrapMode: Text.NoWrap; elide: Text.ElideRight }
-                Text { visible: root.widget2Type === "text"; width: parent.width; anchors.left: parent.left; anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; text: (root.widget2Label.length > 0 ? root.widget2Label + ": " : "") + root.widgetDisplayText(root.widget2Type, root.widget2Label, root.widget2Source, root.widget2Fallback, root.widget2Unit, root.widget2Value); color: "#DDEBFF"; font.pixelSize: root.widgetValuePixelSize; maximumLineCount: 4; wrapMode: Text.Wrap; elide: Text.ElideRight }
+                Text { visible: root.widget2Type !== "button" && root.widget2Type !== "input" && root.widget2Type !== "select" && root.widget2Type !== "text"; width: parent.width * 0.58; anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; text: root.widgetDisplayText(root.widget2Type, root.widget2Label, root.widget2Source, root.widget2Fallback, root.widget2Unit, root.widget2Value, root.widget2Id); color: "#EAF2FF"; font.pixelSize: root.widgetValuePixelSize; font.bold: root.widget2Type === "metric"; horizontalAlignment: Text.AlignRight; maximumLineCount: 1; wrapMode: Text.NoWrap; elide: Text.ElideRight }
+                Text { visible: root.widget2Type === "text"; width: parent.width; anchors.left: parent.left; anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; text: (root.widget2Label.length > 0 ? root.widget2Label + ": " : "") + root.widgetDisplayText(root.widget2Type, root.widget2Label, root.widget2Source, root.widget2Fallback, root.widget2Unit, root.widget2Value, root.widget2Id); color: "#DDEBFF"; font.pixelSize: root.widgetValuePixelSize; maximumLineCount: 4; wrapMode: Text.Wrap; elide: Text.ElideRight }
             }
 
             Item {
@@ -767,7 +1153,7 @@ Item {
                     visible: root.widget3Type === "select"
                     width: parent.width
                     height: root.buttonHeight
-                    optionsText: root.widget3OptionsText
+                    optionsText: root.widget3Id === "report_selector" ? root.reportSelectorOptionsText(root.widget3OptionsText) : root.widget3OptionsText
                     fallbackText: root.widget3Fallback
                     textPixelSize: root.widgetValuePixelSize
                     itemHeight: Math.max(24, root.buttonHeight)
@@ -777,13 +1163,19 @@ Item {
                     borderColor: root.cardBorderColor.length > 0 ? root.cardBorderColor : "#465A78"
                     popupBackgroundColor: "#121926"
                     popupBorderColor: root.cardBorderColor.length > 0 ? root.cardBorderColor : "#465A78"
-                    onCurrentTextChanged: root.widget3SelectText = currentText
-                    Component.onCompleted: root.widget3SelectText = currentText
+                    onCurrentTextChanged: {
+                        root.widget3SelectText = currentText
+                        if (root.widget3Id === "report_selector") root.rememberReportSelection(currentText)
+                    }
+                    Component.onCompleted: {
+                        root.widget3SelectText = currentText
+                        if (root.widget3Id === "report_selector") root.rememberReportSelection(currentText)
+                    }
                 }
 
                 Text { visible: root.widget3Type !== "button" && root.widget3Type !== "input" && root.widget3Type !== "select" && root.widget3Type !== "text"; width: parent.width * 0.40; anchors.left: parent.left; anchors.verticalCenter: parent.verticalCenter; text: root.widget3Label.length > 0 ? root.widget3Label : root.widget3Id; color: "#8EA4BF"; font.pixelSize: root.widgetLabelPixelSize; maximumLineCount: 1; wrapMode: Text.NoWrap; elide: Text.ElideRight }
-                Text { visible: root.widget3Type !== "button" && root.widget3Type !== "input" && root.widget3Type !== "select" && root.widget3Type !== "text"; width: parent.width * 0.58; anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; text: root.widgetDisplayText(root.widget3Type, root.widget3Label, root.widget3Source, root.widget3Fallback, root.widget3Unit, root.widget3Value); color: "#EAF2FF"; font.pixelSize: root.widgetValuePixelSize; font.bold: root.widget3Type === "metric"; horizontalAlignment: Text.AlignRight; maximumLineCount: 1; wrapMode: Text.NoWrap; elide: Text.ElideRight }
-                Text { visible: root.widget3Type === "text"; width: parent.width; anchors.left: parent.left; anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; text: (root.widget3Label.length > 0 ? root.widget3Label + ": " : "") + root.widgetDisplayText(root.widget3Type, root.widget3Label, root.widget3Source, root.widget3Fallback, root.widget3Unit, root.widget3Value); color: "#DDEBFF"; font.pixelSize: root.widgetValuePixelSize; maximumLineCount: 4; wrapMode: Text.Wrap; elide: Text.ElideRight }
+                Text { visible: root.widget3Type !== "button" && root.widget3Type !== "input" && root.widget3Type !== "select" && root.widget3Type !== "text"; width: parent.width * 0.58; anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; text: root.widgetDisplayText(root.widget3Type, root.widget3Label, root.widget3Source, root.widget3Fallback, root.widget3Unit, root.widget3Value, root.widget3Id); color: "#EAF2FF"; font.pixelSize: root.widgetValuePixelSize; font.bold: root.widget3Type === "metric"; horizontalAlignment: Text.AlignRight; maximumLineCount: 1; wrapMode: Text.NoWrap; elide: Text.ElideRight }
+                Text { visible: root.widget3Type === "text"; width: parent.width; anchors.left: parent.left; anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; text: (root.widget3Label.length > 0 ? root.widget3Label + ": " : "") + root.widgetDisplayText(root.widget3Type, root.widget3Label, root.widget3Source, root.widget3Fallback, root.widget3Unit, root.widget3Value, root.widget3Id); color: "#DDEBFF"; font.pixelSize: root.widgetValuePixelSize; maximumLineCount: 4; wrapMode: Text.Wrap; elide: Text.ElideRight }
             }
 
             Item {
@@ -835,7 +1227,7 @@ Item {
                     visible: root.widget4Type === "select"
                     width: parent.width
                     height: root.buttonHeight
-                    optionsText: root.widget4OptionsText
+                    optionsText: root.widget4Id === "report_selector" ? root.reportSelectorOptionsText(root.widget4OptionsText) : root.widget4OptionsText
                     fallbackText: root.widget4Fallback
                     textPixelSize: root.widgetValuePixelSize
                     itemHeight: Math.max(24, root.buttonHeight)
@@ -845,13 +1237,19 @@ Item {
                     borderColor: root.cardBorderColor.length > 0 ? root.cardBorderColor : "#465A78"
                     popupBackgroundColor: "#121926"
                     popupBorderColor: root.cardBorderColor.length > 0 ? root.cardBorderColor : "#465A78"
-                    onCurrentTextChanged: root.widget4SelectText = currentText
-                    Component.onCompleted: root.widget4SelectText = currentText
+                    onCurrentTextChanged: {
+                        root.widget4SelectText = currentText
+                        if (root.widget4Id === "report_selector") root.rememberReportSelection(currentText)
+                    }
+                    Component.onCompleted: {
+                        root.widget4SelectText = currentText
+                        if (root.widget4Id === "report_selector") root.rememberReportSelection(currentText)
+                    }
                 }
 
                 Text { visible: root.widget4Type !== "button" && root.widget4Type !== "input" && root.widget4Type !== "select" && root.widget4Type !== "text"; width: parent.width * 0.40; anchors.left: parent.left; anchors.verticalCenter: parent.verticalCenter; text: root.widget4Label.length > 0 ? root.widget4Label : root.widget4Id; color: "#8EA4BF"; font.pixelSize: root.widgetLabelPixelSize; maximumLineCount: 1; wrapMode: Text.NoWrap; elide: Text.ElideRight }
-                Text { visible: root.widget4Type !== "button" && root.widget4Type !== "input" && root.widget4Type !== "select" && root.widget4Type !== "text"; width: parent.width * 0.58; anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; text: root.widgetDisplayText(root.widget4Type, root.widget4Label, root.widget4Source, root.widget4Fallback, root.widget4Unit, root.widget4Value); color: "#EAF2FF"; font.pixelSize: root.widgetValuePixelSize; font.bold: root.widget4Type === "metric"; horizontalAlignment: Text.AlignRight; maximumLineCount: 1; wrapMode: Text.NoWrap; elide: Text.ElideRight }
-                Text { visible: root.widget4Type === "text"; width: parent.width; anchors.left: parent.left; anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; text: (root.widget4Label.length > 0 ? root.widget4Label + ": " : "") + root.widgetDisplayText(root.widget4Type, root.widget4Label, root.widget4Source, root.widget4Fallback, root.widget4Unit, root.widget4Value); color: "#DDEBFF"; font.pixelSize: root.widgetValuePixelSize; maximumLineCount: 4; wrapMode: Text.Wrap; elide: Text.ElideRight }
+                Text { visible: root.widget4Type !== "button" && root.widget4Type !== "input" && root.widget4Type !== "select" && root.widget4Type !== "text"; width: parent.width * 0.58; anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; text: root.widgetDisplayText(root.widget4Type, root.widget4Label, root.widget4Source, root.widget4Fallback, root.widget4Unit, root.widget4Value, root.widget4Id); color: "#EAF2FF"; font.pixelSize: root.widgetValuePixelSize; font.bold: root.widget4Type === "metric"; horizontalAlignment: Text.AlignRight; maximumLineCount: 1; wrapMode: Text.NoWrap; elide: Text.ElideRight }
+                Text { visible: root.widget4Type === "text"; width: parent.width; anchors.left: parent.left; anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; text: (root.widget4Label.length > 0 ? root.widget4Label + ": " : "") + root.widgetDisplayText(root.widget4Type, root.widget4Label, root.widget4Source, root.widget4Fallback, root.widget4Unit, root.widget4Value, root.widget4Id); color: "#DDEBFF"; font.pixelSize: root.widgetValuePixelSize; maximumLineCount: 4; wrapMode: Text.Wrap; elide: Text.ElideRight }
             }
 
             Item {
@@ -903,7 +1301,7 @@ Item {
                     visible: root.widget5Type === "select"
                     width: parent.width
                     height: root.buttonHeight
-                    optionsText: root.widget5OptionsText
+                    optionsText: root.widget5Id === "report_selector" ? root.reportSelectorOptionsText(root.widget5OptionsText) : root.widget5OptionsText
                     fallbackText: root.widget5Fallback
                     textPixelSize: root.widgetValuePixelSize
                     itemHeight: Math.max(24, root.buttonHeight)
@@ -913,13 +1311,19 @@ Item {
                     borderColor: root.cardBorderColor.length > 0 ? root.cardBorderColor : "#465A78"
                     popupBackgroundColor: "#121926"
                     popupBorderColor: root.cardBorderColor.length > 0 ? root.cardBorderColor : "#465A78"
-                    onCurrentTextChanged: root.widget5SelectText = currentText
-                    Component.onCompleted: root.widget5SelectText = currentText
+                    onCurrentTextChanged: {
+                        root.widget5SelectText = currentText
+                        if (root.widget5Id === "report_selector") root.rememberReportSelection(currentText)
+                    }
+                    Component.onCompleted: {
+                        root.widget5SelectText = currentText
+                        if (root.widget5Id === "report_selector") root.rememberReportSelection(currentText)
+                    }
                 }
 
                 Text { visible: root.widget5Type !== "button" && root.widget5Type !== "input" && root.widget5Type !== "select" && root.widget5Type !== "text"; width: parent.width * 0.40; anchors.left: parent.left; anchors.verticalCenter: parent.verticalCenter; text: root.widget5Label.length > 0 ? root.widget5Label : root.widget5Id; color: "#8EA4BF"; font.pixelSize: root.widgetLabelPixelSize; maximumLineCount: 1; wrapMode: Text.NoWrap; elide: Text.ElideRight }
-                Text { visible: root.widget5Type !== "button" && root.widget5Type !== "input" && root.widget5Type !== "select" && root.widget5Type !== "text"; width: parent.width * 0.58; anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; text: root.widgetDisplayText(root.widget5Type, root.widget5Label, root.widget5Source, root.widget5Fallback, root.widget5Unit, root.widget5Value); color: "#EAF2FF"; font.pixelSize: root.widgetValuePixelSize; font.bold: root.widget5Type === "metric"; horizontalAlignment: Text.AlignRight; maximumLineCount: 1; wrapMode: Text.NoWrap; elide: Text.ElideRight }
-                Text { visible: root.widget5Type === "text"; width: parent.width; anchors.left: parent.left; anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; text: (root.widget5Label.length > 0 ? root.widget5Label + ": " : "") + root.widgetDisplayText(root.widget5Type, root.widget5Label, root.widget5Source, root.widget5Fallback, root.widget5Unit, root.widget5Value); color: "#DDEBFF"; font.pixelSize: root.widgetValuePixelSize; maximumLineCount: 4; wrapMode: Text.Wrap; elide: Text.ElideRight }
+                Text { visible: root.widget5Type !== "button" && root.widget5Type !== "input" && root.widget5Type !== "select" && root.widget5Type !== "text"; width: parent.width * 0.58; anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; text: root.widgetDisplayText(root.widget5Type, root.widget5Label, root.widget5Source, root.widget5Fallback, root.widget5Unit, root.widget5Value, root.widget5Id); color: "#EAF2FF"; font.pixelSize: root.widgetValuePixelSize; font.bold: root.widget5Type === "metric"; horizontalAlignment: Text.AlignRight; maximumLineCount: 1; wrapMode: Text.NoWrap; elide: Text.ElideRight }
+                Text { visible: root.widget5Type === "text"; width: parent.width; anchors.left: parent.left; anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; text: (root.widget5Label.length > 0 ? root.widget5Label + ": " : "") + root.widgetDisplayText(root.widget5Type, root.widget5Label, root.widget5Source, root.widget5Fallback, root.widget5Unit, root.widget5Value, root.widget5Id); color: "#DDEBFF"; font.pixelSize: root.widgetValuePixelSize; maximumLineCount: 4; wrapMode: Text.Wrap; elide: Text.ElideRight }
             }
 
             Item {
@@ -971,7 +1375,7 @@ Item {
                     visible: root.widget6Type === "select"
                     width: parent.width
                     height: root.buttonHeight
-                    optionsText: root.widget6OptionsText
+                    optionsText: root.widget6Id === "report_selector" ? root.reportSelectorOptionsText(root.widget6OptionsText) : root.widget6OptionsText
                     fallbackText: root.widget6Fallback
                     textPixelSize: root.widgetValuePixelSize
                     itemHeight: Math.max(24, root.buttonHeight)
@@ -981,13 +1385,141 @@ Item {
                     borderColor: root.cardBorderColor.length > 0 ? root.cardBorderColor : "#465A78"
                     popupBackgroundColor: "#121926"
                     popupBorderColor: root.cardBorderColor.length > 0 ? root.cardBorderColor : "#465A78"
-                    onCurrentTextChanged: root.widget6SelectText = currentText
-                    Component.onCompleted: root.widget6SelectText = currentText
+                    onCurrentTextChanged: {
+                        root.widget6SelectText = currentText
+                        if (root.widget6Id === "report_selector") root.rememberReportSelection(currentText)
+                    }
+                    Component.onCompleted: {
+                        root.widget6SelectText = currentText
+                        if (root.widget6Id === "report_selector") root.rememberReportSelection(currentText)
+                    }
                 }
 
                 Text { visible: root.widget6Type !== "button" && root.widget6Type !== "input" && root.widget6Type !== "select" && root.widget6Type !== "text"; width: parent.width * 0.40; anchors.left: parent.left; anchors.verticalCenter: parent.verticalCenter; text: root.widget6Label.length > 0 ? root.widget6Label : root.widget6Id; color: "#8EA4BF"; font.pixelSize: root.widgetLabelPixelSize; maximumLineCount: 1; wrapMode: Text.NoWrap; elide: Text.ElideRight }
-                Text { visible: root.widget6Type !== "button" && root.widget6Type !== "input" && root.widget6Type !== "select" && root.widget6Type !== "text"; width: parent.width * 0.58; anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; text: root.widgetDisplayText(root.widget6Type, root.widget6Label, root.widget6Source, root.widget6Fallback, root.widget6Unit, root.widget6Value); color: "#EAF2FF"; font.pixelSize: root.widgetValuePixelSize; font.bold: root.widget6Type === "metric"; horizontalAlignment: Text.AlignRight; maximumLineCount: 1; wrapMode: Text.NoWrap; elide: Text.ElideRight }
-                Text { visible: root.widget6Type === "text"; width: parent.width; anchors.left: parent.left; anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; text: (root.widget6Label.length > 0 ? root.widget6Label + ": " : "") + root.widgetDisplayText(root.widget6Type, root.widget6Label, root.widget6Source, root.widget6Fallback, root.widget6Unit, root.widget6Value); color: "#DDEBFF"; font.pixelSize: root.widgetValuePixelSize; maximumLineCount: 4; wrapMode: Text.Wrap; elide: Text.ElideRight }
+                Text { visible: root.widget6Type !== "button" && root.widget6Type !== "input" && root.widget6Type !== "select" && root.widget6Type !== "text"; width: parent.width * 0.58; anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; text: root.widgetDisplayText(root.widget6Type, root.widget6Label, root.widget6Source, root.widget6Fallback, root.widget6Unit, root.widget6Value, root.widget6Id); color: "#EAF2FF"; font.pixelSize: root.widgetValuePixelSize; font.bold: root.widget6Type === "metric"; horizontalAlignment: Text.AlignRight; maximumLineCount: 1; wrapMode: Text.NoWrap; elide: Text.ElideRight }
+                Text { visible: root.widget6Type === "text"; width: parent.width; anchors.left: parent.left; anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; text: (root.widget6Label.length > 0 ? root.widget6Label + ": " : "") + root.widgetDisplayText(root.widget6Type, root.widget6Label, root.widget6Source, root.widget6Fallback, root.widget6Unit, root.widget6Value, root.widget6Id); color: "#DDEBFF"; font.pixelSize: root.widgetValuePixelSize; maximumLineCount: 4; wrapMode: Text.Wrap; elide: Text.ElideRight }
+            }
+
+            Rectangle {
+                id: reportListPanel
+                width: parent.width
+                height: root.reportListPanelVisible() ? Math.max(220, Math.min(360, parent.height * 0.44)) : 0
+                visible: root.reportListPanelVisible()
+                radius: 16
+                color: "#09111F"
+                border.color: "#34506F"
+                border.width: 1
+                clip: true
+
+                Rectangle {
+                    anchors.fill: parent
+                    anchors.margins: 1
+                    radius: 15
+                    color: "transparent"
+                    border.color: "#11243A"
+                    border.width: 1
+                }
+
+                Column {
+                    anchors.fill: parent
+                    anchors.margins: 10
+                    spacing: 7
+
+                    Row {
+                        width: parent.width
+                        height: 22
+                        spacing: 8
+
+                        Text {
+                            width: Math.max(1, parent.width - reportListCountBadge.width - 10)
+                            height: parent.height
+                            text: "Current User Reports"
+                            color: "#EAF2FF"
+                            font.pixelSize: Math.max(12, root.widgetValuePixelSize)
+                            font.bold: true
+                            verticalAlignment: Text.AlignVCenter
+                            elide: Text.ElideRight
+                        }
+
+                        Rectangle {
+                            id: reportListCountBadge
+                            width: reportListCountText.implicitWidth + 16
+                            height: 20
+                            radius: 10
+                            color: "#132942"
+                            border.color: "#416A92"
+                            border.width: 1
+                            visible: reportListCountText.text.length > 0
+
+                            Text {
+                                id: reportListCountText
+                                anchors.centerIn: parent
+                                text: root.reportListCountText()
+                                color: "#AEEBFF"
+                                font.pixelSize: Math.max(9, root.widgetMetaPixelSize)
+                                font.bold: true
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        width: parent.width
+                        height: 1
+                        color: "#20354C"
+                        opacity: 0.75
+                    }
+
+                    Item {
+                        id: reportListViewport
+                        width: parent.width
+                        height: Math.max(1, parent.height - 34)
+                        clip: true
+
+                        Flickable {
+                            id: reportListFlick
+                            anchors.fill: parent
+                            anchors.rightMargin: reportListScrollBar.visible ? 10 : 0
+                            clip: true
+                            contentWidth: width
+                            contentHeight: reportListTextBlock.implicitHeight + 4
+                            boundsBehavior: Flickable.StopAtBounds
+                            flickableDirection: Flickable.VerticalFlick
+
+                            Text {
+                                id: reportListTextBlock
+                                width: Math.max(1, reportListFlick.width - 6)
+                                text: root.reportListPanelText()
+                                color: "#DDEBFF"
+                                font.pixelSize: Math.max(10, root.widgetMetaPixelSize)
+                                lineHeight: 1.18
+                                wrapMode: Text.WrapAnywhere
+                            }
+                        }
+
+                        Rectangle {
+                            id: reportListScrollTrack
+                            anchors.top: parent.top
+                            anchors.bottom: parent.bottom
+                            anchors.right: parent.right
+                            width: 5
+                            radius: 3
+                            color: "#111D2B"
+                            opacity: reportListScrollBar.visible ? 0.9 : 0.0
+                        }
+
+                        Rectangle {
+                            id: reportListScrollBar
+                            anchors.right: parent.right
+                            width: 5
+                            radius: 3
+                            color: reportListFlick.moving || reportListFlick.dragging ? "#8FEAFF" : "#4F789D"
+                            opacity: visible ? (reportListFlick.moving || reportListFlick.dragging ? 0.95 : 0.66) : 0.0
+                            visible: reportListFlick.contentHeight > reportListFlick.height + 2
+                            height: visible ? Math.max(28, reportListViewport.height * reportListFlick.height / Math.max(reportListFlick.contentHeight, 1)) : 0
+                            y: visible ? Math.max(0, Math.min(reportListViewport.height - height, reportListFlick.contentY * (reportListViewport.height - height) / Math.max(reportListFlick.contentHeight - reportListFlick.height, 1))) : 0
+                        }
+                    }
+                }
             }
 
         }
@@ -1047,7 +1579,21 @@ Item {
                 anchors.fill: parent
                 anchors.margins: 14
                 clip: true
-                contentWidth: Math.max(1, profilePopup.width - 28)
+                contentWidth: Math.max(1, profilePopup.width - 42)
+                ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+                ScrollBar.vertical: ScrollBar {
+                    policy: ScrollBar.AsNeeded
+                    width: 7
+                    padding: 1
+                    contentItem: Rectangle {
+                        implicitWidth: 7
+                        radius: 4
+                        color: parent.pressed ? "#AEEBFF" : "#4B6A86"
+                        opacity: parent.active ? 0.72 : 0.34
+                    }
+                    background: Rectangle { color: "transparent" }
+                }
+
 
                 Column {
                     width: Math.max(1, profilePopup.width - 28)
@@ -1106,7 +1652,21 @@ Item {
                 anchors.fill: parent
                 anchors.margins: 14
                 clip: true
-                contentWidth: Math.max(1, calibrationPopup.width - 28)
+                contentWidth: Math.max(1, calibrationPopup.width - 42)
+                ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+                ScrollBar.vertical: ScrollBar {
+                    policy: ScrollBar.AsNeeded
+                    width: 7
+                    padding: 1
+                    contentItem: Rectangle {
+                        implicitWidth: 7
+                        radius: 4
+                        color: parent.pressed ? "#AEEBFF" : "#4B6A86"
+                        opacity: parent.active ? 0.72 : 0.34
+                    }
+                    background: Rectangle { color: "transparent" }
+                }
+
 
                 Column {
                     width: Math.max(1, calibrationPopup.width - 28)
@@ -1140,6 +1700,185 @@ Item {
                         actionId: "close_calibration_popup"
                         variant: "secondary"
                         onActionRequested: function(actionId) { calibrationPopup.close() }
+                    }
+                }
+            }
+        }
+    }
+
+
+
+    function popupHostWidth() {
+        return (Overlay.overlay && Overlay.overlay.width > 0) ? Overlay.overlay.width : root.width
+    }
+
+    function popupHostHeight() {
+        return (Overlay.overlay && Overlay.overlay.height > 0) ? Overlay.overlay.height : root.height
+    }
+
+    Popup {
+        id: reportPopup
+        parent: Overlay.overlay
+        width: Math.max(360, Math.min(860, root.popupHostWidth() - 32))
+        height: Math.max(340, Math.min(660, root.popupHostHeight() - 32))
+        modal: false
+        focus: true
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+        x: Math.max(16, Math.min((root.popupHostWidth() - width) / 2, root.popupHostWidth() - width - 16))
+        y: Math.max(16, Math.min((root.popupHostHeight() - height) / 2, root.popupHostHeight() - height - 16))
+        padding: 0
+
+        background: Rectangle {
+            color: "transparent"
+            border.width: 0
+        }
+
+        contentItem: Rectangle {
+            radius: Math.max(18, root.cardRadiusValue)
+            color: "#101722"
+            border.color: "#6EE7F9"
+            border.width: 2
+            clip: true
+
+            Column {
+                anchors.fill: parent
+                anchors.margins: 16
+                spacing: 10
+
+                Row {
+                    width: parent.width
+                    height: Math.max(32, root.buttonHeight)
+                    spacing: 10
+
+                    Column {
+                        width: parent.width - closeReportPopupButton.width - 10
+                        spacing: 2
+                        Text {
+                            text: "Report Detail"
+                            color: "#EAF2FF"
+                            font.pixelSize: Math.max(17, root.titlePixelSize)
+                            font.bold: true
+                            width: parent.width
+                            elide: Text.ElideRight
+                        }
+                        Text {
+                            text: root.reportValue("session_id", root.reportValue("latest_session_id", "n/a")) + " · " + root.reportValue("status", "n/a")
+                            color: "#9BE7C0"
+                            font.pixelSize: Math.max(10, root.widgetMetaPixelSize)
+                            width: parent.width
+                            elide: Text.ElideRight
+                        }
+                    }
+
+                    ConfigButtonWidget {
+                        id: closeReportPopupButton
+                        width: 92
+                        buttonWidth: 92
+                        buttonHeight: root.buttonHeight
+                        label: "Close"
+                        actionId: "close_report_popup"
+                        variant: "secondary"
+                        onActionRequested: function(actionId) { reportPopup.close() }
+                    }
+                }
+
+                Rectangle {
+                    width: parent.width
+                    height: Math.max(104, Math.min(142, parent.height * 0.25))
+                    radius: 14
+                    color: "#121C2B"
+                    border.color: "#24364F"
+                    border.width: 1
+                    clip: true
+
+                    Grid {
+                        anchors.fill: parent
+                        anchors.margins: 10
+                        columns: 2
+                        rowSpacing: 6
+                        columnSpacing: 14
+
+                        Text { width: (parent.width - 14) / 2; text: "User: " + root.reportValue("user_id", root.sourceValue("controlStateJson.current_user_id", "n/a")); color: "#DDEBFF"; font.pixelSize: root.widgetValuePixelSize; elide: Text.ElideRight }
+                        Text { width: (parent.width - 14) / 2; text: "Game: " + root.reportValue("game_id", "n/a"); color: "#DDEBFF"; font.pixelSize: root.widgetValuePixelSize; elide: Text.ElideRight }
+                        Text { width: (parent.width - 14) / 2; text: "Score: " + root.reportValue("score", "n/a"); color: "#DDEBFF"; font.pixelSize: root.widgetValuePixelSize; elide: Text.ElideRight }
+                        Text { width: (parent.width - 14) / 2; text: "Duration: " + root.reportValue("duration_sec", "n/a") + " sec"; color: "#DDEBFF"; font.pixelSize: root.widgetValuePixelSize; elide: Text.ElideRight }
+                        Text { width: (parent.width - 14) / 2; text: "Samples: " + root.reportValue("behavior_sample_count", "n/a"); color: "#DDEBFF"; font.pixelSize: root.widgetValuePixelSize; elide: Text.ElideRight }
+                        Text { width: (parent.width - 14) / 2; text: "Events: " + root.reportValue("game_event_count", "n/a"); color: "#DDEBFF"; font.pixelSize: root.widgetValuePixelSize; elide: Text.ElideRight }
+                    }
+                }
+
+                Column {
+                    width: parent.width
+                    spacing: 6
+
+                    Text { text: "Report path"; color: "#8EA4BF"; font.pixelSize: root.widgetMetaPixelSize; width: parent.width }
+                    Text {
+                        text: root.reportValue("report_path", root.reportValue("latest_report_path", root.sourceValue("controlStateJson.report_selected_report_path", root.sourceValue("controlStateJson.latest_report_path", "n/a"))))
+                        color: "#DDEBFF"
+                        font.pixelSize: Math.max(10, root.widgetMetaPixelSize)
+                        width: parent.width - 14
+                        wrapMode: Text.WrapAnywhere
+                    }
+                    Text { text: "Export path"; color: "#8EA4BF"; font.pixelSize: root.widgetMetaPixelSize; width: parent.width }
+                    Text {
+                        text: root.reportValue("export_path", root.sourceValue("controlStateJson.report_export_path", "n/a"))
+                        color: "#6EE7F9"
+                        font.pixelSize: Math.max(10, root.widgetMetaPixelSize)
+                        width: parent.width - 14
+                        wrapMode: Text.WrapAnywhere
+                    }
+                }
+
+                Rectangle {
+                    width: parent.width
+                    height: Math.max(120, parent.height - 306)
+                    radius: 14
+                    color: "#0B111B"
+                    border.color: "#24364F"
+                    border.width: 1
+                    clip: true
+
+                    Column {
+                        anchors.fill: parent
+                        anchors.margins: 10
+                        spacing: 6
+
+                        Text {
+                            text: "Report Preview"
+                            color: "#EAF2FF"
+                            font.pixelSize: Math.max(14, root.widgetValuePixelSize)
+                            font.bold: true
+                            width: parent.width
+                        }
+
+                        ScrollView {
+                            width: parent.width
+                            height: parent.height - 28
+                            clip: true
+                            contentWidth: Math.max(1, width - 16)
+                            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+                            ScrollBar.vertical: ScrollBar {
+                                policy: ScrollBar.AsNeeded
+                                width: 7
+                                padding: 1
+                                contentItem: Rectangle {
+                                    implicitWidth: 7
+                                    radius: 4
+                                    color: parent.pressed ? "#AEEBFF" : "#4B6A86"
+                                    opacity: parent.active ? 0.72 : 0.34
+                                }
+                                background: Rectangle { color: "transparent" }
+                            }
+
+                            Text {
+                                width: Math.max(1, parent.width - 18)
+                                text: root.reportValue("report_preview", "n/a")
+                                color: "#DDEBFF"
+                                font.pixelSize: Math.max(10, root.widgetMetaPixelSize)
+                                lineHeight: 1.18
+                                wrapMode: Text.WrapAnywhere
+                            }
+                        }
                     }
                 }
             }

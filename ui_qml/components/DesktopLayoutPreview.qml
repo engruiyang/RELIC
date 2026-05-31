@@ -23,6 +23,49 @@ Item {
     property int cardCount: Number(layoutValue("card_count", 0))
     property string payloadStatusText: "n/a"
     property string payloadSourceText: "n/a"
+    property string sharedReportActionRaw: ""
+    property string sharedSelectedReportSessionId: ""
+    property string currentUserIdText: String((root.controlStateObj && root.controlStateObj.current_user_id) || (root.appStateObj && root.appStateObj.current_user_id) || "")
+
+    onCurrentUserIdTextChanged: {
+        // Prevent report cards from displaying paths/previews returned for a previously loaded user.
+        root.sharedReportActionRaw = ""
+        root.sharedSelectedReportSessionId = ""
+    }
+
+    function validReportSessionId(value) {
+        var text = String(value === undefined || value === null ? "" : value).trim()
+        return text.length > 0 && text !== "n/a" && text !== "no_report_available" && text !== "manual" && text !== "null"
+    }
+
+    function reportSessionIdFromActionRaw(raw) {
+        try {
+            var obj = JSON.parse(raw || "{}")
+            var result = (obj.result && typeof obj.result === "object") ? obj.result : ({})
+            var detail = (obj.detail && typeof obj.detail === "object") ? obj.detail : ({})
+            var report = (obj.report && typeof obj.report === "object") ? obj.report : ({})
+            var resultDetail = (result.detail && typeof result.detail === "object") ? result.detail : ({})
+            var resultReport = (result.report && typeof result.report === "object") ? result.report : ({})
+            var candidates = [
+                obj.session_id, result.session_id, detail.session_id, report.session_id,
+                resultDetail.session_id, resultReport.session_id,
+                obj.latest_session_id, result.latest_session_id
+            ]
+            for (var i = 0; i < candidates.length; i += 1) {
+                if (validReportSessionId(candidates[i])) return String(candidates[i]).trim()
+            }
+        } catch (e) {
+        }
+        return ""
+    }
+
+    function acceptReportActionRaw(raw) {
+        root.sharedReportActionRaw = raw || ""
+        var sid = root.reportSessionIdFromActionRaw(root.sharedReportActionRaw)
+        if (root.validReportSessionId(sid)) {
+            root.sharedSelectedReportSessionId = sid
+        }
+    }
 
     function layoutValue(key, fallbackValue) {
         var payload = root.layoutPayload || ({})
@@ -933,6 +976,12 @@ Item {
                     designThemeObj: root.designThemeObj
                     gameStyleObj: root.gameStyleObj
                     effectStyleObj: root.effectStyleObj
+                    sharedReportActionRaw: root.sharedReportActionRaw
+                    sharedSelectedReportSessionId: root.sharedSelectedReportSessionId
+                    onReportSelectionChanged: function(sessionId) {
+                        if (root.validReportSessionId(sessionId)) root.sharedSelectedReportSessionId = String(sessionId).trim()
+                    }
+                    onReportActionResultReady: function(raw) { root.acceptReportActionRaw(raw) }
                     widget1Type: root.card1Widget1Type
                     widget1Id: root.card1Widget1Id
                     widget1Label: root.card1Widget1Label
@@ -1060,6 +1109,12 @@ Item {
                     designThemeObj: root.designThemeObj
                     gameStyleObj: root.gameStyleObj
                     effectStyleObj: root.effectStyleObj
+                    sharedReportActionRaw: root.sharedReportActionRaw
+                    sharedSelectedReportSessionId: root.sharedSelectedReportSessionId
+                    onReportSelectionChanged: function(sessionId) {
+                        if (root.validReportSessionId(sessionId)) root.sharedSelectedReportSessionId = String(sessionId).trim()
+                    }
+                    onReportActionResultReady: function(raw) { root.acceptReportActionRaw(raw) }
                     widget1Type: root.card2Widget1Type
                     widget1Id: root.card2Widget1Id
                     widget1Label: root.card2Widget1Label
@@ -1187,6 +1242,12 @@ Item {
                     designThemeObj: root.designThemeObj
                     gameStyleObj: root.gameStyleObj
                     effectStyleObj: root.effectStyleObj
+                    sharedReportActionRaw: root.sharedReportActionRaw
+                    sharedSelectedReportSessionId: root.sharedSelectedReportSessionId
+                    onReportSelectionChanged: function(sessionId) {
+                        if (root.validReportSessionId(sessionId)) root.sharedSelectedReportSessionId = String(sessionId).trim()
+                    }
+                    onReportActionResultReady: function(raw) { root.acceptReportActionRaw(raw) }
                     widget1Type: root.card3Widget1Type
                     widget1Id: root.card3Widget1Id
                     widget1Label: root.card3Widget1Label
@@ -1314,6 +1375,12 @@ Item {
                     designThemeObj: root.designThemeObj
                     gameStyleObj: root.gameStyleObj
                     effectStyleObj: root.effectStyleObj
+                    sharedReportActionRaw: root.sharedReportActionRaw
+                    sharedSelectedReportSessionId: root.sharedSelectedReportSessionId
+                    onReportSelectionChanged: function(sessionId) {
+                        if (root.validReportSessionId(sessionId)) root.sharedSelectedReportSessionId = String(sessionId).trim()
+                    }
+                    onReportActionResultReady: function(raw) { root.acceptReportActionRaw(raw) }
                     widget1Type: root.card4Widget1Type
                     widget1Id: root.card4Widget1Id
                     widget1Label: root.card4Widget1Label
@@ -1441,6 +1508,12 @@ Item {
                     designThemeObj: root.designThemeObj
                     gameStyleObj: root.gameStyleObj
                     effectStyleObj: root.effectStyleObj
+                    sharedReportActionRaw: root.sharedReportActionRaw
+                    sharedSelectedReportSessionId: root.sharedSelectedReportSessionId
+                    onReportSelectionChanged: function(sessionId) {
+                        if (root.validReportSessionId(sessionId)) root.sharedSelectedReportSessionId = String(sessionId).trim()
+                    }
+                    onReportActionResultReady: function(raw) { root.acceptReportActionRaw(raw) }
                     widget1Type: root.card5Widget1Type
                     widget1Id: root.card5Widget1Id
                     widget1Label: root.card5Widget1Label
@@ -1568,6 +1641,12 @@ Item {
                     designThemeObj: root.designThemeObj
                     gameStyleObj: root.gameStyleObj
                     effectStyleObj: root.effectStyleObj
+                    sharedReportActionRaw: root.sharedReportActionRaw
+                    sharedSelectedReportSessionId: root.sharedSelectedReportSessionId
+                    onReportSelectionChanged: function(sessionId) {
+                        if (root.validReportSessionId(sessionId)) root.sharedSelectedReportSessionId = String(sessionId).trim()
+                    }
+                    onReportActionResultReady: function(raw) { root.acceptReportActionRaw(raw) }
                     widget1Type: root.card6Widget1Type
                     widget1Id: root.card6Widget1Id
                     widget1Label: root.card6Widget1Label
@@ -1695,6 +1774,12 @@ Item {
                     designThemeObj: root.designThemeObj
                     gameStyleObj: root.gameStyleObj
                     effectStyleObj: root.effectStyleObj
+                    sharedReportActionRaw: root.sharedReportActionRaw
+                    sharedSelectedReportSessionId: root.sharedSelectedReportSessionId
+                    onReportSelectionChanged: function(sessionId) {
+                        if (root.validReportSessionId(sessionId)) root.sharedSelectedReportSessionId = String(sessionId).trim()
+                    }
+                    onReportActionResultReady: function(raw) { root.acceptReportActionRaw(raw) }
                     widget1Type: root.card7Widget1Type
                     widget1Id: root.card7Widget1Id
                     widget1Label: root.card7Widget1Label
