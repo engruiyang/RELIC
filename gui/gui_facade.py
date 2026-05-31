@@ -2197,7 +2197,23 @@ class GuiFacade:
             else:
                 payload = dict(payload)
                 if action_id in {"session.start", "user.ensure_demo_debug", "user.load_current"} and "user_id" not in payload:
-                    payload["user_id"] = self.get_app_state().get("current_user_id") or payload.get("user_id")
+                    payload["user_id"] = self._current_user_override or self.get_app_state().get("current_user_id") or payload.get("user_id")
+                if action_id == "session.start":
+                    requested_game_id = str(payload.get("game_id") or self.get_app_state().get("current_game_id") or "trace_lock").strip()
+                    if requested_game_id:
+                        select_result = self._select_game_summary(requested_game_id)
+                        if select_result.get("status") not in {"accepted", "not_implemented"} and self.mode == "live-control":
+                            self.last_command_result = {
+                                "action_id": action_id,
+                                "status": select_result.get("status", "game_select_failed"),
+                                "result": select_result,
+                                "message": select_result.get("message", "game_select_failed"),
+                                "accepted": False,
+                            }
+                            result = deepcopy(self.last_command_result)
+                            self._last_command_error = str(result.get("status") or "")
+                            print(f"[GUI ACTION] action_id={action_id} status={result.get('status')} result={result.get('result')} message='{result.get('message', '')}'", flush=True)
+                            return result
                 self.handle_gui_command(cmd, payload)
                 status = self.last_command_result.get("status", "unknown") if isinstance(self.last_command_result, dict) else "unknown"
                 result = {"action_id": action_id, "status": status, "result": self.last_command_result, "accepted": bool(self.last_command_result.get("accepted", False)) if isinstance(self.last_command_result, dict) else False}

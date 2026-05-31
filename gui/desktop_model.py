@@ -247,11 +247,18 @@ def _widget_labels(widgets: list[dict[str, Any]], *, limit: int = 3) -> list[str
 
 
 def _card_placeholder_role(card_id: str, card_type: str, widgets: list[dict[str, Any]]) -> tuple[bool, str]:
+    has_live_game_canvas = any(
+        isinstance(w, dict)
+        and (w.get("type") == "game_canvas" or w.get("id") == "game_canvas_live_view")
+        for w in widgets
+    )
     has_game_placeholder = any(
         isinstance(w, dict)
         and (w.get("type") == "game_placeholder" or w.get("id") == "game_canvas_placeholder")
         for w in widgets
     )
+    if card_id == "game_canvas_card" and has_live_game_canvas:
+        return False, "live_game_canvas"
     if card_id == "game_canvas_card" or has_game_placeholder:
         return True, "game_canvas_placeholder"
     return False, card_type
@@ -339,11 +346,18 @@ def _training_game_canvas_card_status(cards: list[dict[str, Any]]) -> str:
         if card.get("id") != "game_canvas_card":
             continue
         widgets = card.get("widgets") if isinstance(card.get("widgets"), list) else []
+        has_live_game_canvas = any(
+            isinstance(w, dict)
+            and (w.get("type") == "game_canvas" or w.get("id") == "game_canvas_live_view")
+            for w in widgets
+        )
         has_placeholder = any(
             isinstance(w, dict)
             and (w.get("type") == "game_placeholder" or w.get("id") == "game_canvas_placeholder")
             for w in widgets
         )
+        if has_live_game_canvas:
+            return "live_canvas_present"
         if card.get("type") == "game" or has_placeholder:
             return "placeholder_present"
         return "card_present_without_placeholder"
