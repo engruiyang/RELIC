@@ -14,6 +14,9 @@ Item {
     property var gameHudObj: ({})
     property var gameViewObj: ({})
     property var renderResourcesObj: ({})
+    property var designThemeObj: ({})
+    property var gameStyleObj: ({})
+    property var effectStyleObj: ({})
 
     property string cardId: ""
     property string cardType: ""
@@ -152,6 +155,21 @@ Item {
         return idx <= root.widgetCount && type.length > 0
     }
 
+    function isGameCanvasCard() {
+        return root.cardId === "game_canvas_card"
+                || root.roleText === "game_canvas"
+                || root.roleText === "game_canvas_live"
+                || root.roleText === "live_game_canvas"
+                || root.cardType === "game_canvas"
+    }
+
+    function isHudOverlayCard() {
+        return root.cardId === "game_hud_card"
+                || root.cardId === "game_hud_overlay_card"
+                || root.roleText === "hud_overlay"
+                || root.cardType === "hud_overlay"
+    }
+
     function rowHeightFor(type) {
         if (type === "button" || type === "input" || type === "select") return root.buttonHeight
         if (type === "text") return Math.max(root.widgetRowHeight * 3, root.buttonHeight * 3)
@@ -234,6 +252,16 @@ Item {
         if (currentUser && currentUser !== "n/a") payload.user_id = currentUser
         if ((actionId === "calibration.show" || actionId === "calibration.bind") && calibrationId && calibrationId !== "n/a") payload.calibration_id = calibrationId
         if ((actionId === "report.show" || actionId === "report.show_session") && sessionId && sessionId !== "n/a") payload.session_id = sessionId
+        if (actionId === "session.start") {
+            payload.game_id = root.widgetCurrentValue("selected_game_id") || sourceValue("gameHudJson.game_id", sourceValue("controlStateJson.current_game_id", "trace_lock"))
+            if (!payload.game_id || payload.game_id === "n/a") payload.game_id = "trace_lock"
+            payload.difficulty_mode = sourceValue("gameHudJson.difficulty_mode", "auto")
+            if (!payload.difficulty_mode || payload.difficulty_mode === "n/a") payload.difficulty_mode = "auto"
+            var debugValue = sourceValue("gameHudJson.debug_difficulty", "auto")
+            payload.debug_difficulty = debugValue && debugValue !== "n/a" ? debugValue : "auto"
+            payload.selected_difficulty_level = payload.debug_difficulty
+            payload.difficulty_level = payload.difficulty_mode === "manual" ? payload.debug_difficulty : null
+        }
         return JSON.stringify(payload)
     }
 
@@ -413,8 +441,80 @@ Item {
         glassOpacity: root.cardGlassOpacity
         glassHighlight: root.cardGlassHighlight
 
+        GameCanvas {
+            id: desktopGameCanvas
+            visible: root.isGameCanvasCard()
+            anchors.fill: parent
+            gameView: root.gameViewObj
+            guiBridgeRef: root.guiBridge
+            fallbackGameId: root.sourceValue("gameHudJson.game_id", root.sourceValue("controlStateJson.current_game_id", "trace_lock"))
+            designThemeObj: root.designThemeObj
+            gameStyleObj: root.gameStyleObj
+            effectStyleObj: root.effectStyleObj
+            renderResourcesObj: root.renderResourcesObj
+        }
+
+        Rectangle {
+            id: gameCanvasHudOverlay
+            visible: root.isGameCanvasCard()
+            anchors.left: parent.left
+            anchors.top: parent.top
+            anchors.margins: 10
+            width: Math.min(parent.width - 20, 380)
+            height: Math.min(parent.height - 20, 132)
+            radius: 16
+            color: "#06111D"
+            opacity: 0.68
+            border.color: "#4FE3D2"
+            border.width: 1
+            z: 20
+
+            Column {
+                anchors.fill: parent
+                anchors.margins: 10
+                spacing: 4
+
+                Text {
+                    width: parent.width
+                    text: "HEAD UP DISPLAY · " + root.sourceValue("gameHudJson.game_id", "trace_lock")
+                    color: "#DDFBFF"
+                    font.pixelSize: Math.max(10, root.widgetMetaPixelSize)
+                    font.bold: true
+                    elide: Text.ElideRight
+                }
+
+                Row {
+                    width: parent.width
+                    spacing: 10
+
+                    Text { width: Math.floor((parent.width - 20) / 3); text: "Score " + root.sourceValue("gameHudJson.score", "0"); color: "#EAF2FF"; font.pixelSize: Math.max(11, root.widgetValuePixelSize); font.bold: true; elide: Text.ElideRight }
+                    Text { width: Math.floor((parent.width - 20) / 3); text: "Combo " + root.sourceValue("gameHudJson.combo", "0"); color: "#EAF2FF"; font.pixelSize: Math.max(11, root.widgetValuePixelSize); font.bold: true; elide: Text.ElideRight }
+                    Text { width: Math.floor((parent.width - 20) / 3); text: "Lv " + root.sourceValue("gameHudJson.effective_level", root.sourceValue("gameHudJson.level", "n/a")); color: "#EAF2FF"; font.pixelSize: Math.max(11, root.widgetValuePixelSize); font.bold: true; elide: Text.ElideRight }
+                }
+
+                Row {
+                    width: parent.width
+                    spacing: 10
+
+                    Text { width: Math.floor((parent.width - 20) / 3); text: "Time " + root.sourceValue("gameHudJson.time_left_ms", "n/a"); color: "#9BE7C0"; font.pixelSize: Math.max(9, root.widgetLabelPixelSize); elide: Text.ElideRight }
+                    Text { width: Math.floor((parent.width - 20) / 3); text: "FI " + root.sourceValue("runtimeSnapshot.fi", root.sourceValue("runtimeSnapshot.fi_smoothed", "n/a")); color: "#9BE7C0"; font.pixelSize: Math.max(9, root.widgetLabelPixelSize); elide: Text.ElideRight }
+                    Text { width: Math.floor((parent.width - 20) / 3); text: "SQI " + root.sourceValue("runtimeSnapshot.sqi", "n/a"); color: "#9BE7C0"; font.pixelSize: Math.max(9, root.widgetLabelPixelSize); elide: Text.ElideRight }
+                }
+
+                Row {
+                    width: parent.width
+                    spacing: 10
+
+                    Text { width: Math.floor((parent.width - 20) / 3); text: "Diff " + root.sourceValue("gameHudJson.difficulty_mode", "auto") + "/" + root.sourceValue("gameHudJson.debug_difficulty", "auto"); color: "#BFDFFF"; font.pixelSize: Math.max(9, root.widgetLabelPixelSize); elide: Text.ElideRight }
+                    Text { width: Math.floor((parent.width - 20) / 3); text: "DDA " + root.sourceValue("gameHudJson.dynamic_difficulty_enabled", "n/a"); color: "#BFDFFF"; font.pixelSize: Math.max(9, root.widgetLabelPixelSize); elide: Text.ElideRight }
+                    Text { width: Math.floor((parent.width - 20) / 3); text: "Attn " + root.sourceValue("runtimeSnapshot.attention", "n/a"); color: "#BFDFFF"; font.pixelSize: Math.max(9, root.widgetLabelPixelSize); elide: Text.ElideRight }
+                }
+            }
+        }
+
         Column {
             id: bodyColumn
+            visible: !root.isGameCanvasCard()
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.top: parent.top

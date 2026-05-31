@@ -5,9 +5,9 @@ Item {
 
     property int slotCount: 7
 
-    property string slot1CardId: "training_control_card"
+    property string slot1CardId: "game_canvas_card"
     property string slot1CardType: ""
-    property string slot1Title: "training_control_card"
+    property string slot1Title: "game_canvas_card"
     property string slot1Subtitle: ""
     property bool slot1Required: true
     property bool slot1Locked: true
@@ -19,9 +19,9 @@ Item {
     property bool slot1Placeholder: false
     property string slot1RoleText: ""
 
-    property string slot2CardId: "session_card"
+    property string slot2CardId: "game_hud_card"
     property string slot2CardType: ""
-    property string slot2Title: "session_card"
+    property string slot2Title: "game_hud_card"
     property string slot2Subtitle: ""
     property bool slot2Required: true
     property bool slot2Locked: true
@@ -33,9 +33,9 @@ Item {
     property bool slot2Placeholder: false
     property string slot2RoleText: ""
 
-    property string slot3CardId: "runtime_io_card"
+    property string slot3CardId: "training_control_card"
     property string slot3CardType: ""
-    property string slot3Title: "runtime_io_card"
+    property string slot3Title: "training_control_card"
     property string slot3Subtitle: ""
     property bool slot3Required: true
     property bool slot3Locked: true
@@ -47,9 +47,9 @@ Item {
     property bool slot3Placeholder: false
     property string slot3RoleText: ""
 
-    property string slot4CardId: "calibration_status_card"
+    property string slot4CardId: "difficulty_control_card"
     property string slot4CardType: ""
-    property string slot4Title: "calibration_status_card"
+    property string slot4Title: "difficulty_control_card"
     property string slot4Subtitle: ""
     property bool slot4Required: true
     property bool slot4Locked: true
@@ -61,12 +61,12 @@ Item {
     property bool slot4Placeholder: false
     property string slot4RoleText: ""
 
-    property string slot5CardId: "game_hud_card"
+    property string slot5CardId: ""
     property string slot5CardType: ""
-    property string slot5Title: "game_hud_card"
+    property string slot5Title: ""
     property string slot5Subtitle: ""
-    property bool slot5Required: true
-    property bool slot5Locked: true
+    property bool slot5Required: false
+    property bool slot5Locked: false
     property string slot5RectText: "n/a"
     property int slot5WidgetCount: 0
     property string slot5ActionIdsText: "n/a"
@@ -75,12 +75,12 @@ Item {
     property bool slot5Placeholder: false
     property string slot5RoleText: ""
 
-    property string slot6CardId: "game_canvas_card"
+    property string slot6CardId: ""
     property string slot6CardType: ""
-    property string slot6Title: "game_canvas_card"
+    property string slot6Title: ""
     property string slot6Subtitle: ""
-    property bool slot6Required: true
-    property bool slot6Locked: true
+    property bool slot6Required: false
+    property bool slot6Locked: false
     property string slot6RectText: "n/a"
     property int slot6WidgetCount: 0
     property string slot6ActionIdsText: "n/a"
@@ -89,12 +89,12 @@ Item {
     property bool slot6Placeholder: false
     property string slot6RoleText: ""
 
-    property string slot7CardId: "diagnostics_summary_card"
+    property string slot7CardId: ""
     property string slot7CardType: ""
-    property string slot7Title: "diagnostics_summary_card"
+    property string slot7Title: ""
     property string slot7Subtitle: ""
-    property bool slot7Required: true
-    property bool slot7Locked: true
+    property bool slot7Required: false
+    property bool slot7Locked: false
     property string slot7RectText: "n/a"
     property int slot7WidgetCount: 0
     property string slot7ActionIdsText: "n/a"

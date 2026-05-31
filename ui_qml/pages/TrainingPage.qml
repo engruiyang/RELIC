@@ -26,6 +26,7 @@ Item {
     property string selectedNativeActionId: ""
     property bool task26DesktopPilotEnabled: true
     property bool task26LegacyFallbackVisible: false
+    // TASK26 Game GUI: GAME CANVAS + HEAD UP DISPLAY transparent HUD overlay + Session Control + Difficulty Control
 
     property string activePanel: "readiness"
     property var availableGameIds: ["trace_lock"]
@@ -489,6 +490,9 @@ Item {
             gameHudObj: trainingPage.gameHudObj
             gameViewObj: trainingPage.gameViewObj
             renderResourcesObj: trainingPage.renderResourcesObj
+            designThemeObj: trainingPage.designThemeObj
+            gameStyleObj: trainingPage.gameStyleObj
+            effectStyleObj: trainingPage.effectStyleObj
         }
     }
 
@@ -534,6 +538,9 @@ Item {
                     gameHudObj: trainingPage.gameHudObj
                     gameViewObj: trainingPage.gameViewObj
                     renderResourcesObj: trainingPage.renderResourcesObj
+                    designThemeObj: trainingPage.designThemeObj
+                    gameStyleObj: trainingPage.gameStyleObj
+                    effectStyleObj: trainingPage.effectStyleObj
                 }
             }
 

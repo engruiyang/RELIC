@@ -12,6 +12,9 @@ Item {
     property var gameHudObj: ({})
     property var gameViewObj: ({})
     property var renderResourcesObj: ({})
+    property var designThemeObj: ({})
+    property var gameStyleObj: ({})
+    property var effectStyleObj: ({})
     property string previewTitle: "Desktop Layout Preview"
     property string previewSubtitle: "TASK26 real layout preview"
     property string pageId: String(layoutValue("page_id", ""))
@@ -927,6 +930,9 @@ Item {
                     gameHudObj: root.gameHudObj
                     gameViewObj: root.gameViewObj
                     renderResourcesObj: root.renderResourcesObj
+                    designThemeObj: root.designThemeObj
+                    gameStyleObj: root.gameStyleObj
+                    effectStyleObj: root.effectStyleObj
                     widget1Type: root.card1Widget1Type
                     widget1Id: root.card1Widget1Id
                     widget1Label: root.card1Widget1Label
@@ -1051,6 +1057,9 @@ Item {
                     gameHudObj: root.gameHudObj
                     gameViewObj: root.gameViewObj
                     renderResourcesObj: root.renderResourcesObj
+                    designThemeObj: root.designThemeObj
+                    gameStyleObj: root.gameStyleObj
+                    effectStyleObj: root.effectStyleObj
                     widget1Type: root.card2Widget1Type
                     widget1Id: root.card2Widget1Id
                     widget1Label: root.card2Widget1Label
@@ -1175,6 +1184,9 @@ Item {
                     gameHudObj: root.gameHudObj
                     gameViewObj: root.gameViewObj
                     renderResourcesObj: root.renderResourcesObj
+                    designThemeObj: root.designThemeObj
+                    gameStyleObj: root.gameStyleObj
+                    effectStyleObj: root.effectStyleObj
                     widget1Type: root.card3Widget1Type
                     widget1Id: root.card3Widget1Id
                     widget1Label: root.card3Widget1Label
@@ -1299,6 +1311,9 @@ Item {
                     gameHudObj: root.gameHudObj
                     gameViewObj: root.gameViewObj
                     renderResourcesObj: root.renderResourcesObj
+                    designThemeObj: root.designThemeObj
+                    gameStyleObj: root.gameStyleObj
+                    effectStyleObj: root.effectStyleObj
                     widget1Type: root.card4Widget1Type
                     widget1Id: root.card4Widget1Id
                     widget1Label: root.card4Widget1Label
@@ -1423,6 +1438,9 @@ Item {
                     gameHudObj: root.gameHudObj
                     gameViewObj: root.gameViewObj
                     renderResourcesObj: root.renderResourcesObj
+                    designThemeObj: root.designThemeObj
+                    gameStyleObj: root.gameStyleObj
+                    effectStyleObj: root.effectStyleObj
                     widget1Type: root.card5Widget1Type
                     widget1Id: root.card5Widget1Id
                     widget1Label: root.card5Widget1Label
@@ -1547,6 +1565,9 @@ Item {
                     gameHudObj: root.gameHudObj
                     gameViewObj: root.gameViewObj
                     renderResourcesObj: root.renderResourcesObj
+                    designThemeObj: root.designThemeObj
+                    gameStyleObj: root.gameStyleObj
+                    effectStyleObj: root.effectStyleObj
                     widget1Type: root.card6Widget1Type
                     widget1Id: root.card6Widget1Id
                     widget1Label: root.card6Widget1Label
@@ -1671,6 +1692,9 @@ Item {
                     gameHudObj: root.gameHudObj
                     gameViewObj: root.gameViewObj
                     renderResourcesObj: root.renderResourcesObj
+                    designThemeObj: root.designThemeObj
+                    gameStyleObj: root.gameStyleObj
+                    effectStyleObj: root.effectStyleObj
                     widget1Type: root.card7Widget1Type
                     widget1Id: root.card7Widget1Id
                     widget1Label: root.card7Widget1Label
