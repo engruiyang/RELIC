@@ -5,6 +5,9 @@ import "../components"
 Item {
     id: trainingPage
 
+    property var guiBridge: null
+    property var sessionObj: ({})
+
     property var appStateObj: ({})
     property var controlStateObj: ({})
     property var runtimeObj: ({})
@@ -22,7 +25,7 @@ Item {
     property string selectedExecutionMode: ""
     property string selectedNativeActionId: ""
     property bool task26DesktopPilotEnabled: true
-    property bool task26LegacyFallbackVisible: true
+    property bool task26LegacyFallbackVisible: false
 
     property string activePanel: "readiness"
     property var availableGameIds: ["trace_lock"]
@@ -462,9 +465,38 @@ Item {
         fallbackColor: (trainingPage.designThemeObj.colors && trainingPage.designThemeObj.colors.background) ? trainingPage.designThemeObj.colors.background : "#F8FAFC"
     }
 
+    Item {
+        id: task26TrainingDesktopPilotOverlay
+        anchors.fill: parent
+        anchors.margins: 6
+        z: 100
+        visible: trainingPage.task26DesktopPilotEnabled
+        enabled: trainingPage.task26DesktopPilotEnabled
+
+        DesktopLayoutPreview {
+            id: task26TrainingDesktopPrimaryPreview
+            anchors.fill: parent
+            layoutPayload: trainingPage.task26TrainingLayoutPayload()
+            previewTitle: "TASK26 Training Desktop Pilot"
+            previewSubtitle: "primary training card layer · legacy fallback: " + String(trainingPage.task26LegacyFallbackVisible)
+            payloadStatusText: trainingPage.task26TrainingLayoutStatus()
+            payloadSourceText: trainingPage.task26TrainingLayoutSource()
+            guiBridge: trainingPage.guiBridge
+            appStateObj: trainingPage.appStateObj
+            runtimeSnapshotObj: trainingPage.runtimeObj
+            sessionStateObj: trainingPage.sessionObj
+            controlStateObj: trainingPage.controlStateObj
+            gameHudObj: trainingPage.gameHudObj
+            gameViewObj: trainingPage.gameViewObj
+            renderResourcesObj: trainingPage.renderResourcesObj
+        }
+    }
+
     ScrollView {
         anchors.fill: parent
         anchors.margins: Number((pageStyleObj.layout || ({})).content_margin || themeSpacing("page_margin", 0))
+        visible: trainingPage.task26LegacyFallbackVisible
+        enabled: trainingPage.task26LegacyFallbackVisible
         clip: true
 
         Column {
@@ -494,10 +526,10 @@ Item {
                     previewSubtitle: "style-capable training card layout"
                     payloadStatusText: trainingPage.task26TrainingLayoutStatus()
                     payloadSourceText: trainingPage.task26TrainingLayoutSource()
-                    guiBridge: typeof guiBridge === "undefined" ? null : guiBridge
+                    guiBridge: trainingPage.guiBridge
                     appStateObj: trainingPage.appStateObj
                     runtimeSnapshotObj: trainingPage.runtimeObj
-                    sessionStateObj: trainingPage.controlStateObj
+                    sessionStateObj: trainingPage.sessionObj
                     controlStateObj: trainingPage.controlStateObj
                     gameHudObj: trainingPage.gameHudObj
                     gameViewObj: trainingPage.gameViewObj

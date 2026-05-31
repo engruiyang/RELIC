@@ -20,6 +20,11 @@ Rectangle {
     property color subtitleColor: "#8EA4BF"
     property color bodyColor: "#D7E2F0"
 
+    property int titlePixelSize: 17
+    property int subtitlePixelSize: 12
+    property int headerSpacing: 2
+    property int contentSpacing: 8
+
     property string shapeType: "rounded_rect"
     property bool glassEnabled: false
     property color glassTintColor: "#DDEEFF"
@@ -99,12 +104,12 @@ Rectangle {
         id: contentColumn
         anchors.fill: parent
         anchors.margins: root.paddingValue
-        spacing: 8
+        spacing: root.contentSpacing
 
         Column {
             id: headerBlock
             width: parent.width
-            spacing: 2
+            spacing: root.headerSpacing
             visible: root.cardTitle.length > 0 || root.cardSubtitle.length > 0
 
             Text {
@@ -113,7 +118,7 @@ Rectangle {
                 text: root.cardTitle
                 visible: root.cardTitle.length > 0
                 color: root.titleColor
-                font.pixelSize: 17
+                font.pixelSize: root.titlePixelSize
                 font.bold: true
                 elide: Text.ElideRight
             }
@@ -124,7 +129,7 @@ Rectangle {
                 text: root.cardSubtitle
                 visible: root.cardSubtitle.length > 0
                 color: root.subtitleColor
-                font.pixelSize: 12
+                font.pixelSize: root.subtitlePixelSize
                 elide: Text.ElideRight
                 wrapMode: Text.NoWrap
             }

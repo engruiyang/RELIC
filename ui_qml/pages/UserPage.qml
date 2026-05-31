@@ -4,6 +4,12 @@ import "../components"
 
 Item {
     id: root
+
+    property var guiBridge: null
+    property var runtimeObj: ({})
+    property var sessionObj: ({})
+    property var gameHudObj: ({})
+    property var gameViewObj: ({})
     property var designThemeObj: ({})
     property var pageStyleObj: ({})
     property var componentStyleObj: ({})
@@ -320,6 +326,7 @@ Item {
         anchors.margins: 6
         z: 100
         visible: root.task26DesktopPilotEnabled
+        enabled: root.task26DesktopPilotEnabled
 
         DesktopLayoutPreview {
             id: task26UserDesktopLayoutPreview
@@ -329,19 +336,23 @@ Item {
             previewSubtitle: "Full-area card desktop pilot · legacy fallback: " + String(root.task26LegacyFallbackVisible)
             payloadStatusText: String((root.renderResourcesObj || ({})).task26_user_layout_status || "n/a")
             payloadSourceText: String((root.renderResourcesObj || ({})).task26_user_layout_source || "n/a")
-            guiBridge: typeof guiBridge === "undefined" ? null : guiBridge
+            guiBridge: root.guiBridge
             appStateObj: root.appStateObj
-            runtimeSnapshotObj: ({})
-            sessionStateObj: root.controlStateObj
+            runtimeSnapshotObj: root.runtimeObj
+            sessionStateObj: root.sessionObj
             controlStateObj: root.controlStateObj
-            gameHudObj: ({})
+            gameHudObj: root.gameHudObj
+            gameViewObj: root.gameViewObj
             renderResourcesObj: root.renderResourcesObj
         }
     }
 
 
     Column {
+        id: legacyUserLayer
         anchors.fill: parent
+        visible: root.task26LegacyFallbackVisible
+        enabled: root.task26LegacyFallbackVisible
         spacing: 6
 
         PageHeader {

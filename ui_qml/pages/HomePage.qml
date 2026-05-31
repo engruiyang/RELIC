@@ -5,6 +5,12 @@ import "../components"
 Item {
     id: root
 
+    property var guiBridge: null
+    property var appStateObj: ({})
+    property var sessionObj: ({})
+    property var gameHudObj: ({})
+    property var gameViewObj: ({})
+
     property var designThemeObj: ({})
     property var pageStyleObj: ({})
     property var componentStyleObj: ({})
@@ -13,7 +19,7 @@ Item {
     property var runtimeObj: ({})
     property string commandSummary: ""
     property bool task26DesktopPilotEnabled: true
-    property bool task26LegacyFallbackVisible: true
+    property bool task26LegacyFallbackVisible: false
 
     signal navigateTo(string pageId)
     signal invokeNative(string actionId)
@@ -68,9 +74,38 @@ Item {
         fallbackColor: root.themeColor("background", "#F8FAFC")
     }
 
+    Item {
+        id: task26HomeDesktopPilotOverlay
+        anchors.fill: parent
+        anchors.margins: 6
+        z: 100
+        visible: root.task26DesktopPilotEnabled
+        enabled: root.task26DesktopPilotEnabled
+
+        DesktopLayoutPreview {
+            id: task26HomeDesktopPrimaryPreview
+            anchors.fill: parent
+            layoutPayload: root.task26HomeLayoutPayload()
+            previewTitle: "TASK26 Home Desktop Pilot"
+            previewSubtitle: "primary desktop card layer · legacy fallback: " + String(root.task26LegacyFallbackVisible)
+            payloadStatusText: root.task26HomeLayoutStatus()
+            payloadSourceText: root.task26HomeLayoutSource()
+            guiBridge: root.guiBridge
+            appStateObj: root.appStateObj
+            runtimeSnapshotObj: root.runtimeObj
+            sessionStateObj: root.sessionObj
+            controlStateObj: root.controlStateObj
+            gameHudObj: root.gameHudObj
+            gameViewObj: root.gameViewObj
+            renderResourcesObj: root.renderResourcesObj
+        }
+    }
+
     Flickable {
         id: homeScroll
         anchors.fill: parent
+        visible: root.task26LegacyFallbackVisible
+        enabled: root.task26LegacyFallbackVisible
         clip: true
         contentWidth: width
         contentHeight: homeContent.implicitHeight + 16
@@ -108,12 +143,13 @@ Item {
                 previewSubtitle: "style-capable desktop card layout"
                 payloadStatusText: root.task26HomeLayoutStatus()
                 payloadSourceText: root.task26HomeLayoutSource()
-                guiBridge: typeof guiBridge === "undefined" ? null : guiBridge
-                appStateObj: ({})
+                guiBridge: root.guiBridge
+                appStateObj: root.appStateObj
                 runtimeSnapshotObj: root.runtimeObj
-                sessionStateObj: root.controlStateObj
+                sessionStateObj: root.sessionObj
                 controlStateObj: root.controlStateObj
-                gameHudObj: ({})
+                gameHudObj: root.gameHudObj
+                gameViewObj: root.gameViewObj
                 renderResourcesObj: root.renderResourcesObj
             }
         }

@@ -4,6 +4,11 @@ import "../components"
 
 Item {
     id: reportPage
+
+    property var guiBridge: null
+    property var runtimeObj: ({})
+    property var gameHudObj: ({})
+    property var gameViewObj: ({})
     property var designThemeObj: ({})
     property var pageStyleObj: ({})
     property var componentStyleObj: ({})
@@ -257,6 +262,7 @@ Item {
         anchors.margins: 6
         z: 100
         visible: reportPage.task26DesktopPilotEnabled
+        enabled: reportPage.task26DesktopPilotEnabled
 
         DesktopLayoutPreview {
             id: task26ReportDesktopLayoutPreview
@@ -266,19 +272,23 @@ Item {
             previewSubtitle: "Full-area card desktop pilot · legacy fallback: " + String(reportPage.task26LegacyFallbackVisible)
             payloadStatusText: String((reportPage.renderResourcesObj || ({})).task26_report_layout_status || "n/a")
             payloadSourceText: String((reportPage.renderResourcesObj || ({})).task26_report_layout_source || "n/a")
-            guiBridge: typeof guiBridge === "undefined" ? null : guiBridge
+            guiBridge: reportPage.guiBridge
             appStateObj: reportPage.appStateObj
-            runtimeSnapshotObj: ({})
-            sessionStateObj: reportPage.controlStateObj
+            runtimeSnapshotObj: reportPage.runtimeObj
+            sessionStateObj: reportPage.sessionObj
             controlStateObj: reportPage.controlStateObj
-            gameHudObj: ({})
+            gameHudObj: reportPage.gameHudObj
+            gameViewObj: reportPage.gameViewObj
             renderResourcesObj: reportPage.renderResourcesObj
         }
     }
 
 
     ScrollView {
+        id: legacyReportLayer
         anchors.fill: parent
+        visible: reportPage.task26LegacyFallbackVisible
+        enabled: reportPage.task26LegacyFallbackVisible
         clip: true
 
         Column {

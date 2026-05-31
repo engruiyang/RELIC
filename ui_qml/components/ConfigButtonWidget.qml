@@ -18,6 +18,7 @@ Item {
     property int buttonWidth: 148
     property int buttonHeight: 40
     property int radiusValue: 12
+    property int textPixelSize: 13
 
     property color primaryColor: "#2D6CDF"
     property color secondaryColor: "#273244"
@@ -50,7 +51,7 @@ Item {
         anchors.centerIn: parent
         text: root.confirmArmed ? root.confirmMessage : root.label
         color: root.textColor
-        font.pixelSize: 13
+        font.pixelSize: root.textPixelSize
         font.bold: root.required
         elide: Text.ElideRight
         width: parent.width - 16

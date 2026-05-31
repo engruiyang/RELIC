@@ -53,6 +53,8 @@ Item {
     property string card1Widget1Fallback: String(layoutValue("card1_widget1_fallback", ""))
     property string card1Widget1Unit: String(layoutValue("card1_widget1_unit", ""))
     property string card1Widget1ActionId: String(layoutValue("card1_widget1_action_id", ""))
+    property string card1Widget1ArgsJson: String(layoutValue("card1_widget1_args_json", "{}"))
+    property string card1Widget1OptionsText: String(layoutValue("card1_widget1_options_text", ""))
     property string card1Widget1Variant: String(layoutValue("card1_widget1_variant", ""))
     property bool card1Widget1Required: Boolean(layoutValue("card1_widget1_required", false))
     property string card1Widget1Value: String(layoutValue("card1_widget1_value", ""))
@@ -63,6 +65,8 @@ Item {
     property string card1Widget2Fallback: String(layoutValue("card1_widget2_fallback", ""))
     property string card1Widget2Unit: String(layoutValue("card1_widget2_unit", ""))
     property string card1Widget2ActionId: String(layoutValue("card1_widget2_action_id", ""))
+    property string card1Widget2ArgsJson: String(layoutValue("card1_widget2_args_json", "{}"))
+    property string card1Widget2OptionsText: String(layoutValue("card1_widget2_options_text", ""))
     property string card1Widget2Variant: String(layoutValue("card1_widget2_variant", ""))
     property bool card1Widget2Required: Boolean(layoutValue("card1_widget2_required", false))
     property string card1Widget2Value: String(layoutValue("card1_widget2_value", ""))
@@ -73,6 +77,8 @@ Item {
     property string card1Widget3Fallback: String(layoutValue("card1_widget3_fallback", ""))
     property string card1Widget3Unit: String(layoutValue("card1_widget3_unit", ""))
     property string card1Widget3ActionId: String(layoutValue("card1_widget3_action_id", ""))
+    property string card1Widget3ArgsJson: String(layoutValue("card1_widget3_args_json", "{}"))
+    property string card1Widget3OptionsText: String(layoutValue("card1_widget3_options_text", ""))
     property string card1Widget3Variant: String(layoutValue("card1_widget3_variant", ""))
     property bool card1Widget3Required: Boolean(layoutValue("card1_widget3_required", false))
     property string card1Widget3Value: String(layoutValue("card1_widget3_value", ""))
@@ -83,6 +89,8 @@ Item {
     property string card1Widget4Fallback: String(layoutValue("card1_widget4_fallback", ""))
     property string card1Widget4Unit: String(layoutValue("card1_widget4_unit", ""))
     property string card1Widget4ActionId: String(layoutValue("card1_widget4_action_id", ""))
+    property string card1Widget4ArgsJson: String(layoutValue("card1_widget4_args_json", "{}"))
+    property string card1Widget4OptionsText: String(layoutValue("card1_widget4_options_text", ""))
     property string card1Widget4Variant: String(layoutValue("card1_widget4_variant", ""))
     property bool card1Widget4Required: Boolean(layoutValue("card1_widget4_required", false))
     property string card1Widget4Value: String(layoutValue("card1_widget4_value", ""))
@@ -93,6 +101,8 @@ Item {
     property string card1Widget5Fallback: String(layoutValue("card1_widget5_fallback", ""))
     property string card1Widget5Unit: String(layoutValue("card1_widget5_unit", ""))
     property string card1Widget5ActionId: String(layoutValue("card1_widget5_action_id", ""))
+    property string card1Widget5ArgsJson: String(layoutValue("card1_widget5_args_json", "{}"))
+    property string card1Widget5OptionsText: String(layoutValue("card1_widget5_options_text", ""))
     property string card1Widget5Variant: String(layoutValue("card1_widget5_variant", ""))
     property bool card1Widget5Required: Boolean(layoutValue("card1_widget5_required", false))
     property string card1Widget5Value: String(layoutValue("card1_widget5_value", ""))
@@ -103,6 +113,8 @@ Item {
     property string card1Widget6Fallback: String(layoutValue("card1_widget6_fallback", ""))
     property string card1Widget6Unit: String(layoutValue("card1_widget6_unit", ""))
     property string card1Widget6ActionId: String(layoutValue("card1_widget6_action_id", ""))
+    property string card1Widget6ArgsJson: String(layoutValue("card1_widget6_args_json", "{}"))
+    property string card1Widget6OptionsText: String(layoutValue("card1_widget6_options_text", ""))
     property string card1Widget6Variant: String(layoutValue("card1_widget6_variant", ""))
     property bool card1Widget6Required: Boolean(layoutValue("card1_widget6_required", false))
     property string card1Widget6Value: String(layoutValue("card1_widget6_value", ""))
@@ -130,6 +142,8 @@ Item {
     property string card2Widget1Fallback: String(layoutValue("card2_widget1_fallback", ""))
     property string card2Widget1Unit: String(layoutValue("card2_widget1_unit", ""))
     property string card2Widget1ActionId: String(layoutValue("card2_widget1_action_id", ""))
+    property string card2Widget1ArgsJson: String(layoutValue("card2_widget1_args_json", "{}"))
+    property string card2Widget1OptionsText: String(layoutValue("card2_widget1_options_text", ""))
     property string card2Widget1Variant: String(layoutValue("card2_widget1_variant", ""))
     property bool card2Widget1Required: Boolean(layoutValue("card2_widget1_required", false))
     property string card2Widget1Value: String(layoutValue("card2_widget1_value", ""))
@@ -140,6 +154,8 @@ Item {
     property string card2Widget2Fallback: String(layoutValue("card2_widget2_fallback", ""))
     property string card2Widget2Unit: String(layoutValue("card2_widget2_unit", ""))
     property string card2Widget2ActionId: String(layoutValue("card2_widget2_action_id", ""))
+    property string card2Widget2ArgsJson: String(layoutValue("card2_widget2_args_json", "{}"))
+    property string card2Widget2OptionsText: String(layoutValue("card2_widget2_options_text", ""))
     property string card2Widget2Variant: String(layoutValue("card2_widget2_variant", ""))
     property bool card2Widget2Required: Boolean(layoutValue("card2_widget2_required", false))
     property string card2Widget2Value: String(layoutValue("card2_widget2_value", ""))
@@ -150,6 +166,8 @@ Item {
     property string card2Widget3Fallback: String(layoutValue("card2_widget3_fallback", ""))
     property string card2Widget3Unit: String(layoutValue("card2_widget3_unit", ""))
     property string card2Widget3ActionId: String(layoutValue("card2_widget3_action_id", ""))
+    property string card2Widget3ArgsJson: String(layoutValue("card2_widget3_args_json", "{}"))
+    property string card2Widget3OptionsText: String(layoutValue("card2_widget3_options_text", ""))
     property string card2Widget3Variant: String(layoutValue("card2_widget3_variant", ""))
     property bool card2Widget3Required: Boolean(layoutValue("card2_widget3_required", false))
     property string card2Widget3Value: String(layoutValue("card2_widget3_value", ""))
@@ -160,6 +178,8 @@ Item {
     property string card2Widget4Fallback: String(layoutValue("card2_widget4_fallback", ""))
     property string card2Widget4Unit: String(layoutValue("card2_widget4_unit", ""))
     property string card2Widget4ActionId: String(layoutValue("card2_widget4_action_id", ""))
+    property string card2Widget4ArgsJson: String(layoutValue("card2_widget4_args_json", "{}"))
+    property string card2Widget4OptionsText: String(layoutValue("card2_widget4_options_text", ""))
     property string card2Widget4Variant: String(layoutValue("card2_widget4_variant", ""))
     property bool card2Widget4Required: Boolean(layoutValue("card2_widget4_required", false))
     property string card2Widget4Value: String(layoutValue("card2_widget4_value", ""))
@@ -170,6 +190,8 @@ Item {
     property string card2Widget5Fallback: String(layoutValue("card2_widget5_fallback", ""))
     property string card2Widget5Unit: String(layoutValue("card2_widget5_unit", ""))
     property string card2Widget5ActionId: String(layoutValue("card2_widget5_action_id", ""))
+    property string card2Widget5ArgsJson: String(layoutValue("card2_widget5_args_json", "{}"))
+    property string card2Widget5OptionsText: String(layoutValue("card2_widget5_options_text", ""))
     property string card2Widget5Variant: String(layoutValue("card2_widget5_variant", ""))
     property bool card2Widget5Required: Boolean(layoutValue("card2_widget5_required", false))
     property string card2Widget5Value: String(layoutValue("card2_widget5_value", ""))
@@ -180,6 +202,8 @@ Item {
     property string card2Widget6Fallback: String(layoutValue("card2_widget6_fallback", ""))
     property string card2Widget6Unit: String(layoutValue("card2_widget6_unit", ""))
     property string card2Widget6ActionId: String(layoutValue("card2_widget6_action_id", ""))
+    property string card2Widget6ArgsJson: String(layoutValue("card2_widget6_args_json", "{}"))
+    property string card2Widget6OptionsText: String(layoutValue("card2_widget6_options_text", ""))
     property string card2Widget6Variant: String(layoutValue("card2_widget6_variant", ""))
     property bool card2Widget6Required: Boolean(layoutValue("card2_widget6_required", false))
     property string card2Widget6Value: String(layoutValue("card2_widget6_value", ""))
@@ -207,6 +231,8 @@ Item {
     property string card3Widget1Fallback: String(layoutValue("card3_widget1_fallback", ""))
     property string card3Widget1Unit: String(layoutValue("card3_widget1_unit", ""))
     property string card3Widget1ActionId: String(layoutValue("card3_widget1_action_id", ""))
+    property string card3Widget1ArgsJson: String(layoutValue("card3_widget1_args_json", "{}"))
+    property string card3Widget1OptionsText: String(layoutValue("card3_widget1_options_text", ""))
     property string card3Widget1Variant: String(layoutValue("card3_widget1_variant", ""))
     property bool card3Widget1Required: Boolean(layoutValue("card3_widget1_required", false))
     property string card3Widget1Value: String(layoutValue("card3_widget1_value", ""))
@@ -217,6 +243,8 @@ Item {
     property string card3Widget2Fallback: String(layoutValue("card3_widget2_fallback", ""))
     property string card3Widget2Unit: String(layoutValue("card3_widget2_unit", ""))
     property string card3Widget2ActionId: String(layoutValue("card3_widget2_action_id", ""))
+    property string card3Widget2ArgsJson: String(layoutValue("card3_widget2_args_json", "{}"))
+    property string card3Widget2OptionsText: String(layoutValue("card3_widget2_options_text", ""))
     property string card3Widget2Variant: String(layoutValue("card3_widget2_variant", ""))
     property bool card3Widget2Required: Boolean(layoutValue("card3_widget2_required", false))
     property string card3Widget2Value: String(layoutValue("card3_widget2_value", ""))
@@ -227,6 +255,8 @@ Item {
     property string card3Widget3Fallback: String(layoutValue("card3_widget3_fallback", ""))
     property string card3Widget3Unit: String(layoutValue("card3_widget3_unit", ""))
     property string card3Widget3ActionId: String(layoutValue("card3_widget3_action_id", ""))
+    property string card3Widget3ArgsJson: String(layoutValue("card3_widget3_args_json", "{}"))
+    property string card3Widget3OptionsText: String(layoutValue("card3_widget3_options_text", ""))
     property string card3Widget3Variant: String(layoutValue("card3_widget3_variant", ""))
     property bool card3Widget3Required: Boolean(layoutValue("card3_widget3_required", false))
     property string card3Widget3Value: String(layoutValue("card3_widget3_value", ""))
@@ -237,6 +267,8 @@ Item {
     property string card3Widget4Fallback: String(layoutValue("card3_widget4_fallback", ""))
     property string card3Widget4Unit: String(layoutValue("card3_widget4_unit", ""))
     property string card3Widget4ActionId: String(layoutValue("card3_widget4_action_id", ""))
+    property string card3Widget4ArgsJson: String(layoutValue("card3_widget4_args_json", "{}"))
+    property string card3Widget4OptionsText: String(layoutValue("card3_widget4_options_text", ""))
     property string card3Widget4Variant: String(layoutValue("card3_widget4_variant", ""))
     property bool card3Widget4Required: Boolean(layoutValue("card3_widget4_required", false))
     property string card3Widget4Value: String(layoutValue("card3_widget4_value", ""))
@@ -247,6 +279,8 @@ Item {
     property string card3Widget5Fallback: String(layoutValue("card3_widget5_fallback", ""))
     property string card3Widget5Unit: String(layoutValue("card3_widget5_unit", ""))
     property string card3Widget5ActionId: String(layoutValue("card3_widget5_action_id", ""))
+    property string card3Widget5ArgsJson: String(layoutValue("card3_widget5_args_json", "{}"))
+    property string card3Widget5OptionsText: String(layoutValue("card3_widget5_options_text", ""))
     property string card3Widget5Variant: String(layoutValue("card3_widget5_variant", ""))
     property bool card3Widget5Required: Boolean(layoutValue("card3_widget5_required", false))
     property string card3Widget5Value: String(layoutValue("card3_widget5_value", ""))
@@ -257,6 +291,8 @@ Item {
     property string card3Widget6Fallback: String(layoutValue("card3_widget6_fallback", ""))
     property string card3Widget6Unit: String(layoutValue("card3_widget6_unit", ""))
     property string card3Widget6ActionId: String(layoutValue("card3_widget6_action_id", ""))
+    property string card3Widget6ArgsJson: String(layoutValue("card3_widget6_args_json", "{}"))
+    property string card3Widget6OptionsText: String(layoutValue("card3_widget6_options_text", ""))
     property string card3Widget6Variant: String(layoutValue("card3_widget6_variant", ""))
     property bool card3Widget6Required: Boolean(layoutValue("card3_widget6_required", false))
     property string card3Widget6Value: String(layoutValue("card3_widget6_value", ""))
@@ -284,6 +320,8 @@ Item {
     property string card4Widget1Fallback: String(layoutValue("card4_widget1_fallback", ""))
     property string card4Widget1Unit: String(layoutValue("card4_widget1_unit", ""))
     property string card4Widget1ActionId: String(layoutValue("card4_widget1_action_id", ""))
+    property string card4Widget1ArgsJson: String(layoutValue("card4_widget1_args_json", "{}"))
+    property string card4Widget1OptionsText: String(layoutValue("card4_widget1_options_text", ""))
     property string card4Widget1Variant: String(layoutValue("card4_widget1_variant", ""))
     property bool card4Widget1Required: Boolean(layoutValue("card4_widget1_required", false))
     property string card4Widget1Value: String(layoutValue("card4_widget1_value", ""))
@@ -294,6 +332,8 @@ Item {
     property string card4Widget2Fallback: String(layoutValue("card4_widget2_fallback", ""))
     property string card4Widget2Unit: String(layoutValue("card4_widget2_unit", ""))
     property string card4Widget2ActionId: String(layoutValue("card4_widget2_action_id", ""))
+    property string card4Widget2ArgsJson: String(layoutValue("card4_widget2_args_json", "{}"))
+    property string card4Widget2OptionsText: String(layoutValue("card4_widget2_options_text", ""))
     property string card4Widget2Variant: String(layoutValue("card4_widget2_variant", ""))
     property bool card4Widget2Required: Boolean(layoutValue("card4_widget2_required", false))
     property string card4Widget2Value: String(layoutValue("card4_widget2_value", ""))
@@ -304,6 +344,8 @@ Item {
     property string card4Widget3Fallback: String(layoutValue("card4_widget3_fallback", ""))
     property string card4Widget3Unit: String(layoutValue("card4_widget3_unit", ""))
     property string card4Widget3ActionId: String(layoutValue("card4_widget3_action_id", ""))
+    property string card4Widget3ArgsJson: String(layoutValue("card4_widget3_args_json", "{}"))
+    property string card4Widget3OptionsText: String(layoutValue("card4_widget3_options_text", ""))
     property string card4Widget3Variant: String(layoutValue("card4_widget3_variant", ""))
     property bool card4Widget3Required: Boolean(layoutValue("card4_widget3_required", false))
     property string card4Widget3Value: String(layoutValue("card4_widget3_value", ""))
@@ -314,6 +356,8 @@ Item {
     property string card4Widget4Fallback: String(layoutValue("card4_widget4_fallback", ""))
     property string card4Widget4Unit: String(layoutValue("card4_widget4_unit", ""))
     property string card4Widget4ActionId: String(layoutValue("card4_widget4_action_id", ""))
+    property string card4Widget4ArgsJson: String(layoutValue("card4_widget4_args_json", "{}"))
+    property string card4Widget4OptionsText: String(layoutValue("card4_widget4_options_text", ""))
     property string card4Widget4Variant: String(layoutValue("card4_widget4_variant", ""))
     property bool card4Widget4Required: Boolean(layoutValue("card4_widget4_required", false))
     property string card4Widget4Value: String(layoutValue("card4_widget4_value", ""))
@@ -324,6 +368,8 @@ Item {
     property string card4Widget5Fallback: String(layoutValue("card4_widget5_fallback", ""))
     property string card4Widget5Unit: String(layoutValue("card4_widget5_unit", ""))
     property string card4Widget5ActionId: String(layoutValue("card4_widget5_action_id", ""))
+    property string card4Widget5ArgsJson: String(layoutValue("card4_widget5_args_json", "{}"))
+    property string card4Widget5OptionsText: String(layoutValue("card4_widget5_options_text", ""))
     property string card4Widget5Variant: String(layoutValue("card4_widget5_variant", ""))
     property bool card4Widget5Required: Boolean(layoutValue("card4_widget5_required", false))
     property string card4Widget5Value: String(layoutValue("card4_widget5_value", ""))
@@ -334,6 +380,8 @@ Item {
     property string card4Widget6Fallback: String(layoutValue("card4_widget6_fallback", ""))
     property string card4Widget6Unit: String(layoutValue("card4_widget6_unit", ""))
     property string card4Widget6ActionId: String(layoutValue("card4_widget6_action_id", ""))
+    property string card4Widget6ArgsJson: String(layoutValue("card4_widget6_args_json", "{}"))
+    property string card4Widget6OptionsText: String(layoutValue("card4_widget6_options_text", ""))
     property string card4Widget6Variant: String(layoutValue("card4_widget6_variant", ""))
     property bool card4Widget6Required: Boolean(layoutValue("card4_widget6_required", false))
     property string card4Widget6Value: String(layoutValue("card4_widget6_value", ""))
@@ -361,6 +409,8 @@ Item {
     property string card5Widget1Fallback: String(layoutValue("card5_widget1_fallback", ""))
     property string card5Widget1Unit: String(layoutValue("card5_widget1_unit", ""))
     property string card5Widget1ActionId: String(layoutValue("card5_widget1_action_id", ""))
+    property string card5Widget1ArgsJson: String(layoutValue("card5_widget1_args_json", "{}"))
+    property string card5Widget1OptionsText: String(layoutValue("card5_widget1_options_text", ""))
     property string card5Widget1Variant: String(layoutValue("card5_widget1_variant", ""))
     property bool card5Widget1Required: Boolean(layoutValue("card5_widget1_required", false))
     property string card5Widget1Value: String(layoutValue("card5_widget1_value", ""))
@@ -371,6 +421,8 @@ Item {
     property string card5Widget2Fallback: String(layoutValue("card5_widget2_fallback", ""))
     property string card5Widget2Unit: String(layoutValue("card5_widget2_unit", ""))
     property string card5Widget2ActionId: String(layoutValue("card5_widget2_action_id", ""))
+    property string card5Widget2ArgsJson: String(layoutValue("card5_widget2_args_json", "{}"))
+    property string card5Widget2OptionsText: String(layoutValue("card5_widget2_options_text", ""))
     property string card5Widget2Variant: String(layoutValue("card5_widget2_variant", ""))
     property bool card5Widget2Required: Boolean(layoutValue("card5_widget2_required", false))
     property string card5Widget2Value: String(layoutValue("card5_widget2_value", ""))
@@ -381,6 +433,8 @@ Item {
     property string card5Widget3Fallback: String(layoutValue("card5_widget3_fallback", ""))
     property string card5Widget3Unit: String(layoutValue("card5_widget3_unit", ""))
     property string card5Widget3ActionId: String(layoutValue("card5_widget3_action_id", ""))
+    property string card5Widget3ArgsJson: String(layoutValue("card5_widget3_args_json", "{}"))
+    property string card5Widget3OptionsText: String(layoutValue("card5_widget3_options_text", ""))
     property string card5Widget3Variant: String(layoutValue("card5_widget3_variant", ""))
     property bool card5Widget3Required: Boolean(layoutValue("card5_widget3_required", false))
     property string card5Widget3Value: String(layoutValue("card5_widget3_value", ""))
@@ -391,6 +445,8 @@ Item {
     property string card5Widget4Fallback: String(layoutValue("card5_widget4_fallback", ""))
     property string card5Widget4Unit: String(layoutValue("card5_widget4_unit", ""))
     property string card5Widget4ActionId: String(layoutValue("card5_widget4_action_id", ""))
+    property string card5Widget4ArgsJson: String(layoutValue("card5_widget4_args_json", "{}"))
+    property string card5Widget4OptionsText: String(layoutValue("card5_widget4_options_text", ""))
     property string card5Widget4Variant: String(layoutValue("card5_widget4_variant", ""))
     property bool card5Widget4Required: Boolean(layoutValue("card5_widget4_required", false))
     property string card5Widget4Value: String(layoutValue("card5_widget4_value", ""))
@@ -401,6 +457,8 @@ Item {
     property string card5Widget5Fallback: String(layoutValue("card5_widget5_fallback", ""))
     property string card5Widget5Unit: String(layoutValue("card5_widget5_unit", ""))
     property string card5Widget5ActionId: String(layoutValue("card5_widget5_action_id", ""))
+    property string card5Widget5ArgsJson: String(layoutValue("card5_widget5_args_json", "{}"))
+    property string card5Widget5OptionsText: String(layoutValue("card5_widget5_options_text", ""))
     property string card5Widget5Variant: String(layoutValue("card5_widget5_variant", ""))
     property bool card5Widget5Required: Boolean(layoutValue("card5_widget5_required", false))
     property string card5Widget5Value: String(layoutValue("card5_widget5_value", ""))
@@ -411,6 +469,8 @@ Item {
     property string card5Widget6Fallback: String(layoutValue("card5_widget6_fallback", ""))
     property string card5Widget6Unit: String(layoutValue("card5_widget6_unit", ""))
     property string card5Widget6ActionId: String(layoutValue("card5_widget6_action_id", ""))
+    property string card5Widget6ArgsJson: String(layoutValue("card5_widget6_args_json", "{}"))
+    property string card5Widget6OptionsText: String(layoutValue("card5_widget6_options_text", ""))
     property string card5Widget6Variant: String(layoutValue("card5_widget6_variant", ""))
     property bool card5Widget6Required: Boolean(layoutValue("card5_widget6_required", false))
     property string card5Widget6Value: String(layoutValue("card5_widget6_value", ""))
@@ -438,6 +498,8 @@ Item {
     property string card6Widget1Fallback: String(layoutValue("card6_widget1_fallback", ""))
     property string card6Widget1Unit: String(layoutValue("card6_widget1_unit", ""))
     property string card6Widget1ActionId: String(layoutValue("card6_widget1_action_id", ""))
+    property string card6Widget1ArgsJson: String(layoutValue("card6_widget1_args_json", "{}"))
+    property string card6Widget1OptionsText: String(layoutValue("card6_widget1_options_text", ""))
     property string card6Widget1Variant: String(layoutValue("card6_widget1_variant", ""))
     property bool card6Widget1Required: Boolean(layoutValue("card6_widget1_required", false))
     property string card6Widget1Value: String(layoutValue("card6_widget1_value", ""))
@@ -448,6 +510,8 @@ Item {
     property string card6Widget2Fallback: String(layoutValue("card6_widget2_fallback", ""))
     property string card6Widget2Unit: String(layoutValue("card6_widget2_unit", ""))
     property string card6Widget2ActionId: String(layoutValue("card6_widget2_action_id", ""))
+    property string card6Widget2ArgsJson: String(layoutValue("card6_widget2_args_json", "{}"))
+    property string card6Widget2OptionsText: String(layoutValue("card6_widget2_options_text", ""))
     property string card6Widget2Variant: String(layoutValue("card6_widget2_variant", ""))
     property bool card6Widget2Required: Boolean(layoutValue("card6_widget2_required", false))
     property string card6Widget2Value: String(layoutValue("card6_widget2_value", ""))
@@ -458,6 +522,8 @@ Item {
     property string card6Widget3Fallback: String(layoutValue("card6_widget3_fallback", ""))
     property string card6Widget3Unit: String(layoutValue("card6_widget3_unit", ""))
     property string card6Widget3ActionId: String(layoutValue("card6_widget3_action_id", ""))
+    property string card6Widget3ArgsJson: String(layoutValue("card6_widget3_args_json", "{}"))
+    property string card6Widget3OptionsText: String(layoutValue("card6_widget3_options_text", ""))
     property string card6Widget3Variant: String(layoutValue("card6_widget3_variant", ""))
     property bool card6Widget3Required: Boolean(layoutValue("card6_widget3_required", false))
     property string card6Widget3Value: String(layoutValue("card6_widget3_value", ""))
@@ -468,6 +534,8 @@ Item {
     property string card6Widget4Fallback: String(layoutValue("card6_widget4_fallback", ""))
     property string card6Widget4Unit: String(layoutValue("card6_widget4_unit", ""))
     property string card6Widget4ActionId: String(layoutValue("card6_widget4_action_id", ""))
+    property string card6Widget4ArgsJson: String(layoutValue("card6_widget4_args_json", "{}"))
+    property string card6Widget4OptionsText: String(layoutValue("card6_widget4_options_text", ""))
     property string card6Widget4Variant: String(layoutValue("card6_widget4_variant", ""))
     property bool card6Widget4Required: Boolean(layoutValue("card6_widget4_required", false))
     property string card6Widget4Value: String(layoutValue("card6_widget4_value", ""))
@@ -478,6 +546,8 @@ Item {
     property string card6Widget5Fallback: String(layoutValue("card6_widget5_fallback", ""))
     property string card6Widget5Unit: String(layoutValue("card6_widget5_unit", ""))
     property string card6Widget5ActionId: String(layoutValue("card6_widget5_action_id", ""))
+    property string card6Widget5ArgsJson: String(layoutValue("card6_widget5_args_json", "{}"))
+    property string card6Widget5OptionsText: String(layoutValue("card6_widget5_options_text", ""))
     property string card6Widget5Variant: String(layoutValue("card6_widget5_variant", ""))
     property bool card6Widget5Required: Boolean(layoutValue("card6_widget5_required", false))
     property string card6Widget5Value: String(layoutValue("card6_widget5_value", ""))
@@ -488,6 +558,8 @@ Item {
     property string card6Widget6Fallback: String(layoutValue("card6_widget6_fallback", ""))
     property string card6Widget6Unit: String(layoutValue("card6_widget6_unit", ""))
     property string card6Widget6ActionId: String(layoutValue("card6_widget6_action_id", ""))
+    property string card6Widget6ArgsJson: String(layoutValue("card6_widget6_args_json", "{}"))
+    property string card6Widget6OptionsText: String(layoutValue("card6_widget6_options_text", ""))
     property string card6Widget6Variant: String(layoutValue("card6_widget6_variant", ""))
     property bool card6Widget6Required: Boolean(layoutValue("card6_widget6_required", false))
     property string card6Widget6Value: String(layoutValue("card6_widget6_value", ""))
@@ -515,6 +587,8 @@ Item {
     property string card7Widget1Fallback: String(layoutValue("card7_widget1_fallback", ""))
     property string card7Widget1Unit: String(layoutValue("card7_widget1_unit", ""))
     property string card7Widget1ActionId: String(layoutValue("card7_widget1_action_id", ""))
+    property string card7Widget1ArgsJson: String(layoutValue("card7_widget1_args_json", "{}"))
+    property string card7Widget1OptionsText: String(layoutValue("card7_widget1_options_text", ""))
     property string card7Widget1Variant: String(layoutValue("card7_widget1_variant", ""))
     property bool card7Widget1Required: Boolean(layoutValue("card7_widget1_required", false))
     property string card7Widget1Value: String(layoutValue("card7_widget1_value", ""))
@@ -525,6 +599,8 @@ Item {
     property string card7Widget2Fallback: String(layoutValue("card7_widget2_fallback", ""))
     property string card7Widget2Unit: String(layoutValue("card7_widget2_unit", ""))
     property string card7Widget2ActionId: String(layoutValue("card7_widget2_action_id", ""))
+    property string card7Widget2ArgsJson: String(layoutValue("card7_widget2_args_json", "{}"))
+    property string card7Widget2OptionsText: String(layoutValue("card7_widget2_options_text", ""))
     property string card7Widget2Variant: String(layoutValue("card7_widget2_variant", ""))
     property bool card7Widget2Required: Boolean(layoutValue("card7_widget2_required", false))
     property string card7Widget2Value: String(layoutValue("card7_widget2_value", ""))
@@ -535,6 +611,8 @@ Item {
     property string card7Widget3Fallback: String(layoutValue("card7_widget3_fallback", ""))
     property string card7Widget3Unit: String(layoutValue("card7_widget3_unit", ""))
     property string card7Widget3ActionId: String(layoutValue("card7_widget3_action_id", ""))
+    property string card7Widget3ArgsJson: String(layoutValue("card7_widget3_args_json", "{}"))
+    property string card7Widget3OptionsText: String(layoutValue("card7_widget3_options_text", ""))
     property string card7Widget3Variant: String(layoutValue("card7_widget3_variant", ""))
     property bool card7Widget3Required: Boolean(layoutValue("card7_widget3_required", false))
     property string card7Widget3Value: String(layoutValue("card7_widget3_value", ""))
@@ -545,6 +623,8 @@ Item {
     property string card7Widget4Fallback: String(layoutValue("card7_widget4_fallback", ""))
     property string card7Widget4Unit: String(layoutValue("card7_widget4_unit", ""))
     property string card7Widget4ActionId: String(layoutValue("card7_widget4_action_id", ""))
+    property string card7Widget4ArgsJson: String(layoutValue("card7_widget4_args_json", "{}"))
+    property string card7Widget4OptionsText: String(layoutValue("card7_widget4_options_text", ""))
     property string card7Widget4Variant: String(layoutValue("card7_widget4_variant", ""))
     property bool card7Widget4Required: Boolean(layoutValue("card7_widget4_required", false))
     property string card7Widget4Value: String(layoutValue("card7_widget4_value", ""))
@@ -555,6 +635,8 @@ Item {
     property string card7Widget5Fallback: String(layoutValue("card7_widget5_fallback", ""))
     property string card7Widget5Unit: String(layoutValue("card7_widget5_unit", ""))
     property string card7Widget5ActionId: String(layoutValue("card7_widget5_action_id", ""))
+    property string card7Widget5ArgsJson: String(layoutValue("card7_widget5_args_json", "{}"))
+    property string card7Widget5OptionsText: String(layoutValue("card7_widget5_options_text", ""))
     property string card7Widget5Variant: String(layoutValue("card7_widget5_variant", ""))
     property bool card7Widget5Required: Boolean(layoutValue("card7_widget5_required", false))
     property string card7Widget5Value: String(layoutValue("card7_widget5_value", ""))
@@ -565,6 +647,8 @@ Item {
     property string card7Widget6Fallback: String(layoutValue("card7_widget6_fallback", ""))
     property string card7Widget6Unit: String(layoutValue("card7_widget6_unit", ""))
     property string card7Widget6ActionId: String(layoutValue("card7_widget6_action_id", ""))
+    property string card7Widget6ArgsJson: String(layoutValue("card7_widget6_args_json", "{}"))
+    property string card7Widget6OptionsText: String(layoutValue("card7_widget6_options_text", ""))
     property string card7Widget6Variant: String(layoutValue("card7_widget6_variant", ""))
     property bool card7Widget6Required: Boolean(layoutValue("card7_widget6_required", false))
     property string card7Widget6Value: String(layoutValue("card7_widget6_value", ""))
@@ -580,6 +664,19 @@ Item {
     property string card1GlassTintColor: String(layoutValue("card1_glass_tint_color", "#DDEEFF"))
     property real card1GlassOpacity: Number(layoutValue("card1_glass_opacity", 0.0))
     property bool card1GlassHighlight: Boolean(layoutValue("card1_glass_highlight", false))
+    property int card1TitlePixelSize: Number(layoutValue("card1_title_pixel_size", 15))
+    property int card1SubtitlePixelSize: Number(layoutValue("card1_subtitle_pixel_size", 10))
+    property int card1WidgetLabelPixelSize: Number(layoutValue("card1_widget_label_pixel_size", 10))
+    property int card1WidgetValuePixelSize: Number(layoutValue("card1_widget_value_pixel_size", 12))
+    property int card1WidgetMetaPixelSize: Number(layoutValue("card1_widget_meta_pixel_size", 9))
+    property int card1WidgetRowHeight: Number(layoutValue("card1_widget_row_height", 22))
+    property int card1ButtonHeight: Number(layoutValue("card1_button_height", 28))
+    property int card1WidgetSpacing: Number(layoutValue("card1_widget_spacing", 3))
+    property int card1BodyTopMargin: Number(layoutValue("card1_body_top_margin", 2))
+    property int card1FeedbackHeight: Number(layoutValue("card1_feedback_height", 34))
+    property int card1FeedbackPixelSize: Number(layoutValue("card1_feedback_pixel_size", 9))
+    property int card1HeaderSpacing: Number(layoutValue("card1_header_spacing", 2))
+    property int card1ContentSpacing: Number(layoutValue("card1_content_spacing", 4))
     property string card2BackgroundColor: String(layoutValue("card2_background_color", ""))
     property real card2BackgroundOpacity: Number(layoutValue("card2_background_opacity", 0.92))
     property string card2BorderColor: String(layoutValue("card2_border_color", ""))
@@ -591,6 +688,19 @@ Item {
     property string card2GlassTintColor: String(layoutValue("card2_glass_tint_color", "#DDEEFF"))
     property real card2GlassOpacity: Number(layoutValue("card2_glass_opacity", 0.0))
     property bool card2GlassHighlight: Boolean(layoutValue("card2_glass_highlight", false))
+    property int card2TitlePixelSize: Number(layoutValue("card2_title_pixel_size", 15))
+    property int card2SubtitlePixelSize: Number(layoutValue("card2_subtitle_pixel_size", 10))
+    property int card2WidgetLabelPixelSize: Number(layoutValue("card2_widget_label_pixel_size", 10))
+    property int card2WidgetValuePixelSize: Number(layoutValue("card2_widget_value_pixel_size", 12))
+    property int card2WidgetMetaPixelSize: Number(layoutValue("card2_widget_meta_pixel_size", 9))
+    property int card2WidgetRowHeight: Number(layoutValue("card2_widget_row_height", 22))
+    property int card2ButtonHeight: Number(layoutValue("card2_button_height", 28))
+    property int card2WidgetSpacing: Number(layoutValue("card2_widget_spacing", 3))
+    property int card2BodyTopMargin: Number(layoutValue("card2_body_top_margin", 2))
+    property int card2FeedbackHeight: Number(layoutValue("card2_feedback_height", 34))
+    property int card2FeedbackPixelSize: Number(layoutValue("card2_feedback_pixel_size", 9))
+    property int card2HeaderSpacing: Number(layoutValue("card2_header_spacing", 2))
+    property int card2ContentSpacing: Number(layoutValue("card2_content_spacing", 4))
     property string card3BackgroundColor: String(layoutValue("card3_background_color", ""))
     property real card3BackgroundOpacity: Number(layoutValue("card3_background_opacity", 0.92))
     property string card3BorderColor: String(layoutValue("card3_border_color", ""))
@@ -602,6 +712,19 @@ Item {
     property string card3GlassTintColor: String(layoutValue("card3_glass_tint_color", "#DDEEFF"))
     property real card3GlassOpacity: Number(layoutValue("card3_glass_opacity", 0.0))
     property bool card3GlassHighlight: Boolean(layoutValue("card3_glass_highlight", false))
+    property int card3TitlePixelSize: Number(layoutValue("card3_title_pixel_size", 15))
+    property int card3SubtitlePixelSize: Number(layoutValue("card3_subtitle_pixel_size", 10))
+    property int card3WidgetLabelPixelSize: Number(layoutValue("card3_widget_label_pixel_size", 10))
+    property int card3WidgetValuePixelSize: Number(layoutValue("card3_widget_value_pixel_size", 12))
+    property int card3WidgetMetaPixelSize: Number(layoutValue("card3_widget_meta_pixel_size", 9))
+    property int card3WidgetRowHeight: Number(layoutValue("card3_widget_row_height", 22))
+    property int card3ButtonHeight: Number(layoutValue("card3_button_height", 28))
+    property int card3WidgetSpacing: Number(layoutValue("card3_widget_spacing", 3))
+    property int card3BodyTopMargin: Number(layoutValue("card3_body_top_margin", 2))
+    property int card3FeedbackHeight: Number(layoutValue("card3_feedback_height", 34))
+    property int card3FeedbackPixelSize: Number(layoutValue("card3_feedback_pixel_size", 9))
+    property int card3HeaderSpacing: Number(layoutValue("card3_header_spacing", 2))
+    property int card3ContentSpacing: Number(layoutValue("card3_content_spacing", 4))
     property string card4BackgroundColor: String(layoutValue("card4_background_color", ""))
     property real card4BackgroundOpacity: Number(layoutValue("card4_background_opacity", 0.92))
     property string card4BorderColor: String(layoutValue("card4_border_color", ""))
@@ -613,6 +736,19 @@ Item {
     property string card4GlassTintColor: String(layoutValue("card4_glass_tint_color", "#DDEEFF"))
     property real card4GlassOpacity: Number(layoutValue("card4_glass_opacity", 0.0))
     property bool card4GlassHighlight: Boolean(layoutValue("card4_glass_highlight", false))
+    property int card4TitlePixelSize: Number(layoutValue("card4_title_pixel_size", 15))
+    property int card4SubtitlePixelSize: Number(layoutValue("card4_subtitle_pixel_size", 10))
+    property int card4WidgetLabelPixelSize: Number(layoutValue("card4_widget_label_pixel_size", 10))
+    property int card4WidgetValuePixelSize: Number(layoutValue("card4_widget_value_pixel_size", 12))
+    property int card4WidgetMetaPixelSize: Number(layoutValue("card4_widget_meta_pixel_size", 9))
+    property int card4WidgetRowHeight: Number(layoutValue("card4_widget_row_height", 22))
+    property int card4ButtonHeight: Number(layoutValue("card4_button_height", 28))
+    property int card4WidgetSpacing: Number(layoutValue("card4_widget_spacing", 3))
+    property int card4BodyTopMargin: Number(layoutValue("card4_body_top_margin", 2))
+    property int card4FeedbackHeight: Number(layoutValue("card4_feedback_height", 34))
+    property int card4FeedbackPixelSize: Number(layoutValue("card4_feedback_pixel_size", 9))
+    property int card4HeaderSpacing: Number(layoutValue("card4_header_spacing", 2))
+    property int card4ContentSpacing: Number(layoutValue("card4_content_spacing", 4))
     property string card5BackgroundColor: String(layoutValue("card5_background_color", ""))
     property real card5BackgroundOpacity: Number(layoutValue("card5_background_opacity", 0.92))
     property string card5BorderColor: String(layoutValue("card5_border_color", ""))
@@ -624,6 +760,19 @@ Item {
     property string card5GlassTintColor: String(layoutValue("card5_glass_tint_color", "#DDEEFF"))
     property real card5GlassOpacity: Number(layoutValue("card5_glass_opacity", 0.0))
     property bool card5GlassHighlight: Boolean(layoutValue("card5_glass_highlight", false))
+    property int card5TitlePixelSize: Number(layoutValue("card5_title_pixel_size", 15))
+    property int card5SubtitlePixelSize: Number(layoutValue("card5_subtitle_pixel_size", 10))
+    property int card5WidgetLabelPixelSize: Number(layoutValue("card5_widget_label_pixel_size", 10))
+    property int card5WidgetValuePixelSize: Number(layoutValue("card5_widget_value_pixel_size", 12))
+    property int card5WidgetMetaPixelSize: Number(layoutValue("card5_widget_meta_pixel_size", 9))
+    property int card5WidgetRowHeight: Number(layoutValue("card5_widget_row_height", 22))
+    property int card5ButtonHeight: Number(layoutValue("card5_button_height", 28))
+    property int card5WidgetSpacing: Number(layoutValue("card5_widget_spacing", 3))
+    property int card5BodyTopMargin: Number(layoutValue("card5_body_top_margin", 2))
+    property int card5FeedbackHeight: Number(layoutValue("card5_feedback_height", 34))
+    property int card5FeedbackPixelSize: Number(layoutValue("card5_feedback_pixel_size", 9))
+    property int card5HeaderSpacing: Number(layoutValue("card5_header_spacing", 2))
+    property int card5ContentSpacing: Number(layoutValue("card5_content_spacing", 4))
     property string card6BackgroundColor: String(layoutValue("card6_background_color", ""))
     property real card6BackgroundOpacity: Number(layoutValue("card6_background_opacity", 0.92))
     property string card6BorderColor: String(layoutValue("card6_border_color", ""))
@@ -635,6 +784,19 @@ Item {
     property string card6GlassTintColor: String(layoutValue("card6_glass_tint_color", "#DDEEFF"))
     property real card6GlassOpacity: Number(layoutValue("card6_glass_opacity", 0.0))
     property bool card6GlassHighlight: Boolean(layoutValue("card6_glass_highlight", false))
+    property int card6TitlePixelSize: Number(layoutValue("card6_title_pixel_size", 15))
+    property int card6SubtitlePixelSize: Number(layoutValue("card6_subtitle_pixel_size", 10))
+    property int card6WidgetLabelPixelSize: Number(layoutValue("card6_widget_label_pixel_size", 10))
+    property int card6WidgetValuePixelSize: Number(layoutValue("card6_widget_value_pixel_size", 12))
+    property int card6WidgetMetaPixelSize: Number(layoutValue("card6_widget_meta_pixel_size", 9))
+    property int card6WidgetRowHeight: Number(layoutValue("card6_widget_row_height", 22))
+    property int card6ButtonHeight: Number(layoutValue("card6_button_height", 28))
+    property int card6WidgetSpacing: Number(layoutValue("card6_widget_spacing", 3))
+    property int card6BodyTopMargin: Number(layoutValue("card6_body_top_margin", 2))
+    property int card6FeedbackHeight: Number(layoutValue("card6_feedback_height", 34))
+    property int card6FeedbackPixelSize: Number(layoutValue("card6_feedback_pixel_size", 9))
+    property int card6HeaderSpacing: Number(layoutValue("card6_header_spacing", 2))
+    property int card6ContentSpacing: Number(layoutValue("card6_content_spacing", 4))
     property string card7BackgroundColor: String(layoutValue("card7_background_color", ""))
     property real card7BackgroundOpacity: Number(layoutValue("card7_background_opacity", 0.92))
     property string card7BorderColor: String(layoutValue("card7_border_color", ""))
@@ -646,6 +808,19 @@ Item {
     property string card7GlassTintColor: String(layoutValue("card7_glass_tint_color", "#DDEEFF"))
     property real card7GlassOpacity: Number(layoutValue("card7_glass_opacity", 0.0))
     property bool card7GlassHighlight: Boolean(layoutValue("card7_glass_highlight", false))
+    property int card7TitlePixelSize: Number(layoutValue("card7_title_pixel_size", 15))
+    property int card7SubtitlePixelSize: Number(layoutValue("card7_subtitle_pixel_size", 10))
+    property int card7WidgetLabelPixelSize: Number(layoutValue("card7_widget_label_pixel_size", 10))
+    property int card7WidgetValuePixelSize: Number(layoutValue("card7_widget_value_pixel_size", 12))
+    property int card7WidgetMetaPixelSize: Number(layoutValue("card7_widget_meta_pixel_size", 9))
+    property int card7WidgetRowHeight: Number(layoutValue("card7_widget_row_height", 22))
+    property int card7ButtonHeight: Number(layoutValue("card7_button_height", 28))
+    property int card7WidgetSpacing: Number(layoutValue("card7_widget_spacing", 3))
+    property int card7BodyTopMargin: Number(layoutValue("card7_body_top_margin", 2))
+    property int card7FeedbackHeight: Number(layoutValue("card7_feedback_height", 34))
+    property int card7FeedbackPixelSize: Number(layoutValue("card7_feedback_pixel_size", 9))
+    property int card7HeaderSpacing: Number(layoutValue("card7_header_spacing", 2))
+    property int card7ContentSpacing: Number(layoutValue("card7_content_spacing", 4))
 
     readonly property real canvasScale: Math.max(
         0.05,
@@ -759,6 +934,8 @@ Item {
                     widget1Fallback: root.card1Widget1Fallback
                     widget1Unit: root.card1Widget1Unit
                     widget1ActionId: root.card1Widget1ActionId
+                    widget1ArgsJson: root.card1Widget1ArgsJson
+                    widget1OptionsText: root.card1Widget1OptionsText
                     widget1Variant: root.card1Widget1Variant
                     widget1Required: root.card1Widget1Required
                     widget1Value: root.card1Widget1Value
@@ -769,6 +946,8 @@ Item {
                     widget2Fallback: root.card1Widget2Fallback
                     widget2Unit: root.card1Widget2Unit
                     widget2ActionId: root.card1Widget2ActionId
+                    widget2ArgsJson: root.card1Widget2ArgsJson
+                    widget2OptionsText: root.card1Widget2OptionsText
                     widget2Variant: root.card1Widget2Variant
                     widget2Required: root.card1Widget2Required
                     widget2Value: root.card1Widget2Value
@@ -779,6 +958,8 @@ Item {
                     widget3Fallback: root.card1Widget3Fallback
                     widget3Unit: root.card1Widget3Unit
                     widget3ActionId: root.card1Widget3ActionId
+                    widget3ArgsJson: root.card1Widget3ArgsJson
+                    widget3OptionsText: root.card1Widget3OptionsText
                     widget3Variant: root.card1Widget3Variant
                     widget3Required: root.card1Widget3Required
                     widget3Value: root.card1Widget3Value
@@ -789,6 +970,8 @@ Item {
                     widget4Fallback: root.card1Widget4Fallback
                     widget4Unit: root.card1Widget4Unit
                     widget4ActionId: root.card1Widget4ActionId
+                    widget4ArgsJson: root.card1Widget4ArgsJson
+                    widget4OptionsText: root.card1Widget4OptionsText
                     widget4Variant: root.card1Widget4Variant
                     widget4Required: root.card1Widget4Required
                     widget4Value: root.card1Widget4Value
@@ -799,6 +982,8 @@ Item {
                     widget5Fallback: root.card1Widget5Fallback
                     widget5Unit: root.card1Widget5Unit
                     widget5ActionId: root.card1Widget5ActionId
+                    widget5ArgsJson: root.card1Widget5ArgsJson
+                    widget5OptionsText: root.card1Widget5OptionsText
                     widget5Variant: root.card1Widget5Variant
                     widget5Required: root.card1Widget5Required
                     widget5Value: root.card1Widget5Value
@@ -809,6 +994,8 @@ Item {
                     widget6Fallback: root.card1Widget6Fallback
                     widget6Unit: root.card1Widget6Unit
                     widget6ActionId: root.card1Widget6ActionId
+                    widget6ArgsJson: root.card1Widget6ArgsJson
+                    widget6OptionsText: root.card1Widget6OptionsText
                     widget6Variant: root.card1Widget6Variant
                     widget6Required: root.card1Widget6Required
                     widget6Value: root.card1Widget6Value
@@ -823,6 +1010,19 @@ Item {
                 cardGlassTintColor: root.card1GlassTintColor
                 cardGlassOpacity: root.card1GlassOpacity
                 cardGlassHighlight: root.card1GlassHighlight
+                titlePixelSize: root.card1TitlePixelSize
+                subtitlePixelSize: root.card1SubtitlePixelSize
+                widgetLabelPixelSize: root.card1WidgetLabelPixelSize
+                widgetValuePixelSize: root.card1WidgetValuePixelSize
+                widgetMetaPixelSize: root.card1WidgetMetaPixelSize
+                widgetRowHeight: root.card1WidgetRowHeight
+                buttonHeight: root.card1ButtonHeight
+                widgetSpacing: root.card1WidgetSpacing
+                bodyTopMargin: root.card1BodyTopMargin
+                feedbackHeight: root.card1FeedbackHeight
+                feedbackPixelSize: root.card1FeedbackPixelSize
+                headerSpacing: root.card1HeaderSpacing
+                contentSpacing: root.card1ContentSpacing
                 }
                 DesktopLayoutCardPreview {
                     cardVisible: root.card2Visible
@@ -858,6 +1058,8 @@ Item {
                     widget1Fallback: root.card2Widget1Fallback
                     widget1Unit: root.card2Widget1Unit
                     widget1ActionId: root.card2Widget1ActionId
+                    widget1ArgsJson: root.card2Widget1ArgsJson
+                    widget1OptionsText: root.card2Widget1OptionsText
                     widget1Variant: root.card2Widget1Variant
                     widget1Required: root.card2Widget1Required
                     widget1Value: root.card2Widget1Value
@@ -868,6 +1070,8 @@ Item {
                     widget2Fallback: root.card2Widget2Fallback
                     widget2Unit: root.card2Widget2Unit
                     widget2ActionId: root.card2Widget2ActionId
+                    widget2ArgsJson: root.card2Widget2ArgsJson
+                    widget2OptionsText: root.card2Widget2OptionsText
                     widget2Variant: root.card2Widget2Variant
                     widget2Required: root.card2Widget2Required
                     widget2Value: root.card2Widget2Value
@@ -878,6 +1082,8 @@ Item {
                     widget3Fallback: root.card2Widget3Fallback
                     widget3Unit: root.card2Widget3Unit
                     widget3ActionId: root.card2Widget3ActionId
+                    widget3ArgsJson: root.card2Widget3ArgsJson
+                    widget3OptionsText: root.card2Widget3OptionsText
                     widget3Variant: root.card2Widget3Variant
                     widget3Required: root.card2Widget3Required
                     widget3Value: root.card2Widget3Value
@@ -888,6 +1094,8 @@ Item {
                     widget4Fallback: root.card2Widget4Fallback
                     widget4Unit: root.card2Widget4Unit
                     widget4ActionId: root.card2Widget4ActionId
+                    widget4ArgsJson: root.card2Widget4ArgsJson
+                    widget4OptionsText: root.card2Widget4OptionsText
                     widget4Variant: root.card2Widget4Variant
                     widget4Required: root.card2Widget4Required
                     widget4Value: root.card2Widget4Value
@@ -898,6 +1106,8 @@ Item {
                     widget5Fallback: root.card2Widget5Fallback
                     widget5Unit: root.card2Widget5Unit
                     widget5ActionId: root.card2Widget5ActionId
+                    widget5ArgsJson: root.card2Widget5ArgsJson
+                    widget5OptionsText: root.card2Widget5OptionsText
                     widget5Variant: root.card2Widget5Variant
                     widget5Required: root.card2Widget5Required
                     widget5Value: root.card2Widget5Value
@@ -908,6 +1118,8 @@ Item {
                     widget6Fallback: root.card2Widget6Fallback
                     widget6Unit: root.card2Widget6Unit
                     widget6ActionId: root.card2Widget6ActionId
+                    widget6ArgsJson: root.card2Widget6ArgsJson
+                    widget6OptionsText: root.card2Widget6OptionsText
                     widget6Variant: root.card2Widget6Variant
                     widget6Required: root.card2Widget6Required
                     widget6Value: root.card2Widget6Value
@@ -922,6 +1134,19 @@ Item {
                 cardGlassTintColor: root.card2GlassTintColor
                 cardGlassOpacity: root.card2GlassOpacity
                 cardGlassHighlight: root.card2GlassHighlight
+                titlePixelSize: root.card2TitlePixelSize
+                subtitlePixelSize: root.card2SubtitlePixelSize
+                widgetLabelPixelSize: root.card2WidgetLabelPixelSize
+                widgetValuePixelSize: root.card2WidgetValuePixelSize
+                widgetMetaPixelSize: root.card2WidgetMetaPixelSize
+                widgetRowHeight: root.card2WidgetRowHeight
+                buttonHeight: root.card2ButtonHeight
+                widgetSpacing: root.card2WidgetSpacing
+                bodyTopMargin: root.card2BodyTopMargin
+                feedbackHeight: root.card2FeedbackHeight
+                feedbackPixelSize: root.card2FeedbackPixelSize
+                headerSpacing: root.card2HeaderSpacing
+                contentSpacing: root.card2ContentSpacing
                 }
                 DesktopLayoutCardPreview {
                     cardVisible: root.card3Visible
@@ -957,6 +1182,8 @@ Item {
                     widget1Fallback: root.card3Widget1Fallback
                     widget1Unit: root.card3Widget1Unit
                     widget1ActionId: root.card3Widget1ActionId
+                    widget1ArgsJson: root.card3Widget1ArgsJson
+                    widget1OptionsText: root.card3Widget1OptionsText
                     widget1Variant: root.card3Widget1Variant
                     widget1Required: root.card3Widget1Required
                     widget1Value: root.card3Widget1Value
@@ -967,6 +1194,8 @@ Item {
                     widget2Fallback: root.card3Widget2Fallback
                     widget2Unit: root.card3Widget2Unit
                     widget2ActionId: root.card3Widget2ActionId
+                    widget2ArgsJson: root.card3Widget2ArgsJson
+                    widget2OptionsText: root.card3Widget2OptionsText
                     widget2Variant: root.card3Widget2Variant
                     widget2Required: root.card3Widget2Required
                     widget2Value: root.card3Widget2Value
@@ -977,6 +1206,8 @@ Item {
                     widget3Fallback: root.card3Widget3Fallback
                     widget3Unit: root.card3Widget3Unit
                     widget3ActionId: root.card3Widget3ActionId
+                    widget3ArgsJson: root.card3Widget3ArgsJson
+                    widget3OptionsText: root.card3Widget3OptionsText
                     widget3Variant: root.card3Widget3Variant
                     widget3Required: root.card3Widget3Required
                     widget3Value: root.card3Widget3Value
@@ -987,6 +1218,8 @@ Item {
                     widget4Fallback: root.card3Widget4Fallback
                     widget4Unit: root.card3Widget4Unit
                     widget4ActionId: root.card3Widget4ActionId
+                    widget4ArgsJson: root.card3Widget4ArgsJson
+                    widget4OptionsText: root.card3Widget4OptionsText
                     widget4Variant: root.card3Widget4Variant
                     widget4Required: root.card3Widget4Required
                     widget4Value: root.card3Widget4Value
@@ -997,6 +1230,8 @@ Item {
                     widget5Fallback: root.card3Widget5Fallback
                     widget5Unit: root.card3Widget5Unit
                     widget5ActionId: root.card3Widget5ActionId
+                    widget5ArgsJson: root.card3Widget5ArgsJson
+                    widget5OptionsText: root.card3Widget5OptionsText
                     widget5Variant: root.card3Widget5Variant
                     widget5Required: root.card3Widget5Required
                     widget5Value: root.card3Widget5Value
@@ -1007,6 +1242,8 @@ Item {
                     widget6Fallback: root.card3Widget6Fallback
                     widget6Unit: root.card3Widget6Unit
                     widget6ActionId: root.card3Widget6ActionId
+                    widget6ArgsJson: root.card3Widget6ArgsJson
+                    widget6OptionsText: root.card3Widget6OptionsText
                     widget6Variant: root.card3Widget6Variant
                     widget6Required: root.card3Widget6Required
                     widget6Value: root.card3Widget6Value
@@ -1021,6 +1258,19 @@ Item {
                 cardGlassTintColor: root.card3GlassTintColor
                 cardGlassOpacity: root.card3GlassOpacity
                 cardGlassHighlight: root.card3GlassHighlight
+                titlePixelSize: root.card3TitlePixelSize
+                subtitlePixelSize: root.card3SubtitlePixelSize
+                widgetLabelPixelSize: root.card3WidgetLabelPixelSize
+                widgetValuePixelSize: root.card3WidgetValuePixelSize
+                widgetMetaPixelSize: root.card3WidgetMetaPixelSize
+                widgetRowHeight: root.card3WidgetRowHeight
+                buttonHeight: root.card3ButtonHeight
+                widgetSpacing: root.card3WidgetSpacing
+                bodyTopMargin: root.card3BodyTopMargin
+                feedbackHeight: root.card3FeedbackHeight
+                feedbackPixelSize: root.card3FeedbackPixelSize
+                headerSpacing: root.card3HeaderSpacing
+                contentSpacing: root.card3ContentSpacing
                 }
                 DesktopLayoutCardPreview {
                     cardVisible: root.card4Visible
@@ -1056,6 +1306,8 @@ Item {
                     widget1Fallback: root.card4Widget1Fallback
                     widget1Unit: root.card4Widget1Unit
                     widget1ActionId: root.card4Widget1ActionId
+                    widget1ArgsJson: root.card4Widget1ArgsJson
+                    widget1OptionsText: root.card4Widget1OptionsText
                     widget1Variant: root.card4Widget1Variant
                     widget1Required: root.card4Widget1Required
                     widget1Value: root.card4Widget1Value
@@ -1066,6 +1318,8 @@ Item {
                     widget2Fallback: root.card4Widget2Fallback
                     widget2Unit: root.card4Widget2Unit
                     widget2ActionId: root.card4Widget2ActionId
+                    widget2ArgsJson: root.card4Widget2ArgsJson
+                    widget2OptionsText: root.card4Widget2OptionsText
                     widget2Variant: root.card4Widget2Variant
                     widget2Required: root.card4Widget2Required
                     widget2Value: root.card4Widget2Value
@@ -1076,6 +1330,8 @@ Item {
                     widget3Fallback: root.card4Widget3Fallback
                     widget3Unit: root.card4Widget3Unit
                     widget3ActionId: root.card4Widget3ActionId
+                    widget3ArgsJson: root.card4Widget3ArgsJson
+                    widget3OptionsText: root.card4Widget3OptionsText
                     widget3Variant: root.card4Widget3Variant
                     widget3Required: root.card4Widget3Required
                     widget3Value: root.card4Widget3Value
@@ -1086,6 +1342,8 @@ Item {
                     widget4Fallback: root.card4Widget4Fallback
                     widget4Unit: root.card4Widget4Unit
                     widget4ActionId: root.card4Widget4ActionId
+                    widget4ArgsJson: root.card4Widget4ArgsJson
+                    widget4OptionsText: root.card4Widget4OptionsText
                     widget4Variant: root.card4Widget4Variant
                     widget4Required: root.card4Widget4Required
                     widget4Value: root.card4Widget4Value
@@ -1096,6 +1354,8 @@ Item {
                     widget5Fallback: root.card4Widget5Fallback
                     widget5Unit: root.card4Widget5Unit
                     widget5ActionId: root.card4Widget5ActionId
+                    widget5ArgsJson: root.card4Widget5ArgsJson
+                    widget5OptionsText: root.card4Widget5OptionsText
                     widget5Variant: root.card4Widget5Variant
                     widget5Required: root.card4Widget5Required
                     widget5Value: root.card4Widget5Value
@@ -1106,6 +1366,8 @@ Item {
                     widget6Fallback: root.card4Widget6Fallback
                     widget6Unit: root.card4Widget6Unit
                     widget6ActionId: root.card4Widget6ActionId
+                    widget6ArgsJson: root.card4Widget6ArgsJson
+                    widget6OptionsText: root.card4Widget6OptionsText
                     widget6Variant: root.card4Widget6Variant
                     widget6Required: root.card4Widget6Required
                     widget6Value: root.card4Widget6Value
@@ -1120,6 +1382,19 @@ Item {
                 cardGlassTintColor: root.card4GlassTintColor
                 cardGlassOpacity: root.card4GlassOpacity
                 cardGlassHighlight: root.card4GlassHighlight
+                titlePixelSize: root.card4TitlePixelSize
+                subtitlePixelSize: root.card4SubtitlePixelSize
+                widgetLabelPixelSize: root.card4WidgetLabelPixelSize
+                widgetValuePixelSize: root.card4WidgetValuePixelSize
+                widgetMetaPixelSize: root.card4WidgetMetaPixelSize
+                widgetRowHeight: root.card4WidgetRowHeight
+                buttonHeight: root.card4ButtonHeight
+                widgetSpacing: root.card4WidgetSpacing
+                bodyTopMargin: root.card4BodyTopMargin
+                feedbackHeight: root.card4FeedbackHeight
+                feedbackPixelSize: root.card4FeedbackPixelSize
+                headerSpacing: root.card4HeaderSpacing
+                contentSpacing: root.card4ContentSpacing
                 }
                 DesktopLayoutCardPreview {
                     cardVisible: root.card5Visible
@@ -1155,6 +1430,8 @@ Item {
                     widget1Fallback: root.card5Widget1Fallback
                     widget1Unit: root.card5Widget1Unit
                     widget1ActionId: root.card5Widget1ActionId
+                    widget1ArgsJson: root.card5Widget1ArgsJson
+                    widget1OptionsText: root.card5Widget1OptionsText
                     widget1Variant: root.card5Widget1Variant
                     widget1Required: root.card5Widget1Required
                     widget1Value: root.card5Widget1Value
@@ -1165,6 +1442,8 @@ Item {
                     widget2Fallback: root.card5Widget2Fallback
                     widget2Unit: root.card5Widget2Unit
                     widget2ActionId: root.card5Widget2ActionId
+                    widget2ArgsJson: root.card5Widget2ArgsJson
+                    widget2OptionsText: root.card5Widget2OptionsText
                     widget2Variant: root.card5Widget2Variant
                     widget2Required: root.card5Widget2Required
                     widget2Value: root.card5Widget2Value
@@ -1175,6 +1454,8 @@ Item {
                     widget3Fallback: root.card5Widget3Fallback
                     widget3Unit: root.card5Widget3Unit
                     widget3ActionId: root.card5Widget3ActionId
+                    widget3ArgsJson: root.card5Widget3ArgsJson
+                    widget3OptionsText: root.card5Widget3OptionsText
                     widget3Variant: root.card5Widget3Variant
                     widget3Required: root.card5Widget3Required
                     widget3Value: root.card5Widget3Value
@@ -1185,6 +1466,8 @@ Item {
                     widget4Fallback: root.card5Widget4Fallback
                     widget4Unit: root.card5Widget4Unit
                     widget4ActionId: root.card5Widget4ActionId
+                    widget4ArgsJson: root.card5Widget4ArgsJson
+                    widget4OptionsText: root.card5Widget4OptionsText
                     widget4Variant: root.card5Widget4Variant
                     widget4Required: root.card5Widget4Required
                     widget4Value: root.card5Widget4Value
@@ -1195,6 +1478,8 @@ Item {
                     widget5Fallback: root.card5Widget5Fallback
                     widget5Unit: root.card5Widget5Unit
                     widget5ActionId: root.card5Widget5ActionId
+                    widget5ArgsJson: root.card5Widget5ArgsJson
+                    widget5OptionsText: root.card5Widget5OptionsText
                     widget5Variant: root.card5Widget5Variant
                     widget5Required: root.card5Widget5Required
                     widget5Value: root.card5Widget5Value
@@ -1205,6 +1490,8 @@ Item {
                     widget6Fallback: root.card5Widget6Fallback
                     widget6Unit: root.card5Widget6Unit
                     widget6ActionId: root.card5Widget6ActionId
+                    widget6ArgsJson: root.card5Widget6ArgsJson
+                    widget6OptionsText: root.card5Widget6OptionsText
                     widget6Variant: root.card5Widget6Variant
                     widget6Required: root.card5Widget6Required
                     widget6Value: root.card5Widget6Value
@@ -1219,6 +1506,19 @@ Item {
                 cardGlassTintColor: root.card5GlassTintColor
                 cardGlassOpacity: root.card5GlassOpacity
                 cardGlassHighlight: root.card5GlassHighlight
+                titlePixelSize: root.card5TitlePixelSize
+                subtitlePixelSize: root.card5SubtitlePixelSize
+                widgetLabelPixelSize: root.card5WidgetLabelPixelSize
+                widgetValuePixelSize: root.card5WidgetValuePixelSize
+                widgetMetaPixelSize: root.card5WidgetMetaPixelSize
+                widgetRowHeight: root.card5WidgetRowHeight
+                buttonHeight: root.card5ButtonHeight
+                widgetSpacing: root.card5WidgetSpacing
+                bodyTopMargin: root.card5BodyTopMargin
+                feedbackHeight: root.card5FeedbackHeight
+                feedbackPixelSize: root.card5FeedbackPixelSize
+                headerSpacing: root.card5HeaderSpacing
+                contentSpacing: root.card5ContentSpacing
                 }
                 DesktopLayoutCardPreview {
                     cardVisible: root.card6Visible
@@ -1254,6 +1554,8 @@ Item {
                     widget1Fallback: root.card6Widget1Fallback
                     widget1Unit: root.card6Widget1Unit
                     widget1ActionId: root.card6Widget1ActionId
+                    widget1ArgsJson: root.card6Widget1ArgsJson
+                    widget1OptionsText: root.card6Widget1OptionsText
                     widget1Variant: root.card6Widget1Variant
                     widget1Required: root.card6Widget1Required
                     widget1Value: root.card6Widget1Value
@@ -1264,6 +1566,8 @@ Item {
                     widget2Fallback: root.card6Widget2Fallback
                     widget2Unit: root.card6Widget2Unit
                     widget2ActionId: root.card6Widget2ActionId
+                    widget2ArgsJson: root.card6Widget2ArgsJson
+                    widget2OptionsText: root.card6Widget2OptionsText
                     widget2Variant: root.card6Widget2Variant
                     widget2Required: root.card6Widget2Required
                     widget2Value: root.card6Widget2Value
@@ -1274,6 +1578,8 @@ Item {
                     widget3Fallback: root.card6Widget3Fallback
                     widget3Unit: root.card6Widget3Unit
                     widget3ActionId: root.card6Widget3ActionId
+                    widget3ArgsJson: root.card6Widget3ArgsJson
+                    widget3OptionsText: root.card6Widget3OptionsText
                     widget3Variant: root.card6Widget3Variant
                     widget3Required: root.card6Widget3Required
                     widget3Value: root.card6Widget3Value
@@ -1284,6 +1590,8 @@ Item {
                     widget4Fallback: root.card6Widget4Fallback
                     widget4Unit: root.card6Widget4Unit
                     widget4ActionId: root.card6Widget4ActionId
+                    widget4ArgsJson: root.card6Widget4ArgsJson
+                    widget4OptionsText: root.card6Widget4OptionsText
                     widget4Variant: root.card6Widget4Variant
                     widget4Required: root.card6Widget4Required
                     widget4Value: root.card6Widget4Value
@@ -1294,6 +1602,8 @@ Item {
                     widget5Fallback: root.card6Widget5Fallback
                     widget5Unit: root.card6Widget5Unit
                     widget5ActionId: root.card6Widget5ActionId
+                    widget5ArgsJson: root.card6Widget5ArgsJson
+                    widget5OptionsText: root.card6Widget5OptionsText
                     widget5Variant: root.card6Widget5Variant
                     widget5Required: root.card6Widget5Required
                     widget5Value: root.card6Widget5Value
@@ -1304,6 +1614,8 @@ Item {
                     widget6Fallback: root.card6Widget6Fallback
                     widget6Unit: root.card6Widget6Unit
                     widget6ActionId: root.card6Widget6ActionId
+                    widget6ArgsJson: root.card6Widget6ArgsJson
+                    widget6OptionsText: root.card6Widget6OptionsText
                     widget6Variant: root.card6Widget6Variant
                     widget6Required: root.card6Widget6Required
                     widget6Value: root.card6Widget6Value
@@ -1318,6 +1630,19 @@ Item {
                 cardGlassTintColor: root.card6GlassTintColor
                 cardGlassOpacity: root.card6GlassOpacity
                 cardGlassHighlight: root.card6GlassHighlight
+                titlePixelSize: root.card6TitlePixelSize
+                subtitlePixelSize: root.card6SubtitlePixelSize
+                widgetLabelPixelSize: root.card6WidgetLabelPixelSize
+                widgetValuePixelSize: root.card6WidgetValuePixelSize
+                widgetMetaPixelSize: root.card6WidgetMetaPixelSize
+                widgetRowHeight: root.card6WidgetRowHeight
+                buttonHeight: root.card6ButtonHeight
+                widgetSpacing: root.card6WidgetSpacing
+                bodyTopMargin: root.card6BodyTopMargin
+                feedbackHeight: root.card6FeedbackHeight
+                feedbackPixelSize: root.card6FeedbackPixelSize
+                headerSpacing: root.card6HeaderSpacing
+                contentSpacing: root.card6ContentSpacing
                 }
                 DesktopLayoutCardPreview {
                     cardVisible: root.card7Visible
@@ -1353,6 +1678,8 @@ Item {
                     widget1Fallback: root.card7Widget1Fallback
                     widget1Unit: root.card7Widget1Unit
                     widget1ActionId: root.card7Widget1ActionId
+                    widget1ArgsJson: root.card7Widget1ArgsJson
+                    widget1OptionsText: root.card7Widget1OptionsText
                     widget1Variant: root.card7Widget1Variant
                     widget1Required: root.card7Widget1Required
                     widget1Value: root.card7Widget1Value
@@ -1363,6 +1690,8 @@ Item {
                     widget2Fallback: root.card7Widget2Fallback
                     widget2Unit: root.card7Widget2Unit
                     widget2ActionId: root.card7Widget2ActionId
+                    widget2ArgsJson: root.card7Widget2ArgsJson
+                    widget2OptionsText: root.card7Widget2OptionsText
                     widget2Variant: root.card7Widget2Variant
                     widget2Required: root.card7Widget2Required
                     widget2Value: root.card7Widget2Value
@@ -1373,6 +1702,8 @@ Item {
                     widget3Fallback: root.card7Widget3Fallback
                     widget3Unit: root.card7Widget3Unit
                     widget3ActionId: root.card7Widget3ActionId
+                    widget3ArgsJson: root.card7Widget3ArgsJson
+                    widget3OptionsText: root.card7Widget3OptionsText
                     widget3Variant: root.card7Widget3Variant
                     widget3Required: root.card7Widget3Required
                     widget3Value: root.card7Widget3Value
@@ -1383,6 +1714,8 @@ Item {
                     widget4Fallback: root.card7Widget4Fallback
                     widget4Unit: root.card7Widget4Unit
                     widget4ActionId: root.card7Widget4ActionId
+                    widget4ArgsJson: root.card7Widget4ArgsJson
+                    widget4OptionsText: root.card7Widget4OptionsText
                     widget4Variant: root.card7Widget4Variant
                     widget4Required: root.card7Widget4Required
                     widget4Value: root.card7Widget4Value
@@ -1393,6 +1726,8 @@ Item {
                     widget5Fallback: root.card7Widget5Fallback
                     widget5Unit: root.card7Widget5Unit
                     widget5ActionId: root.card7Widget5ActionId
+                    widget5ArgsJson: root.card7Widget5ArgsJson
+                    widget5OptionsText: root.card7Widget5OptionsText
                     widget5Variant: root.card7Widget5Variant
                     widget5Required: root.card7Widget5Required
                     widget5Value: root.card7Widget5Value
@@ -1403,6 +1738,8 @@ Item {
                     widget6Fallback: root.card7Widget6Fallback
                     widget6Unit: root.card7Widget6Unit
                     widget6ActionId: root.card7Widget6ActionId
+                    widget6ArgsJson: root.card7Widget6ArgsJson
+                    widget6OptionsText: root.card7Widget6OptionsText
                     widget6Variant: root.card7Widget6Variant
                     widget6Required: root.card7Widget6Required
                     widget6Value: root.card7Widget6Value
@@ -1417,6 +1754,19 @@ Item {
                 cardGlassTintColor: root.card7GlassTintColor
                 cardGlassOpacity: root.card7GlassOpacity
                 cardGlassHighlight: root.card7GlassHighlight
+                titlePixelSize: root.card7TitlePixelSize
+                subtitlePixelSize: root.card7SubtitlePixelSize
+                widgetLabelPixelSize: root.card7WidgetLabelPixelSize
+                widgetValuePixelSize: root.card7WidgetValuePixelSize
+                widgetMetaPixelSize: root.card7WidgetMetaPixelSize
+                widgetRowHeight: root.card7WidgetRowHeight
+                buttonHeight: root.card7ButtonHeight
+                widgetSpacing: root.card7WidgetSpacing
+                bodyTopMargin: root.card7BodyTopMargin
+                feedbackHeight: root.card7FeedbackHeight
+                feedbackPixelSize: root.card7FeedbackPixelSize
+                headerSpacing: root.card7HeaderSpacing
+                contentSpacing: root.card7ContentSpacing
                 }
             }
         }

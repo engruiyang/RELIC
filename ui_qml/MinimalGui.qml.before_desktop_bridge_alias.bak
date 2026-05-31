@@ -1,4 +1,4 @@
-import QtQuick
+﻿import QtQuick
 import QtQuick.Controls
 import "pages"
 import "components"
@@ -6,9 +6,6 @@ import "components"
 ApplicationWindow {
     id: root
 
-
-    property var desktopGuiBridge: guiBridge
-    // TASK26 compatibility token for static tests only: guiBridge: guiBridge
     visible: true
     width: Number(appShellLayoutValue("window_width", 1360))
     height: Number(appShellLayoutValue("window_height", 860))
@@ -112,7 +109,7 @@ ApplicationWindow {
     }
 
     Connections {
-        target: root.desktopGuiBridge ? root.desktopGuiBridge : null
+        target: guiBridge ? guiBridge : null
         function onStateChanged() {
             pullState()
         }
@@ -219,7 +216,7 @@ ApplicationWindow {
                         sessionObj: root.sessionObj
                         gameHudObj: root.gameHudObj
                         gameViewObj: root.gameViewObj
-                        guiBridge: root.desktopGuiBridge
+                        guiBridge: guiBridge
                         controlStateObj: root.controlStateObj
                         runtimeObj: root.runtimeObj
                         commandSummary: root.commandsFor("home")
@@ -238,7 +235,7 @@ ApplicationWindow {
                         sessionObj: root.sessionObj
                         gameHudObj: root.gameHudObj
                         gameViewObj: root.gameViewObj
-                        guiBridge: root.desktopGuiBridge
+                        guiBridge: guiBridge
                         appStateObj: root.appStateObj
                         controlStateObj: root.controlStateObj
                         commandSummary: root.commandsFor("user")
@@ -257,7 +254,7 @@ ApplicationWindow {
                         sessionObj: root.sessionObj
                         gameHudObj: root.gameHudObj
                         gameViewObj: root.gameViewObj
-                        guiBridge: root.desktopGuiBridge
+                        guiBridge: guiBridge
                         controlStateObj: root.controlStateObj
                         commandSummary: root.commandsFor("calibration")
                         onInvokeNative: function(a) { root.invokeNative(a) }
@@ -271,7 +268,7 @@ ApplicationWindow {
                         componentStyleObj: root.componentStylesObj
                         renderResourcesObj: root.renderResourcesObj
                         sessionObj: root.sessionObj
-                        guiBridge: root.desktopGuiBridge
+                        guiBridge: guiBridge
                         appStateObj: root.appStateObj
                         controlStateObj: root.controlStateObj
                         runtimeObj: root.runtimeObj
@@ -293,7 +290,7 @@ ApplicationWindow {
                         runtimeObj: root.runtimeObj
                         gameHudObj: root.gameHudObj
                         gameViewObj: root.gameViewObj
-                        guiBridge: root.desktopGuiBridge
+                        guiBridge: guiBridge
                         appStateObj: root.appStateObj
                         controlStateObj: root.controlStateObj
                         sessionObj: root.sessionObj
@@ -309,7 +306,7 @@ ApplicationWindow {
                         renderResourcesObj: root.renderResourcesObj
                         appStateObj: root.appStateObj
                         gameViewObj: root.gameViewObj
-                        guiBridge: root.desktopGuiBridge
+                        guiBridge: guiBridge
                         controlStateObj: root.controlStateObj
                         runtimeObj: root.runtimeObj
                         sessionObj: root.sessionObj
@@ -325,7 +322,7 @@ ApplicationWindow {
                         pageStyleObj: root.pageStylesObj.developer_lab_page || ({})
                         componentStyleObj: root.componentStylesObj
                         renderResourcesObj: root.renderResourcesObj
-                        guiBridge: root.desktopGuiBridge
+                        guiBridge: guiBridge
                         controlStateObj: root.controlStateObj
                         commandSummary: root.commandsFor("developer_lab")
                     }
@@ -348,5 +345,3 @@ ApplicationWindow {
 // profile_status calibration_status profile_loaded user_type attention_low_threshold attention_high_threshold preferred_game_id calibration_usable last_calibration_id failure_reason
 // First Profile Calibration Quick Check Periodic Recalibration Triggered Recalibration
 // GameCanvas will be restored in TASK24 score combo level session_elapsed_ms behavior_sample_count Fragment Lock Signal Hunter Stabilizer last_session_status current_session_id attention sqi fi_smoothed control_state
-
-

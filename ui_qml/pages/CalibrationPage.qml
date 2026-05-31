@@ -4,6 +4,13 @@ import "../components"
 
 Item {
     id: root
+
+    property var guiBridge: null
+    property var appStateObj: ({})
+    property var runtimeObj: ({})
+    property var sessionObj: ({})
+    property var gameHudObj: ({})
+    property var gameViewObj: ({})
     property var designThemeObj: ({})
     property var pageStyleObj: ({})
     property var componentStyleObj: ({})
@@ -308,12 +315,36 @@ Item {
         invokeCalibration("calibration.poll", ({}), "progress")
     }
 
+    function calibrationProgressIsRunning() {
+        var state = root.controlStateObj || ({})
+        var runningValue = state.calibration_progress_running
+        var statusText = String(state.calibration_progress_status || "").toLowerCase()
+        if (runningValue === true) {
+            return true
+        }
+        if (String(runningValue).toLowerCase() === "true") {
+            return true
+        }
+        return statusText === "running" || statusText === "guidance_running"
+    }
+
+    function refreshDesktopCalibrationFeedback() {
+        if (!root.guiBridge) {
+            return
+        }
+        if (calibrationProgressIsRunning()) {
+            root.guiBridge.invokeAction("calibration.poll", "{}")
+        }
+        root.controlStateObj = safeJsonParse(root.guiBridge.controlStateJson)
+        root.renderResourcesObj = safeJsonParse(root.guiBridge.renderResourcesJson)
+    }
+
     Timer {
         id: calibrationProgressTimer
-        interval: 250 * 4
-        running: root.visible && root.calibrationRunning
+        interval: 1000
+        running: root.visible && root.task26DesktopPilotEnabled
         repeat: true
-        onTriggered: root.doPollProgress()
+        onTriggered: root.refreshDesktopCalibrationFeedback()
     }
 
     DesignBackground {
@@ -331,29 +362,43 @@ Item {
         anchors.margins: 6
         z: 100
         visible: root.task26DesktopPilotEnabled
+        enabled: root.task26DesktopPilotEnabled
 
-        DesktopLayoutPreview {
-            id: task26CalibrationDesktopLayoutPreview
+        ScrollView {
+            id: task26CalibrationDesktopScrollView
             anchors.fill: parent
-            layoutPayload: root.task26CalibrationLayoutPayload()
-            previewTitle: "TASK26 Calibration Desktop Pilot"
-            previewSubtitle: "Full-area card desktop pilot · legacy fallback: " + String(root.task26LegacyFallbackVisible)
-            payloadStatusText: String((root.renderResourcesObj || ({})).task26_calibration_layout_status || "n/a")
-            payloadSourceText: String((root.renderResourcesObj || ({})).task26_calibration_layout_source || "n/a")
-            guiBridge: typeof guiBridge === "undefined" ? null : guiBridge
-            appStateObj: ({})
-            runtimeSnapshotObj: ({})
-            sessionStateObj: root.controlStateObj
-            controlStateObj: root.controlStateObj
-            gameHudObj: ({})
-            renderResourcesObj: root.renderResourcesObj
+            clip: true
+            contentWidth: availableWidth
+            contentHeight: Math.max(availableHeight, 1040)
+
+            DesktopLayoutPreview {
+                id: task26CalibrationDesktopLayoutPreview
+                width: Math.max(1, task26CalibrationDesktopScrollView.availableWidth)
+                height: Math.max(1040, task26CalibrationDesktopScrollView.availableHeight)
+                layoutPayload: root.task26CalibrationLayoutPayload()
+                previewTitle: "TASK26 Calibration Desktop Pilot"
+                previewSubtitle: "Scrollable formal calibration desktop · legacy fallback: " + String(root.task26LegacyFallbackVisible)
+                payloadStatusText: String((root.renderResourcesObj || ({})).task26_calibration_layout_status || "n/a")
+                payloadSourceText: String((root.renderResourcesObj || ({})).task26_calibration_layout_source || "n/a")
+                guiBridge: root.guiBridge
+                appStateObj: root.appStateObj
+                runtimeSnapshotObj: root.runtimeObj
+                sessionStateObj: root.sessionObj
+                controlStateObj: root.controlStateObj
+                gameHudObj: root.gameHudObj
+                gameViewObj: root.gameViewObj
+                renderResourcesObj: root.renderResourcesObj
+            }
         }
     }
+
 
 
     ScrollView {
         id: calibrationScroller
         anchors.fill: parent
+        visible: root.task26LegacyFallbackVisible
+        enabled: root.task26LegacyFallbackVisible
         clip: true
         contentWidth: availableWidth
 
