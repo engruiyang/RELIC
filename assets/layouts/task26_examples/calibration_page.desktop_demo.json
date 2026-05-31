@@ -1,20 +1,20 @@
 {
   "page_id": "calibration",
   "title": "Calibration Desktop",
-  "subtitle": "TASK26G-3 Calibration desktop pilot",
+  "subtitle": "Formal calibration cards: control, feedback, query, popup detail",
   "layout": {
     "mode": "grid",
     "columns": 12,
-    "rows": 8,
+    "rows": 12,
     "gap": 8,
     "padding": 8
   },
   "cards": [
     {
-      "id": "calibration_status_card",
-      "type": "calibration",
-      "title": "Calibration Status",
-      "subtitle": "Current calibration gate",
+      "id": "calibration_control_card",
+      "type": "actions",
+      "title": "Calibration Control Panel",
+      "subtitle": "Bind selected calibration and control calibration lifecycle",
       "required": true,
       "locked": true,
       "preset": "normal_card",
@@ -22,56 +22,239 @@
         "col": 1,
         "row": 1,
         "col_span": 4,
-        "row_span": 3
+        "row_span": 6
       },
       "shape": "rounded_rect",
       "style": {
-        "background_color": "#162235",
-        "background_opacity": 0.88,
-        "border_color": "#5D8CFF",
+        "background_opacity": 0.9,
         "border_width": 2,
-        "corner_radius": 18,
+        "corner_radius": 20,
         "shape_type": "rounded_rect",
         "background_image": "",
         "glass_enabled": true,
-        "glass_tint": "#DDEEFF",
-        "glass_opacity": 0.1,
-        "glass_highlight": true
+        "glass_opacity": 0.12,
+        "glass_highlight": true,
+        "title_pixel_size": 16,
+        "subtitle_pixel_size": 10,
+        "widget_label_pixel_size": 10,
+        "widget_value_pixel_size": 12,
+        "widget_meta_pixel_size": 9,
+        "widget_row_height": 26,
+        "button_height": 28,
+        "widget_spacing": 4,
+        "body_top_margin": 2,
+        "feedback_height": 22,
+        "feedback_pixel_size": 9,
+        "header_spacing": 1,
+        "content_spacing": 4,
+        "background_color": "#261A31",
+        "border_color": "#B479FF",
+        "glass_tint": "#F2DDFF"
+      },
+      "widgets": [
+        {
+          "type": "select",
+          "id": "selected_calibration_id",
+          "label": "Bind Target",
+          "value": "manual",
+          "fallback": "manual",
+          "options": [
+            "manual"
+          ],
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "button",
+          "id": "bind_selected_calibration",
+          "label": "Bind Selected",
+          "action_id": "calibration.bind",
+          "args": {
+            "calibration_id": "${select.selected_calibration_id}"
+          },
+          "variant": "primary",
+          "required": true,
+          "enabled_when": "always",
+          "confirm": false,
+          "style": {
+            "preset": "button_primary"
+          }
+        },
+        {
+          "type": "button",
+          "id": "start_calibration",
+          "label": "Start Calibration",
+          "action_id": "calibration.start",
+          "args": {},
+          "variant": "primary",
+          "required": true,
+          "enabled_when": "always",
+          "confirm": false,
+          "style": {
+            "preset": "button_primary"
+          }
+        },
+        {
+          "type": "button",
+          "id": "poll_calibration_progress",
+          "label": "Poll Progress",
+          "action_id": "calibration.poll",
+          "args": {},
+          "variant": "secondary",
+          "required": false,
+          "enabled_when": "always",
+          "confirm": false,
+          "style": {
+            "preset": "button_secondary"
+          }
+        },
+        {
+          "type": "button",
+          "id": "cancel_calibration",
+          "label": "Cancel Calibration",
+          "action_id": "calibration.cancel",
+          "args": {},
+          "variant": "secondary",
+          "required": false,
+          "enabled_when": "always",
+          "confirm": false,
+          "style": {
+            "preset": "button_secondary"
+          }
+        },
+        {
+          "type": "button",
+          "id": "calibration_status_btn",
+          "label": "Calibration Status",
+          "action_id": "calibration.status",
+          "args": {},
+          "variant": "secondary",
+          "required": false,
+          "enabled_when": "always",
+          "confirm": false,
+          "style": {
+            "preset": "button_secondary"
+          }
+        }
+      ],
+      "card_policy": {
+        "allow_move": true,
+        "allow_resize": true,
+        "allow_remove": false,
+        "allow_collapse": true
+      }
+    },
+    {
+      "id": "calibration_feedback_card",
+      "type": "calibration_feedback",
+      "title": "Calibration Feedback",
+      "subtitle": "Finite calibration guidance: phase, elapsed/remain timer and current operator prompt",
+      "required": true,
+      "locked": true,
+      "preset": "normal_card",
+      "position": {
+        "col": 5,
+        "row": 1,
+        "col_span": 8,
+        "row_span": 6
+      },
+      "shape": "rounded_rect",
+      "style": {
+        "background_opacity": 0.9,
+        "border_width": 2,
+        "corner_radius": 20,
+        "shape_type": "rounded_rect",
+        "background_image": "",
+        "glass_enabled": true,
+        "glass_opacity": 0.12,
+        "glass_highlight": true,
+        "title_pixel_size": 16,
+        "subtitle_pixel_size": 10,
+        "widget_label_pixel_size": 10,
+        "widget_value_pixel_size": 12,
+        "widget_meta_pixel_size": 9,
+        "widget_row_height": 24,
+        "button_height": 30,
+        "widget_spacing": 3,
+        "body_top_margin": 2,
+        "feedback_height": 24,
+        "feedback_pixel_size": 9,
+        "header_spacing": 1,
+        "content_spacing": 5,
+        "background_color": "#102A30",
+        "border_color": "#4FE3D2",
+        "glass_tint": "#D9FFF7"
       },
       "widgets": [
         {
           "type": "metric",
-          "id": "current_user",
-          "label": "Current User",
-          "source": "controlStateJson.current_user_id",
-          "fallback": "none",
-          "format": "plain",
-          "unit": "",
-          "preset": "metric_default",
-          "style": {},
-          "visible_when": "always"
-        },
-        {
-          "type": "metric",
-          "id": "calibration_status",
-          "label": "Status",
-          "source": "controlStateJson.calibration_status",
-          "fallback": "unknown",
-          "format": "plain",
-          "unit": "",
-          "preset": "metric_default",
-          "style": {},
-          "visible_when": "always"
-        },
-        {
-          "type": "metric",
-          "id": "calibration_usable",
-          "label": "Usable",
-          "source": "controlStateJson.calibration_usable",
+          "id": "progress_running",
+          "label": "Running",
+          "source": "controlStateJson.calibration_progress_running",
           "fallback": "false",
           "format": "plain",
           "unit": "",
           "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "metric",
+          "id": "progress_phase",
+          "label": "Phase",
+          "source": "controlStateJson.calibration_progress_phase",
+          "fallback": "n/a",
+          "format": "plain",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "metric",
+          "id": "elapsed_time",
+          "label": "Elapsed",
+          "source": "controlStateJson.calibration_progress_elapsed_sec",
+          "fallback": "0.0",
+          "format": "plain",
+          "unit": "s",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "metric",
+          "id": "remaining_time",
+          "label": "Remain",
+          "source": "controlStateJson.calibration_phase_remaining_sec",
+          "fallback": "0.0",
+          "format": "plain",
+          "unit": "s",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "metric",
+          "id": "progress_percent",
+          "label": "Progress",
+          "source": "controlStateJson.calibration_progress_percent",
+          "fallback": "0.0",
+          "format": "plain",
+          "unit": "%",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "text",
+          "id": "active_prompt",
+          "label": "Current Guidance",
+          "source": "controlStateJson.calibration_operator_guidance",
+          "fallback": "Click Start Calibration to show step-by-step operator guidance.",
+          "format": "plain",
+          "unit": "",
+          "preset": "text_default",
           "style": {},
           "visible_when": "always"
         }
@@ -84,52 +267,86 @@
       }
     },
     {
-      "id": "calibration_actions_card",
-      "type": "actions",
-      "title": "Calibration Actions",
-      "subtitle": "Status, latest, list, bind",
+      "id": "calibration_query_card",
+      "type": "query",
+      "title": "Calibration Query",
+      "subtitle": "Query current user's calibrations or manually paste calibration ID",
       "required": true,
       "locked": true,
       "preset": "normal_card",
       "position": {
-        "col": 5,
-        "row": 1,
-        "col_span": 4,
-        "row_span": 3
+        "col": 1,
+        "row": 7,
+        "col_span": 12,
+        "row_span": 5
       },
       "shape": "rounded_rect",
       "style": {
-        "background_color": "#321B2B",
-        "background_opacity": 0.88,
-        "border_color": "#FF6680",
+        "background_opacity": 0.9,
         "border_width": 2,
         "corner_radius": 20,
         "shape_type": "rounded_rect",
         "background_image": "",
         "glass_enabled": true,
-        "glass_tint": "#FFDDE8",
         "glass_opacity": 0.12,
-        "glass_highlight": true
+        "glass_highlight": true,
+        "title_pixel_size": 16,
+        "subtitle_pixel_size": 10,
+        "widget_label_pixel_size": 10,
+        "widget_value_pixel_size": 12,
+        "widget_meta_pixel_size": 9,
+        "widget_row_height": 26,
+        "button_height": 28,
+        "widget_spacing": 4,
+        "body_top_margin": 2,
+        "feedback_height": 22,
+        "feedback_pixel_size": 9,
+        "header_spacing": 1,
+        "content_spacing": 4,
+        "background_color": "#1D2535",
+        "border_color": "#5D8CFF",
+        "glass_tint": "#DDEEFF"
       },
       "widgets": [
         {
+          "type": "select",
+          "id": "selected_calibration_id",
+          "label": "Current User Calibration",
+          "value": "manual",
+          "fallback": "manual",
+          "options": [
+            "manual"
+          ],
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "input",
+          "id": "manual_calibration_id",
+          "label": "Manual ID",
+          "value": "",
+          "fallback": "Paste calibration id",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
           "type": "button",
-          "id": "calibration_status_btn",
-          "label": "Calibration Status",
-          "action_id": "calibration.status",
+          "id": "list_current_calibrations",
+          "label": "List Current User",
+          "action_id": "calibration.list",
           "args": {},
-          "variant": "primary",
-          "required": true,
+          "variant": "secondary",
+          "required": false,
           "enabled_when": "always",
           "confirm": false,
           "style": {
-            "preset": "button_primary"
+            "preset": "button_secondary"
           }
         },
         {
           "type": "button",
-          "id": "calibration_latest_btn",
-          "label": "Latest Calibration",
+          "id": "latest_calibration",
+          "label": "Latest Calibration Detail",
           "action_id": "calibration.latest",
           "args": {},
           "variant": "secondary",
@@ -142,10 +359,28 @@
         },
         {
           "type": "button",
-          "id": "calibration_list_btn",
-          "label": "List Calibrations",
-          "action_id": "calibration.list",
-          "args": {},
+          "id": "show_selected_calibration",
+          "label": "Show Selected",
+          "action_id": "calibration.show",
+          "args": {
+            "calibration_id": "${select.selected_calibration_id}"
+          },
+          "variant": "primary",
+          "required": false,
+          "enabled_when": "always",
+          "confirm": false,
+          "style": {
+            "preset": "button_primary"
+          }
+        },
+        {
+          "type": "button",
+          "id": "show_manual_calibration",
+          "label": "Show Manual",
+          "action_id": "calibration.show",
+          "args": {
+            "calibration_id": "${input.manual_calibration_id}"
+          },
           "variant": "secondary",
           "required": false,
           "enabled_when": "always",
@@ -159,152 +394,6 @@
         "allow_move": true,
         "allow_resize": true,
         "allow_remove": false,
-        "allow_collapse": true
-      }
-    },
-    {
-      "id": "calibration_detail_card",
-      "type": "detail",
-      "title": "Calibration Detail",
-      "subtitle": "Baseline and signal statistics",
-      "required": true,
-      "locked": true,
-      "preset": "normal_card",
-      "position": {
-        "col": 9,
-        "row": 1,
-        "col_span": 4,
-        "row_span": 3
-      },
-      "shape": "rounded_rect",
-      "style": {
-        "background_color": "#183326",
-        "background_opacity": 0.82,
-        "border_color": "#67E8A5",
-        "border_width": 2,
-        "corner_radius": 16,
-        "shape_type": "rounded_rect",
-        "background_image": "",
-        "glass_enabled": false,
-        "glass_tint": "#DDEEFF",
-        "glass_opacity": 0.1,
-        "glass_highlight": false
-      },
-      "widgets": [
-        {
-          "type": "metric",
-          "id": "last_calibration_id",
-          "label": "Last Calibration",
-          "source": "controlStateJson.last_calibration_id",
-          "fallback": "none",
-          "format": "plain",
-          "unit": "",
-          "preset": "metric_default",
-          "style": {},
-          "visible_when": "always"
-        },
-        {
-          "type": "metric",
-          "id": "attention_baseline",
-          "label": "Attention Baseline",
-          "source": "controlStateJson.attention_baseline",
-          "fallback": "n/a",
-          "format": "plain",
-          "unit": "",
-          "preset": "metric_default",
-          "style": {},
-          "visible_when": "always"
-        },
-        {
-          "type": "metric",
-          "id": "gyro_noise",
-          "label": "Gyro Noise",
-          "source": "controlStateJson.gyro_noise_rms",
-          "fallback": "n/a",
-          "format": "plain",
-          "unit": "",
-          "preset": "metric_default",
-          "style": {},
-          "visible_when": "always"
-        }
-      ],
-      "card_policy": {
-        "allow_move": true,
-        "allow_resize": true,
-        "allow_remove": false,
-        "allow_collapse": true
-      }
-    },
-    {
-      "id": "calibration_progress_card",
-      "type": "progress",
-      "title": "Calibration Progress",
-      "subtitle": "Operator phase guidance",
-      "required": false,
-      "locked": false,
-      "preset": "normal_card",
-      "position": {
-        "col": 1,
-        "row": 4,
-        "col_span": 8,
-        "row_span": 3
-      },
-      "shape": "rounded_rect",
-      "style": {
-        "background_color": "#221A33",
-        "background_opacity": 0.74,
-        "border_color": "#B58CFF",
-        "border_width": 2,
-        "corner_radius": 24,
-        "shape_type": "rounded_rect",
-        "background_image": "",
-        "glass_enabled": true,
-        "glass_tint": "#E8D7FF",
-        "glass_opacity": 0.16,
-        "glass_highlight": true
-      },
-      "widgets": [
-        {
-          "type": "metric",
-          "id": "progress_status",
-          "label": "Progress",
-          "source": "controlStateJson.calibration_progress_status",
-          "fallback": "idle",
-          "format": "plain",
-          "unit": "",
-          "preset": "metric_default",
-          "style": {},
-          "visible_when": "always"
-        },
-        {
-          "type": "text",
-          "id": "phase",
-          "label": "Current Phase",
-          "source": "controlStateJson.calibration_progress_phase",
-          "fallback": "n/a",
-          "format": "plain",
-          "unit": "",
-          "preset": "text_body",
-          "style": {},
-          "visible_when": "always"
-        },
-        {
-          "type": "text",
-          "id": "operator_hint",
-          "label": "Operator Hint",
-          "source": "controlStateJson.calibration_operator_guidance",
-          "fallback": "n/a",
-          "format": "plain",
-          "unit": "",
-          "preset": "text_body",
-          "style": {},
-          "visible_when": "always"
-        }
-      ],
-      "card_policy": {
-        "allow_move": true,
-        "allow_resize": true,
-        "allow_remove": true,
         "allow_collapse": true
       }
     }

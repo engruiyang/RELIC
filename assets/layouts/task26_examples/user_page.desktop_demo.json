@@ -22,7 +22,7 @@
         "col": 1,
         "row": 1,
         "col_span": 4,
-        "row_span": 3
+        "row_span": 2
       },
       "shape": "rounded_rect",
       "style": {
@@ -36,7 +36,20 @@
         "glass_enabled": true,
         "glass_tint": "#DDEEFF",
         "glass_opacity": 0.1,
-        "glass_highlight": true
+        "glass_highlight": true,
+        "title_pixel_size": 15,
+        "subtitle_pixel_size": 10,
+        "widget_label_pixel_size": 10,
+        "widget_value_pixel_size": 12,
+        "widget_meta_pixel_size": 9,
+        "widget_row_height": 20,
+        "button_height": 24,
+        "widget_spacing": 3,
+        "body_top_margin": 1,
+        "feedback_height": 34,
+        "feedback_pixel_size": 9,
+        "header_spacing": 1,
+        "content_spacing": 3
       },
       "widgets": [
         {
@@ -84,10 +97,10 @@
       }
     },
     {
-      "id": "user_actions_card",
-      "type": "actions",
-      "title": "User Actions",
-      "subtitle": "Load, list, and inspect profiles",
+      "id": "user_credentials_card",
+      "type": "form",
+      "title": "Register / Login",
+      "subtitle": "Register: fill Register ID + Display Name. Login: fill Login ID, then Load/Profile.",
       "required": true,
       "locked": true,
       "preset": "normal_card",
@@ -95,43 +108,72 @@
         "col": 5,
         "row": 1,
         "col_span": 4,
-        "row_span": 3
+        "row_span": 4
       },
       "shape": "rounded_rect",
       "style": {
-        "background_color": "#321B2B",
         "background_opacity": 0.88,
-        "border_color": "#FF6680",
         "border_width": 2,
-        "corner_radius": 20,
+        "corner_radius": 18,
         "shape_type": "rounded_rect",
         "background_image": "",
         "glass_enabled": true,
-        "glass_tint": "#FFDDE8",
-        "glass_opacity": 0.12,
-        "glass_highlight": true
+        "glass_tint": "#DDEEFF",
+        "glass_opacity": 0.1,
+        "glass_highlight": true,
+        "title_pixel_size": 15,
+        "subtitle_pixel_size": 10,
+        "widget_label_pixel_size": 10,
+        "widget_value_pixel_size": 12,
+        "widget_meta_pixel_size": 9,
+        "widget_row_height": 20,
+        "button_height": 24,
+        "widget_spacing": 3,
+        "body_top_margin": 1,
+        "feedback_height": 34,
+        "feedback_pixel_size": 9,
+        "header_spacing": 1,
+        "content_spacing": 3,
+        "background_color": "#202640",
+        "border_color": "#FFD479"
       },
       "widgets": [
         {
-          "type": "button",
-          "id": "list_users",
-          "label": "List Users",
-          "action_id": "user.list",
-          "args": {},
-          "variant": "secondary",
+          "type": "input",
+          "id": "new_user_id",
+          "label": "Register ID",
+          "value": "TEST_NEW",
+          "fallback": "New user id, e.g. TEST_NEW",
           "required": true,
-          "enabled_when": "always",
-          "confirm": false,
-          "style": {
-            "preset": "button_secondary"
-          }
+          "style": {}
+        },
+        {
+          "type": "input",
+          "id": "new_display_name",
+          "label": "Display Name",
+          "value": "TEST New User",
+          "fallback": "Visible name for the new user",
+          "required": false,
+          "style": {}
+        },
+        {
+          "type": "input",
+          "id": "login_user_id",
+          "label": "Login ID",
+          "value": "TEST",
+          "fallback": "Existing user id, e.g. TEST",
+          "required": true,
+          "style": {}
         },
         {
           "type": "button",
-          "id": "load_user",
-          "label": "Load User",
-          "action_id": "user.load",
-          "args": {},
+          "id": "register_user_btn",
+          "label": "Register User",
+          "action_id": "user.create",
+          "args": {
+            "user_id": "${input.new_user_id}",
+            "display_name": "${input.new_display_name}"
+          },
           "variant": "primary",
           "required": true,
           "enabled_when": "always",
@@ -142,12 +184,143 @@
         },
         {
           "type": "button",
-          "id": "show_profile",
-          "label": "Show Profile",
-          "action_id": "user.show_profile",
-          "args": {},
+          "id": "login_user_btn",
+          "label": "Login / Load",
+          "action_id": "user.load",
+          "args": {
+            "user_id": "${input.login_user_id}"
+          },
           "variant": "secondary",
           "required": true,
+          "enabled_when": "always",
+          "confirm": false,
+          "style": {
+            "preset": "button_secondary"
+          }
+        },
+        {
+          "type": "button",
+          "id": "show_login_profile_btn",
+          "label": "Show Login Profile",
+          "action_id": "user.show_profile",
+          "args": {
+            "user_id": "${input.login_user_id}"
+          },
+          "variant": "secondary",
+          "required": false,
+          "enabled_when": "always",
+          "confirm": false,
+          "style": {
+            "preset": "button_secondary"
+          }
+        }
+      ],
+      "card_policy": {
+        "allow_move": true,
+        "allow_resize": true,
+        "allow_remove": false,
+        "allow_collapse": true
+      }
+    },
+    {
+      "id": "user_selector_card",
+      "type": "select",
+      "title": "User Selector",
+      "subtitle": "Choose user and inspect profile",
+      "required": true,
+      "locked": true,
+      "preset": "normal_card",
+      "position": {
+        "col": 9,
+        "row": 1,
+        "col_span": 4,
+        "row_span": 3
+      },
+      "shape": "rounded_rect",
+      "style": {
+        "background_opacity": 0.88,
+        "border_width": 2,
+        "corner_radius": 18,
+        "shape_type": "rounded_rect",
+        "background_image": "",
+        "glass_enabled": true,
+        "glass_tint": "#DDEEFF",
+        "glass_opacity": 0.1,
+        "glass_highlight": true,
+        "title_pixel_size": 15,
+        "subtitle_pixel_size": 10,
+        "widget_label_pixel_size": 10,
+        "widget_value_pixel_size": 12,
+        "widget_meta_pixel_size": 9,
+        "widget_row_height": 20,
+        "button_height": 24,
+        "widget_spacing": 3,
+        "body_top_margin": 1,
+        "feedback_height": 34,
+        "feedback_pixel_size": 9,
+        "header_spacing": 1,
+        "content_spacing": 3,
+        "background_color": "#1B2C36",
+        "border_color": "#66CCFF"
+      },
+      "widgets": [
+        {
+          "type": "select",
+          "id": "selected_user_id",
+          "label": "Select User",
+          "options": [
+            "TEST",
+            "demo",
+            "TEST1",
+            "TEST2",
+            "TEST3",
+            "TEST_NEW"
+          ],
+          "value": "TEST",
+          "fallback": "TEST",
+          "required": true,
+          "style": {}
+        },
+        {
+          "type": "button",
+          "id": "load_selected_user_btn",
+          "label": "Load Selected",
+          "action_id": "user.load",
+          "args": {
+            "user_id": "${select.selected_user_id}"
+          },
+          "variant": "primary",
+          "required": true,
+          "enabled_when": "always",
+          "confirm": false,
+          "style": {
+            "preset": "button_primary"
+          }
+        },
+        {
+          "type": "button",
+          "id": "show_selected_profile_btn",
+          "label": "Show Selected Profile",
+          "action_id": "user.show_profile",
+          "args": {
+            "user_id": "${select.selected_user_id}"
+          },
+          "variant": "secondary",
+          "required": false,
+          "enabled_when": "always",
+          "confirm": false,
+          "style": {
+            "preset": "button_secondary"
+          }
+        },
+        {
+          "type": "button",
+          "id": "refresh_user_list_btn",
+          "label": "Refresh List",
+          "action_id": "user.list",
+          "args": {},
+          "variant": "secondary",
+          "required": false,
           "enabled_when": "always",
           "confirm": false,
           "style": {
@@ -171,24 +344,37 @@
       "locked": true,
       "preset": "normal_card",
       "position": {
-        "col": 9,
-        "row": 1,
+        "col": 1,
+        "row": 3,
         "col_span": 4,
-        "row_span": 3
+        "row_span": 2
       },
       "shape": "rounded_rect",
       "style": {
         "background_color": "#183326",
-        "background_opacity": 0.82,
+        "background_opacity": 0.88,
         "border_color": "#67E8A5",
         "border_width": 2,
-        "corner_radius": 16,
+        "corner_radius": 18,
         "shape_type": "rounded_rect",
         "background_image": "",
-        "glass_enabled": false,
+        "glass_enabled": true,
         "glass_tint": "#DDEEFF",
         "glass_opacity": 0.1,
-        "glass_highlight": false
+        "glass_highlight": true,
+        "title_pixel_size": 15,
+        "subtitle_pixel_size": 10,
+        "widget_label_pixel_size": 10,
+        "widget_value_pixel_size": 12,
+        "widget_meta_pixel_size": 9,
+        "widget_row_height": 20,
+        "button_height": 24,
+        "widget_spacing": 3,
+        "body_top_margin": 1,
+        "feedback_height": 34,
+        "feedback_pixel_size": 9,
+        "header_spacing": 1,
+        "content_spacing": 3
       },
       "widgets": [
         {
@@ -236,6 +422,137 @@
       }
     },
     {
+      "id": "user_profile_popup_card",
+      "type": "profile_popup",
+      "title": "Profile Popup",
+      "subtitle": "Open card-style profile detail",
+      "required": true,
+      "locked": true,
+      "preset": "normal_card",
+      "position": {
+        "col": 9,
+        "row": 4,
+        "col_span": 4,
+        "row_span": 3
+      },
+      "shape": "rounded_rect",
+      "style": {
+        "background_opacity": 0.88,
+        "border_width": 2,
+        "corner_radius": 18,
+        "shape_type": "rounded_rect",
+        "background_image": "",
+        "glass_enabled": true,
+        "glass_tint": "#DDEEFF",
+        "glass_opacity": 0.1,
+        "glass_highlight": true,
+        "title_pixel_size": 15,
+        "subtitle_pixel_size": 10,
+        "widget_label_pixel_size": 10,
+        "widget_value_pixel_size": 12,
+        "widget_meta_pixel_size": 9,
+        "widget_row_height": 20,
+        "button_height": 24,
+        "widget_spacing": 3,
+        "body_top_margin": 1,
+        "feedback_height": 34,
+        "feedback_pixel_size": 9,
+        "header_spacing": 1,
+        "content_spacing": 3,
+        "background_color": "#2B2138",
+        "border_color": "#D783FF"
+      },
+      "widgets": [
+        {
+          "type": "select",
+          "id": "profile_user_select",
+          "label": "Profile User",
+          "options": [
+            "TEST",
+            "demo",
+            "TEST1",
+            "TEST2",
+            "TEST3",
+            "TEST_NEW"
+          ],
+          "value": "TEST",
+          "fallback": "TEST",
+          "required": false,
+          "style": {}
+        },
+        {
+          "type": "button",
+          "id": "profile_popup_btn",
+          "label": "Open Profile Card",
+          "action_id": "user.show_profile",
+          "args": {
+            "user_id": "${select.profile_user_select}"
+          },
+          "variant": "primary",
+          "required": true,
+          "enabled_when": "always",
+          "confirm": false,
+          "style": {
+            "preset": "button_primary"
+          }
+        },
+        {
+          "type": "metric",
+          "id": "popup_current_user",
+          "label": "Current User",
+          "source": "controlStateJson.current_user_id",
+          "fallback": "none",
+          "format": "plain",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "metric",
+          "id": "popup_last_calibration",
+          "label": "Last Calibration",
+          "source": "controlStateJson.last_calibration_id",
+          "fallback": "none",
+          "format": "plain",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "metric",
+          "id": "popup_attention_low",
+          "label": "Attention Low",
+          "source": "controlStateJson.attention_low_threshold",
+          "fallback": "n/a",
+          "format": "plain",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "metric",
+          "id": "popup_attention_high",
+          "label": "Attention High",
+          "source": "controlStateJson.attention_high_threshold",
+          "fallback": "n/a",
+          "format": "plain",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        }
+      ],
+      "card_policy": {
+        "allow_move": true,
+        "allow_resize": true,
+        "allow_remove": false,
+        "allow_collapse": true
+      }
+    },
+    {
       "id": "user_notes_card",
       "type": "decoration",
       "title": "User Notes",
@@ -245,23 +562,36 @@
       "preset": "normal_card",
       "position": {
         "col": 1,
-        "row": 4,
-        "col_span": 6,
-        "row_span": 3
+        "row": 7,
+        "col_span": 12,
+        "row_span": 2
       },
       "shape": "rounded_rect",
       "style": {
-        "background_color": "#221A33",
-        "background_opacity": 0.74,
-        "border_color": "#B58CFF",
+        "background_color": "#172033",
+        "background_opacity": 0.88,
+        "border_color": "#465A78",
         "border_width": 2,
-        "corner_radius": 24,
+        "corner_radius": 18,
         "shape_type": "rounded_rect",
         "background_image": "",
         "glass_enabled": true,
-        "glass_tint": "#E8D7FF",
-        "glass_opacity": 0.16,
-        "glass_highlight": true
+        "glass_tint": "#DDEEFF",
+        "glass_opacity": 0.1,
+        "glass_highlight": true,
+        "title_pixel_size": 15,
+        "subtitle_pixel_size": 10,
+        "widget_label_pixel_size": 10,
+        "widget_value_pixel_size": 12,
+        "widget_meta_pixel_size": 9,
+        "widget_row_height": 20,
+        "button_height": 24,
+        "widget_spacing": 3,
+        "body_top_margin": 1,
+        "feedback_height": 34,
+        "feedback_pixel_size": 9,
+        "header_spacing": 1,
+        "content_spacing": 3
       },
       "widgets": [
         {

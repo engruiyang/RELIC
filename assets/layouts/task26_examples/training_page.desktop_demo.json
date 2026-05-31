@@ -1,28 +1,215 @@
 {
   "page_id": "training",
-  "title": "Training Desktop",
-  "subtitle": "TASK26F-0A Training migration audit demo",
+  "title": "Training Game Desktop",
+  "subtitle": "Formal game stage: live GameCanvas, transparent HUD overlay, session controls, difficulty controls",
   "layout": {
     "mode": "grid",
     "columns": 12,
     "rows": 8,
     "gap": 8,
-    "padding": 10
+    "padding": 8
   },
   "cards": [
     {
+      "id": "game_canvas_card",
+      "type": "game",
+      "title": "GAME CANVAS",
+      "subtitle": "Live GameCanvas core stage; transparent HUD overlays are rendered above the canvas",
+      "required": true,
+      "locked": true,
+      "preset": "normal_card",
+      "position": {
+        "col": 1,
+        "row": 1,
+        "col_span": 8,
+        "row_span": 8
+      },
+      "shape": "rounded_rect",
+      "style": {
+        "background_color": "#070B12",
+        "background_opacity": 0.98,
+        "border_color": "#4FE3D2",
+        "border_width": 2,
+        "corner_radius": 22,
+        "shape_type": "rounded_rect",
+        "background_image": "",
+        "glass_enabled": true,
+        "glass_tint": "#4FE3D2",
+        "glass_opacity": 0.12,
+        "glass_highlight": true,
+        "title_pixel_size": 15,
+        "subtitle_pixel_size": 9,
+        "widget_label_pixel_size": 10,
+        "widget_value_pixel_size": 12,
+        "widget_meta_pixel_size": 8,
+        "widget_row_height": 24,
+        "button_height": 28,
+        "widget_spacing": 3,
+        "body_top_margin": 2,
+        "feedback_height": 24,
+        "feedback_pixel_size": 8,
+        "header_spacing": 1,
+        "content_spacing": 4
+      },
+      "widgets": [
+        {
+          "type": "game_canvas",
+          "id": "game_canvas_live_view",
+          "label": "Live GameCanvas",
+          "source": "gameViewJson",
+          "fallback": "No active game view.",
+          "format": "plain",
+          "unit": "",
+          "preset": "game_canvas_live",
+          "style": {},
+          "visible_when": "always"
+        }
+      ],
+      "card_policy": {
+        "allow_move": false,
+        "allow_resize": false,
+        "allow_remove": false,
+        "allow_collapse": false
+      },
+      "metadata": {
+        "implementation_status": "live_game_canvas_card"
+      }
+    },
+    {
+      "id": "game_hud_card",
+      "type": "hud_overlay",
+      "title": "Transparent HUD",
+      "subtitle": "Transparent HUD mirror; primary HUD is overlaid on GameCanvas",
+      "required": true,
+      "locked": true,
+      "preset": "normal_card",
+      "position": {
+        "col": 9,
+        "row": 1,
+        "col_span": 2,
+        "row_span": 4
+      },
+      "shape": "rounded_rect",
+      "style": {
+        "background_color": "#09131D",
+        "background_opacity": 0.42,
+        "border_color": "#7DF9FF",
+        "border_width": 2,
+        "corner_radius": 18,
+        "shape_type": "rounded_rect",
+        "background_image": "",
+        "glass_enabled": true,
+        "glass_tint": "#7DF9FF",
+        "glass_opacity": 0.2,
+        "glass_highlight": true,
+        "title_pixel_size": 15,
+        "subtitle_pixel_size": 9,
+        "widget_label_pixel_size": 9,
+        "widget_value_pixel_size": 13,
+        "widget_meta_pixel_size": 8,
+        "widget_row_height": 23,
+        "button_height": 26,
+        "widget_spacing": 3,
+        "body_top_margin": 2,
+        "feedback_height": 22,
+        "feedback_pixel_size": 8,
+        "header_spacing": 1,
+        "content_spacing": 4
+      },
+      "widgets": [
+        {
+          "type": "metric",
+          "id": "hud_score",
+          "label": "Score",
+          "source": "gameHudJson.score",
+          "fallback": "0",
+          "format": "plain",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "metric",
+          "id": "hud_combo",
+          "label": "Combo",
+          "source": "gameHudJson.combo",
+          "fallback": "0",
+          "format": "plain",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "metric",
+          "id": "hud_time_left",
+          "label": "Time Left",
+          "source": "gameHudJson.time_left_ms",
+          "fallback": "n/a",
+          "format": "plain",
+          "unit": "ms",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "metric",
+          "id": "hud_level",
+          "label": "Level",
+          "source": "gameHudJson.effective_level",
+          "fallback": "n/a",
+          "format": "plain",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "metric",
+          "id": "hud_accuracy",
+          "label": "Accuracy",
+          "source": "gameHudJson.accuracy",
+          "fallback": "n/a",
+          "format": "plain",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "metric",
+          "id": "hud_attention",
+          "label": "Attention",
+          "source": "runtimeSnapshot.attention",
+          "fallback": "n/a",
+          "format": "plain",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        }
+      ],
+      "card_policy": {
+        "allow_move": false,
+        "allow_resize": false,
+        "allow_remove": false,
+        "allow_collapse": false
+      }
+    },
+    {
       "id": "training_control_card",
       "type": "actions",
-      "title": "Training Controls",
-      "subtitle": "Readiness, session, and safe stop actions",
+      "title": "Session Control",
+      "subtitle": "Game/session controls with current user, readiness, and safe stop",
       "required": true,
       "locked": true,
       "preset": "danger_card",
       "position": {
-        "col": 1,
+        "col": 11,
         "row": 1,
-        "col_span": 4,
-        "row_span": 2
+        "col_span": 2,
+        "row_span": 4
       },
       "shape": "rounded_rect",
       "style": {
@@ -32,18 +219,85 @@
         "border_width": 2,
         "corner_radius": 18,
         "shape_type": "rounded_rect",
+        "background_image": "",
         "glass_enabled": true,
-        "glass_tint": "#BFDFFF",
-        "glass_opacity": 0.1,
-        "glass_highlight": true
+        "glass_tint": "#5D8CFF",
+        "glass_opacity": 0.12,
+        "glass_highlight": true,
+        "title_pixel_size": 15,
+        "subtitle_pixel_size": 9,
+        "widget_label_pixel_size": 9,
+        "widget_value_pixel_size": 10,
+        "widget_meta_pixel_size": 8,
+        "widget_row_height": 20,
+        "button_height": 24,
+        "widget_spacing": 2,
+        "body_top_margin": 2,
+        "feedback_height": 26,
+        "feedback_pixel_size": 8,
+        "header_spacing": 1,
+        "content_spacing": 4
       },
       "widgets": [
+        {
+          "type": "select",
+          "id": "selected_game_id",
+          "label": "Game",
+          "value": "trace_lock",
+          "fallback": "trace_lock",
+          "options": [
+            "trace_lock"
+          ],
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "metric",
+          "id": "session_active",
+          "label": "Active",
+          "source": "sessionState.session_active",
+          "fallback": "false",
+          "format": "bool",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "metric",
+          "id": "current_user_id",
+          "label": "User",
+          "source": "controlStateJson.current_user_id",
+          "fallback": "n/a",
+          "format": "plain",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "metric",
+          "id": "calibration_usable",
+          "label": "Calibration",
+          "source": "controlStateJson.calibration_usable",
+          "fallback": "false",
+          "format": "bool",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
         {
           "type": "button",
           "id": "start_session_btn",
           "label": "Start Session",
           "action_id": "session.start",
-          "args": {},
+          "args": {
+            "game_id": "${select.selected_game_id}",
+            "difficulty_mode": "auto",
+            "debug_difficulty": "auto",
+            "selected_difficulty_level": "auto"
+          },
           "variant": "primary",
           "required": true,
           "enabled_when": "readiness_ready",
@@ -95,273 +349,23 @@
           }
         },
         {
-          "type": "text",
-          "id": "current_user_id_source",
-          "label": "Current User",
-          "source": "controlStateJson.current_user_id",
-          "fallback": "none",
-          "format": "plain",
-          "unit": "",
-          "preset": "text_body",
-          "style": {},
-          "visible_when": "always"
-        }
-      ],
-      "card_policy": {
-        "allow_move": false,
-        "allow_resize": false,
-        "allow_remove": false,
-        "allow_collapse": false
-      }
-    },
-    {
-      "id": "session_card",
-      "type": "session",
-      "title": "Session Status",
-      "subtitle": "Active session identity and elapsed time",
-      "required": true,
-      "locked": true,
-      "preset": "normal_card",
-      "position": {
-        "col": 5,
-        "row": 1,
-        "col_span": 4,
-        "row_span": 2
-      },
-      "shape": "rounded_rect",
-      "style": {
-        "background_color": "#321B2B",
-        "background_opacity": 0.88,
-        "border_color": "#FF6680",
-        "border_width": 2,
-        "corner_radius": 20,
-        "shape_type": "rounded_rect",
-        "glass_enabled": true,
-        "glass_tint": "#FFDDE8",
-        "glass_opacity": 0.12,
-        "glass_highlight": true
-      },
-      "widgets": [
-        {
-          "type": "metric",
-          "id": "session_active",
-          "label": "Active",
-          "source": "sessionState.session_active",
-          "fallback": "false",
-          "format": "bool",
-          "unit": "",
-          "preset": "metric_default",
-          "style": {},
-          "visible_when": "always"
-        },
-        {
-          "type": "metric",
-          "id": "current_session_id",
-          "label": "Session ID",
-          "source": "sessionState.current_session_id",
-          "fallback": "none",
-          "format": "plain",
-          "unit": "",
-          "preset": "metric_default",
-          "style": {},
-          "visible_when": "always"
-        },
-        {
-          "type": "metric",
-          "id": "session_elapsed_ms",
-          "label": "Elapsed",
-          "source": "sessionState.session_elapsed_ms",
-          "fallback": "0",
-          "format": "duration_ms",
-          "unit": "ms",
-          "preset": "metric_default",
-          "style": {},
-          "visible_when": "always"
-        }
-      ],
-      "card_policy": {
-        "allow_move": false,
-        "allow_resize": false,
-        "allow_remove": false,
-        "allow_collapse": true
-      }
-    },
-    {
-      "id": "runtime_io_card",
-      "type": "runtime",
-      "title": "Runtime I/O",
-      "subtitle": "Stream, attention, and gyro freshness",
-      "required": true,
-      "locked": true,
-      "preset": "normal_card",
-      "position": {
-        "col": 9,
-        "row": 1,
-        "col_span": 4,
-        "row_span": 3
-      },
-      "shape": "rounded_rect",
-      "style": {
-        "background_color": "#183326",
-        "background_opacity": 0.82,
-        "border_color": "#67E8A5",
-        "border_width": 1,
-        "corner_radius": 16,
-        "shape_type": "rounded_rect",
-        "glass_enabled": false,
-        "glass_tint": "#E6FFF2",
-        "glass_opacity": 0.0,
-        "glass_highlight": false
-      },
-      "widgets": [
-        {
-          "type": "metric",
-          "id": "stream_alive",
-          "label": "Stream Alive",
-          "source": "runtimeSnapshot.stream_alive",
-          "fallback": "false",
-          "format": "bool",
-          "unit": "",
-          "preset": "metric_default",
-          "style": {},
-          "visible_when": "always"
-        },
-        {
-          "type": "metric",
-          "id": "attention",
-          "label": "Attention",
-          "source": "runtimeSnapshot.attention",
-          "fallback": "n/a",
-          "format": "float_2",
-          "unit": "",
-          "preset": "metric_default",
-          "style": {},
-          "visible_when": "always"
-        },
-        {
-          "type": "metric",
-          "id": "attention_age_ms",
-          "label": "Attention Age",
-          "source": "runtimeSnapshot.attention_age_ms",
-          "fallback": "n/a",
-          "format": "duration_ms",
-          "unit": "ms",
-          "preset": "metric_default",
-          "style": {},
-          "visible_when": "always"
-        },
-        {
-          "type": "metric",
-          "id": "gyro_x",
-          "label": "Gyro X",
-          "source": "runtimeSnapshot.gyro_x",
-          "fallback": "n/a",
-          "format": "float_2",
-          "unit": "",
-          "preset": "metric_default",
-          "style": {},
-          "visible_when": "always"
-        },
-        {
-          "type": "metric",
-          "id": "gyro_y",
-          "label": "Gyro Y",
-          "source": "runtimeSnapshot.gyro_y",
-          "fallback": "n/a",
-          "format": "float_2",
-          "unit": "",
-          "preset": "metric_default",
-          "style": {},
-          "visible_when": "always"
-        },
-        {
-          "type": "metric",
-          "id": "gyro_z",
-          "label": "Gyro Z",
-          "source": "runtimeSnapshot.gyro_z",
-          "fallback": "n/a",
-          "format": "float_2",
-          "unit": "",
-          "preset": "metric_default",
-          "style": {},
-          "visible_when": "always"
-        },
-        {
-          "type": "metric",
-          "id": "gyro_age_ms",
-          "label": "Gyro Age",
-          "source": "runtimeSnapshot.gyro_age_ms",
-          "fallback": "n/a",
-          "format": "duration_ms",
-          "unit": "ms",
-          "preset": "metric_default",
-          "style": {},
-          "visible_when": "always"
-        }
-      ],
-      "card_policy": {
-        "allow_move": false,
-        "allow_resize": false,
-        "allow_remove": false,
-        "allow_collapse": true
-      }
-    },
-    {
-      "id": "calibration_status_card",
-      "type": "calibration",
-      "title": "Calibration Status",
-      "subtitle": "Readiness gate calibration coverage",
-      "required": true,
-      "locked": true,
-      "preset": "normal_card",
-      "position": {
-        "col": 1,
-        "row": 3,
-        "col_span": 4,
-        "row_span": 2
-      },
-      "shape": "rounded_rect",
-      "style": {
-        "background_color": "#241E36",
-        "background_opacity": 0.78,
-        "border_color": "#C4B5FD",
-        "border_width": 1,
-        "corner_radius": 24,
-        "shape_type": "pill",
-        "glass_enabled": true,
-        "glass_tint": "#F2ECFF",
-        "glass_opacity": 0.16,
-        "glass_highlight": true
-      },
-      "widgets": [
-        {
-          "type": "metric",
-          "id": "calibration_usable",
-          "label": "Calibration Usable",
-          "source": "controlState.calibration_usable",
-          "fallback": "unknown",
-          "format": "bool",
-          "unit": "",
-          "preset": "metric_default",
-          "style": {},
-          "visible_when": "always"
-        },
-        {
-          "type": "metric",
-          "id": "last_calibration_id",
-          "label": "Last Calibration",
-          "source": "controlState.last_calibration_id",
-          "fallback": "none",
-          "format": "plain",
-          "unit": "",
-          "preset": "metric_default",
-          "style": {},
-          "visible_when": "always"
+          "type": "button",
+          "id": "game_status_btn",
+          "label": "Game Status",
+          "action_id": "game.status",
+          "args": {},
+          "variant": "secondary",
+          "required": false,
+          "enabled_when": "always",
+          "confirm": false,
+          "style": {
+            "preset": "button_secondary"
+          }
         },
         {
           "type": "button",
           "id": "calibration_status_btn",
-          "label": "Calibration Status",
+          "label": "Cal Status",
           "action_id": "calibration.status",
           "args": {},
           "variant": "secondary",
@@ -377,160 +381,139 @@
         "allow_move": false,
         "allow_resize": false,
         "allow_remove": false,
-        "allow_collapse": true
+        "allow_collapse": false
       }
     },
     {
-      "id": "game_hud_card",
-      "type": "hud",
-      "title": "Game HUD",
-      "subtitle": "TraceLock HUD and status placeholders",
+      "id": "difficulty_control_card",
+      "type": "difficulty",
+      "title": "Difficulty Control",
+      "subtitle": "Auto/manual DDA controls for TraceLock",
       "required": true,
       "locked": true,
-      "preset": "glass_card",
+      "preset": "normal_card",
       "position": {
-        "col": 5,
-        "row": 3,
+        "col": 9,
+        "row": 5,
         "col_span": 4,
-        "row_span": 3
+        "row_span": 4
       },
       "shape": "rounded_rect",
       "style": {
-        "background_color": "#182235",
-        "background_opacity": 0.92,
-        "border_color": "#5D8CFF",
+        "background_color": "#22172F",
+        "background_opacity": 0.9,
+        "border_color": "#B479FF",
         "border_width": 2,
-        "corner_radius": 18,
+        "corner_radius": 20,
         "shape_type": "rounded_rect",
+        "background_image": "",
         "glass_enabled": true,
-        "glass_tint": "#BFDFFF",
-        "glass_opacity": 0.1,
-        "glass_highlight": true
+        "glass_tint": "#B479FF",
+        "glass_opacity": 0.12,
+        "glass_highlight": true,
+        "title_pixel_size": 15,
+        "subtitle_pixel_size": 9,
+        "widget_label_pixel_size": 10,
+        "widget_value_pixel_size": 12,
+        "widget_meta_pixel_size": 8,
+        "widget_row_height": 24,
+        "button_height": 28,
+        "widget_spacing": 3,
+        "body_top_margin": 2,
+        "feedback_height": 28,
+        "feedback_pixel_size": 8,
+        "header_spacing": 1,
+        "content_spacing": 4
       },
       "widgets": [
         {
-          "type": "metric",
-          "id": "game_status",
-          "label": "Status",
-          "source": "gameHudJson.status",
-          "fallback": "unknown",
-          "format": "plain",
-          "unit": "",
-          "preset": "metric_default",
+          "type": "select",
+          "id": "difficulty_mode",
+          "label": "Mode",
+          "value": "auto",
+          "fallback": "auto",
+          "options": [
+            "auto",
+            "manual"
+          ],
           "style": {},
-          "visible_when": "always",
-          "contract": {
-            "contract_status": "pending_bridge_validation",
-            "prototype": true
-          }
+          "visible_when": "always"
         },
         {
-          "type": "metric",
-          "id": "game_score",
-          "label": "Score",
-          "source": "gameHudJson.score",
-          "fallback": "0",
-          "format": "int",
-          "unit": "",
-          "preset": "metric_default",
+          "type": "select",
+          "id": "difficulty_level",
+          "label": "Level",
+          "value": "3",
+          "fallback": "3",
+          "options": [
+            "1",
+            "2",
+            "3",
+            "4",
+            "5"
+          ],
           "style": {},
-          "visible_when": "always",
-          "contract": {
-            "contract_status": "pending_bridge_validation",
-            "prototype": true
-          }
+          "visible_when": "always"
         },
         {
-          "type": "metric",
-          "id": "game_focus_index",
-          "label": "Focus Index",
-          "source": "gameHudJson.focus_index",
-          "fallback": "n/a",
-          "format": "float_2",
-          "unit": "",
-          "preset": "metric_default",
-          "style": {},
-          "visible_when": "always",
-          "contract": {
-            "contract_status": "pending_bridge_validation",
-            "prototype": true
+          "type": "button",
+          "id": "apply_difficulty_btn",
+          "label": "Apply Difficulty",
+          "action_id": "game.difficulty",
+          "args": {
+            "game_id": "trace_lock",
+            "mode": "${select.difficulty_mode}",
+            "level": "${select.difficulty_level}"
+          },
+          "variant": "primary",
+          "required": true,
+          "enabled_when": "always",
+          "confirm": false,
+          "style": {
+            "preset": "button_primary"
           }
         },
         {
           "type": "button",
-          "id": "game_status_btn",
-          "label": "Game Status",
-          "action_id": "game.status",
-          "args": {},
+          "id": "reset_auto_difficulty_btn",
+          "label": "Reset Auto",
+          "action_id": "game.difficulty",
+          "args": {
+            "game_id": "trace_lock",
+            "mode": "auto",
+            "level": "auto"
+          },
           "variant": "secondary",
-          "required": false,
+          "required": true,
           "enabled_when": "always",
           "confirm": false,
           "style": {
             "preset": "button_secondary"
           }
-        }
-      ],
-      "card_policy": {
-        "allow_move": false,
-        "allow_resize": false,
-        "allow_remove": false,
-        "allow_collapse": true
-      },
-      "contract": {
-        "contract_status": "pending_bridge_validation",
-        "prototype": true,
-        "pending_sources": [
-          "gameHudJson.status",
-          "gameHudJson.score",
-          "gameHudJson.focus_index"
-        ]
-      }
-    },
-    {
-      "id": "game_canvas_card",
-      "type": "game",
-      "title": "Game Canvas",
-      "subtitle": "Placeholder declaration only; no QML GameCanvas hookup in TASK26F-0A",
-      "required": true,
-      "locked": true,
-      "preset": "image_card",
-      "position": {
-        "col": 1,
-        "row": 5,
-        "col_span": 8,
-        "row_span": 4
-      },
-      "shape": "rounded_rect",
-      "style": {
-        "background_color": "#321B2B",
-        "background_opacity": 0.88,
-        "border_color": "#FF6680",
-        "border_width": 2,
-        "corner_radius": 20,
-        "shape_type": "rounded_rect",
-        "glass_enabled": true,
-        "glass_tint": "#FFDDE8",
-        "glass_opacity": 0.12,
-        "glass_highlight": true
-      },
-      "widgets": [
+        },
         {
-          "type": "game_placeholder",
-          "id": "game_canvas_placeholder",
-          "label": "GameCanvas Placeholder",
-          "source": "gameViewJson.game_id",
-          "fallback": "trace_lock",
-          "format": "game_canvas_placeholder",
+          "type": "metric",
+          "id": "effective_level",
+          "label": "Effective",
+          "source": "gameHudJson.effective_level",
+          "fallback": "n/a",
+          "format": "plain",
           "unit": "",
-          "preset": "game_canvas_placeholder",
+          "preset": "metric_default",
           "style": {},
-          "visible_when": "always",
-          "contract": {
-            "canvas_role": "game_canvas_placeholder",
-            "implementation_status": "placeholder_only",
-            "requires_legacy_fallback": true
-          }
+          "visible_when": "always"
+        },
+        {
+          "type": "metric",
+          "id": "dynamic_difficulty_enabled",
+          "label": "DDA",
+          "source": "gameHudJson.dynamic_difficulty_enabled",
+          "fallback": "n/a",
+          "format": "plain",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
         }
       ],
       "card_policy": {
@@ -538,85 +521,6 @@
         "allow_resize": false,
         "allow_remove": false,
         "allow_collapse": false
-      },
-      "contract": {
-        "canvas_role": "game_canvas_placeholder",
-        "implementation_status": "placeholder_only",
-        "requires_legacy_fallback": true
-      }
-    },
-    {
-      "id": "diagnostics_summary_card",
-      "type": "diagnostics",
-      "title": "Diagnostics Summary",
-      "subtitle": "Warnings, errors, and manual refresh",
-      "required": true,
-      "locked": true,
-      "preset": "normal_card",
-      "position": {
-        "col": 9,
-        "row": 4,
-        "col_span": 4,
-        "row_span": 5
-      },
-      "shape": "rounded_rect",
-      "style": {
-        "background_color": "#183326",
-        "background_opacity": 0.82,
-        "border_color": "#67E8A5",
-        "border_width": 1,
-        "corner_radius": 16,
-        "shape_type": "rounded_rect",
-        "glass_enabled": false,
-        "glass_tint": "#E6FFF2",
-        "glass_opacity": 0.0,
-        "glass_highlight": false
-      },
-      "widgets": [
-        {
-          "type": "text",
-          "id": "warning_flags",
-          "label": "Warnings",
-          "source": "runtimeSnapshot.warning_flags",
-          "fallback": "none",
-          "format": "plain",
-          "unit": "",
-          "preset": "text_body",
-          "style": {},
-          "visible_when": "always"
-        },
-        {
-          "type": "text",
-          "id": "error_flags",
-          "label": "Errors",
-          "source": "runtimeSnapshot.error_flags",
-          "fallback": "none",
-          "format": "plain",
-          "unit": "",
-          "preset": "text_body",
-          "style": {},
-          "visible_when": "always"
-        },
-        {
-          "type": "button",
-          "id": "diagnostics_refresh_btn",
-          "label": "Refresh Diagnostics",
-          "action_id": "diagnostics.refresh",
-          "args": {},
-          "variant": "secondary",
-          "required": false,
-          "enabled_when": "always",
-          "confirm": false,
-          "style": {
-            "preset": "button_secondary"
-          }
-        }
-      ],
-      "card_policy": {
-        "allow_move": false,
-        "allow_resize": false,
-        "allow_remove": false,
-        "allow_collapse": true
       }
     }
   ]

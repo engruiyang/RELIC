@@ -14,7 +14,7 @@
       "id": "report_actions_card",
       "type": "actions",
       "title": "Report Actions",
-      "subtitle": "Refresh and inspect sessions",
+      "subtitle": "Latest, list, and show sessions",
       "required": true,
       "locked": true,
       "preset": "normal_card",
@@ -36,7 +36,20 @@
         "glass_enabled": true,
         "glass_tint": "#FFDDE8",
         "glass_opacity": 0.12,
-        "glass_highlight": true
+        "glass_highlight": true,
+        "title_pixel_size": 15,
+        "subtitle_pixel_size": 10,
+        "widget_label_pixel_size": 10,
+        "widget_value_pixel_size": 12,
+        "widget_meta_pixel_size": 9,
+        "widget_row_height": 20,
+        "button_height": 22,
+        "widget_spacing": 3,
+        "body_top_margin": 1,
+        "feedback_height": 36,
+        "feedback_pixel_size": 9,
+        "header_spacing": 1,
+        "content_spacing": 3
       },
       "widgets": [
         {
@@ -115,7 +128,20 @@
         "glass_enabled": true,
         "glass_tint": "#DDEEFF",
         "glass_opacity": 0.1,
-        "glass_highlight": true
+        "glass_highlight": true,
+        "title_pixel_size": 15,
+        "subtitle_pixel_size": 10,
+        "widget_label_pixel_size": 10,
+        "widget_value_pixel_size": 12,
+        "widget_meta_pixel_size": 9,
+        "widget_row_height": 20,
+        "button_height": 24,
+        "widget_spacing": 3,
+        "body_top_margin": 1,
+        "feedback_height": 28,
+        "feedback_pixel_size": 9,
+        "header_spacing": 1,
+        "content_spacing": 3
       },
       "widgets": [
         {
@@ -188,7 +214,20 @@
         "glass_enabled": false,
         "glass_tint": "#DDEEFF",
         "glass_opacity": 0.1,
-        "glass_highlight": false
+        "glass_highlight": false,
+        "title_pixel_size": 15,
+        "subtitle_pixel_size": 10,
+        "widget_label_pixel_size": 10,
+        "widget_value_pixel_size": 12,
+        "widget_meta_pixel_size": 9,
+        "widget_row_height": 20,
+        "button_height": 24,
+        "widget_spacing": 3,
+        "body_top_margin": 1,
+        "feedback_height": 28,
+        "feedback_pixel_size": 9,
+        "header_spacing": 1,
+        "content_spacing": 3
       },
       "widgets": [
         {
@@ -261,7 +300,20 @@
         "glass_enabled": true,
         "glass_tint": "#E8D7FF",
         "glass_opacity": 0.16,
-        "glass_highlight": true
+        "glass_highlight": true,
+        "title_pixel_size": 15,
+        "subtitle_pixel_size": 10,
+        "widget_label_pixel_size": 10,
+        "widget_value_pixel_size": 12,
+        "widget_meta_pixel_size": 9,
+        "widget_row_height": 20,
+        "button_height": 24,
+        "widget_spacing": 3,
+        "body_top_margin": 1,
+        "feedback_height": 28,
+        "feedback_pixel_size": 9,
+        "header_spacing": 1,
+        "content_spacing": 3
       },
       "widgets": [
         {

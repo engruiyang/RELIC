@@ -102,7 +102,7 @@
     "pipeline_id": "session",
     "mandatory": true,
     "required_cards": [
-      "session_card"
+      "training_control_card"
     ],
     "required_fields": [
       "sessionState.session_active"
@@ -114,7 +114,7 @@
       "training",
       "home"
     ],
-    "fallback_card": "session_card",
+    "fallback_card": "training_control_card",
     "coverage_policy": {
       "visibility": "always",
       "always_accessible": true,
@@ -153,10 +153,10 @@
     "pipeline_id": "calibration",
     "mandatory": true,
     "required_cards": [
-      "calibration_status_card"
+      "training_control_card"
     ],
     "required_fields": [
-      "controlStateJson.current_user_id"
+      "controlStateJson.calibration_usable"
     ],
     "required_buttons": [
       "calibration.status"
@@ -165,7 +165,7 @@
       "calibration",
       "training"
     ],
-    "fallback_card": "calibration_status_card",
+    "fallback_card": "training_control_card",
     "coverage_policy": {
       "visibility": "always",
       "always_accessible": true,
@@ -203,8 +203,8 @@
     "pipeline_id": "game",
     "mandatory": false,
     "required_cards": [
-      "game_hud_card",
-      "game_canvas_card"
+      "game_canvas_card",
+      "game_hud_card"
     ],
     "required_fields": [
       "gameHudJson.score",

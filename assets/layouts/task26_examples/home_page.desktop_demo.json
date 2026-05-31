@@ -228,10 +228,10 @@
       "locked": false,
       "preset": "image_card",
       "position": {
-        "col": 6,
-        "row": 2,
-        "col_span": 4,
-        "row_span": 2
+        "col": 7,
+        "row": 4,
+        "col_span": 6,
+        "row_span": 3
       },
       "shape": "image_frame",
       "style": {
