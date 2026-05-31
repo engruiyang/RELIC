@@ -70,6 +70,9 @@ class GuiFacade:
         self._calibration_command: list[str] = []
         self._calibration_user_id = ""
         self._calibration_current_phase = ""
+        self._last_report_detail: dict[str, Any] = {}
+        self._last_report_list: list[dict[str, Any]] = []
+        self._last_export_path = ""
 
         self._core_source: GuiCoreSnapshotSource | None = None
         self._live_source: GuiLiveReadonlySource | None = None
@@ -371,7 +374,32 @@ class GuiFacade:
 
     def _build_task26_report_layout_resource(self) -> dict[str, Any]:
         try:
-            return build_report_layout_render_resource(Path("."))
+            resource = build_report_layout_render_resource(Path("."))
+            control_state = self.get_control_state()
+            payload = resource.get("task26_report_layout_payload")
+            if isinstance(payload, dict):
+                self._hydrate_report_layout_payload(payload, control_state)
+            report_context_keys = (
+                "current_user_id",
+                "latest_report_path",
+                "report_selected_session_id",
+                "report_selected_report_path",
+                "report_selected_user_id",
+                "report_available",
+                "report_export_path",
+                "report_preview",
+                "report_selected_report_preview",
+                "report_preview_available",
+                "report_options_text",
+                "report_list_text",
+                "last_action_id",
+                "last_action_status",
+                "last_action_message",
+            )
+            resource["task26_report_context"] = {key: control_state.get(key, "n/a") for key in report_context_keys}
+            resource["task26_report_context_status"] = "ok"
+            resource["task26_report_context_source"] = "GuiFacade.get_control_state"
+            return resource
         except Exception as exc:
             return {
                 "task26_report_layout_payload": {},
@@ -1198,6 +1226,7 @@ class GuiFacade:
         item.setdefault("status", item.get("training_status", item.get("state", "")) or "")
         item.setdefault("score", item.get("score_last", item.get("score", item.get("score_total", "n/a"))) or "n/a")
         item.setdefault("report_path", item.get("latest_report_path", item.get("report_file", "")) or "")
+        item["report_path"] = self._infer_existing_report_path(str(item.get("session_id") or ""), str(item.get("report_path") or ""))
         item.setdefault("log_path", item.get("session_log_path", item.get("log_path", "")) or "")
         item.setdefault("created_at", item.get("started_at", item.get("start_time", item.get("ended_at", "n/a"))) or "n/a")
         duration_sec = item.get("duration_sec")
@@ -1218,6 +1247,55 @@ class GuiFacade:
         item.setdefault("warning_count", item.get("warning_count", 0) or 0)
         item.setdefault("error_count", item.get("error_count", 0) or 0)
         return item
+
+    def _compact_report_list_item(self, item: dict[str, Any]) -> dict[str, Any]:
+        keys = (
+            "session_id",
+            "user_id",
+            "game_id",
+            "status",
+            "score",
+            "started_at",
+            "ended_at",
+            "created_at",
+            "duration_sec",
+            "total_duration_ms",
+            "report_path",
+            "log_path",
+            "report_available",
+            "file_index",
+            "report_id",
+        )
+        return {key: item.get(key, "") for key in keys if key in item}
+
+    def _format_report_list_text(self, items: list[dict[str, Any]]) -> str:
+        lines: list[str] = []
+        for idx, item in enumerate(items, start=1):
+            session_id = str(item.get("session_id") or item.get("report_id") or "").strip()
+            if not session_id:
+                continue
+            score = item.get("score", "n/a")
+            created_at = item.get("ended_at") or item.get("created_at") or item.get("started_at") or "n/a"
+            report_path = item.get("report_path") or item.get("latest_report_path") or item.get("source_report_path") or "n/a"
+            lines.append(f"{idx}. {session_id} | score={score} | time={created_at}\n   {report_path}")
+        return "\n".join(lines) if lines else "No reports found for current user."
+
+    def _action_log_summary(self, result: dict[str, Any]) -> dict[str, Any]:
+        if not isinstance(result, dict):
+            return {"result": str(result)[:160]}
+        nested = result.get("result") if isinstance(result.get("result"), dict) else result
+        detail = nested.get("detail") if isinstance(nested.get("detail"), dict) else {}
+        items = nested.get("items") if isinstance(nested.get("items"), list) else []
+        return {
+            "status": result.get("status", nested.get("status", "")),
+            "message": result.get("message", nested.get("message", result.get("reason", ""))),
+            "accepted": result.get("accepted", nested.get("accepted", False)),
+            "user_id": result.get("user_id", nested.get("user_id", detail.get("user_id", ""))),
+            "session_id": result.get("session_id", nested.get("session_id", detail.get("session_id", nested.get("latest_session_id", "")))),
+            "report_path": result.get("report_path", nested.get("report_path", nested.get("source_report_path", nested.get("latest_report_path", detail.get("report_path", ""))))),
+            "export_path": result.get("export_path", nested.get("export_path", "")),
+            "items_count": result.get("items_count", nested.get("items_count", len(items) if items else "")),
+        }
 
     def _session_item_from_state(self) -> dict[str, Any] | None:
         session = self.get_session_state() or {}
@@ -1242,13 +1320,23 @@ class GuiFacade:
         }
         return self._normalize_session_record(item)
 
-    def _read_report_preview(self, report_path: str, max_chars: int = 8000) -> str:
+    def _safe_report_path(self, report_path: str) -> Path | None:
         raw_path = str(report_path or "").strip()
         if not raw_path:
-            return ""
+            return None
         path = Path(raw_path)
         if not path.is_absolute():
             path = Path.cwd() / path
+        try:
+            resolved = path.resolve()
+        except OSError:
+            return None
+        return resolved
+
+    def _read_report_preview(self, report_path: str, max_chars: int = 8000) -> str:
+        path = self._safe_report_path(report_path)
+        if path is None:
+            return ""
         try:
             if path.exists() and path.is_file():
                 return path.read_text(encoding="utf-8", errors="replace")[:max_chars]
@@ -1256,7 +1344,50 @@ class GuiFacade:
             return ""
         return ""
 
-    def _fetch_report_session_list(self, user_id: str = "") -> dict[str, Any]:
+    def _infer_existing_report_path(self, session_id: str = "", report_path: str = "") -> str:
+        candidates: list[Path] = []
+        raw_report_path = str(report_path or "").strip()
+        if raw_report_path:
+            safe = self._safe_report_path(raw_report_path)
+            if safe is not None:
+                candidates.append(safe)
+        sid = str(session_id or "").strip()
+        if sid:
+            # write_session_report() uses reports/sessions/<session_id>.md.
+            # Some older DB rows were written before report_path was backfilled;
+            # the file can still exist on disk and should be treated as the report.
+            candidates.append((Path.cwd() / "reports" / "sessions" / f"{sid}.md").resolve())
+        for idx, candidate in enumerate(candidates):
+            try:
+                if candidate.exists() and candidate.is_file():
+                    if idx == 0 and raw_report_path:
+                        # Preserve an explicit DB/user supplied report_path exactly as stored.
+                        # Windows tests and the GUI compare/display native paths; forcing
+                        # Path.as_posix() here changes C:\\... into C:/... and creates
+                        # false failures even though the file is valid.  Inferred fallback
+                        # paths below still use project-relative POSIX text for stable JSON.
+                        return raw_report_path
+                    try:
+                        return candidate.relative_to(Path.cwd().resolve()).as_posix()
+                    except ValueError:
+                        return str(candidate)
+            except OSError:
+                continue
+        return raw_report_path
+
+    def _report_item_has_readable_report(self, item: dict[str, Any]) -> bool:
+        report_path = str(item.get("report_path") or item.get("latest_report_path") or "").strip()
+        if not report_path:
+            return False
+        path = self._safe_report_path(report_path)
+        if path is None:
+            return False
+        try:
+            return path.exists() and path.is_file()
+        except OSError:
+            return False
+
+    def _fetch_report_session_list(self, user_id: str = "", *, compact: bool = True) -> dict[str, Any]:
         user_id = str(user_id or "").strip()
         items: list[dict[str, Any]] = []
         conn = self._connect_readonly_db()
@@ -1272,6 +1403,8 @@ class GuiFacade:
                 order_sql = f" ORDER BY {order_col} DESC" if order_col else " ORDER BY rowid DESC"
                 if user_id and "user_id" in columns:
                     rows = conn.execute(f"SELECT * FROM {table_name} WHERE user_id=?" + order_sql, (user_id,)).fetchall()
+                elif user_id:
+                    rows = []
                 else:
                     rows = conn.execute(f"SELECT * FROM {table_name}" + order_sql).fetchall()
                 items = [self._normalize_session_record(dict(row)) for row in rows]
@@ -1279,63 +1412,167 @@ class GuiFacade:
             conn.close()
 
         state_item = self._session_item_from_state()
-        if state_item and (not user_id or state_item.get("user_id") in {"", user_id}):
+        if state_item and (not user_id or str(state_item.get("user_id") or "") in {"", user_id}):
             existing_ids = {str(item.get("session_id") or "") for item in items}
             if state_item.get("session_id") not in existing_ids:
                 items.insert(0, state_item)
 
+        # Report page is scoped to the current user.  Do not leak other users'
+        # sessions through fallback records or stale profile/session state.
+        if user_id:
+            items = [item for item in items if str(item.get("user_id") or "") in {"", user_id}]
+
+        # The Report page should operate on reports, not arbitrary sessions.
+        # Older rows may be valid sessions without report_path; leaving them as the
+        # default selector caused Show Selected/Export to target a no-report session
+        # after switching users.  Keep only entries with a readable report file.
+        report_items: list[dict[str, Any]] = []
+        for item in items:
+            item["report_path"] = self._infer_existing_report_path(str(item.get("session_id") or ""), str(item.get("report_path") or ""))
+            item["report_available"] = self._report_item_has_readable_report(item)
+            if item["report_available"]:
+                report_items.append(item)
+
+        items = report_items
+        for i, item in enumerate(items, start=1):
+            item["file_index"] = i
+            item["report_id"] = item.get("session_id", "")
+            item["report_available"] = True
+
+        self._last_report_list = deepcopy(items)
+        public_items = [self._compact_report_list_item(item) for item in items] if compact else items
         return {
             "status": "accepted",
-            "message": "session_list",
+            "message": "report_list",
             "user_id": user_id,
-            "items": items,
-            "sessions": items,
+            "items": public_items,
+            "sessions": public_items,
             "items_count": len(items),
             "session_count": len(items),
+            "report_list_text": self._format_report_list_text(public_items),
         }
 
-    def _fetch_report_session_detail(self, session_id: str, user_id: str = "") -> dict[str, Any]:
-        session_id = str(session_id or "").strip()
+    def _resolve_report_session_detail(self, user_id: str, session_id: str = "", report_path: str = "", file_index: Any = None) -> dict[str, Any]:
         user_id = str(user_id or "").strip()
-        if not session_id:
-            return {"status": "missing_input", "message": "missing_session_id", "session_id": ""}
-        listing = self._fetch_report_session_list(user_id)
-        for item in listing.get("items", []):
-            if str(item.get("session_id") or "") == session_id:
-                detail = dict(item)
-                detail["status"] = "accepted"
-                detail["message"] = "session_loaded"
-                detail["report_preview"] = self._read_report_preview(str(detail.get("report_path") or ""))
-                return detail
+        session_id = str(session_id or "").strip()
+        report_path = str(report_path or "").strip()
+        report_path_norm = str(Path(report_path).as_posix()) if report_path else ""
+        listing = self._fetch_report_session_list(user_id, compact=False)
+        items = listing.get("items", []) if isinstance(listing, dict) else []
 
-        conn = self._connect_readonly_db()
-        try:
-            table_name = self._session_table_name(conn)
-            if table_name:
-                columns = self._table_columns(conn, table_name)
-                id_col = "session_id" if "session_id" in columns else ("id" if "id" in columns else "")
-                if id_col:
-                    row = conn.execute(f"SELECT * FROM {table_name} WHERE {id_col}=?", (session_id,)).fetchone()
-                    if row:
-                        detail = self._normalize_session_record(dict(row))
-                        detail["status"] = "accepted"
-                        detail["message"] = "session_loaded"
-                        detail["report_preview"] = self._read_report_preview(str(detail.get("report_path") or ""))
-                        return detail
-        finally:
-            conn.close()
+        if file_index not in (None, "", "n/a"):
+            try:
+                idx = int(file_index)
+            except (TypeError, ValueError):
+                idx = -1
+            if 1 <= idx <= len(items):
+                return dict(items[idx - 1])
 
-        return {"status": "session_not_found", "message": "session_not_found", "session_id": session_id, "user_id": user_id}
+        for item in items:
+            item_session_id = str(item.get("session_id") or "").strip()
+            item_report_path = str(item.get("report_path") or "").strip()
+            item_report_path_norm = str(Path(item_report_path).as_posix()) if item_report_path else ""
+            if session_id and item_session_id == session_id:
+                return dict(item)
+            if report_path_norm and item_report_path_norm == report_path_norm:
+                return dict(item)
+
+        # Strict user-scoped DB fallback.  It is valid only when the table itself
+        # confirms the same user_id.  This avoids the TEST_NEW -> TEST leakage that
+        # happened during early card migration.
+        if session_id:
+            conn = self._connect_readonly_db()
+            try:
+                table_name = self._session_table_name(conn)
+                if table_name:
+                    columns = self._table_columns(conn, table_name)
+                    id_col = "session_id" if "session_id" in columns else ("id" if "id" in columns else "")
+                    if id_col:
+                        if user_id and "user_id" in columns:
+                            row = conn.execute(f"SELECT * FROM {table_name} WHERE {id_col}=? AND user_id=?", (session_id, user_id)).fetchone()
+                        elif user_id:
+                            row = None
+                        else:
+                            row = conn.execute(f"SELECT * FROM {table_name} WHERE {id_col}=?", (session_id,)).fetchone()
+                        if row:
+                            return self._normalize_session_record(dict(row))
+            finally:
+                conn.close()
+
+        return {}
+
+    def _fetch_report_session_detail(self, session_id: str = "", user_id: str = "", report_path: str = "", file_index: Any = None) -> dict[str, Any]:
+        session_id = str(session_id or "").strip()
+        report_path = str(report_path or "").strip()
+        user_id = str(user_id or "").strip()
+        if not session_id and not report_path and file_index in (None, "", "n/a"):
+            return {"status": "missing_input", "message": "missing_session_id", "result": "missing_report_identifier", "session_id": "", "user_id": user_id}
+
+        detail = self._resolve_report_session_detail(user_id, session_id=session_id, report_path=report_path, file_index=file_index)
+        if detail:
+            detail = dict(detail)
+            detail_user_id = str(detail.get("user_id") or "").strip()
+            if user_id and detail_user_id and detail_user_id != user_id:
+                return {"status": "report_user_mismatch", "message": "report_user_mismatch", "session_id": session_id or detail.get("session_id", ""), "user_id": user_id, "report_user_id": detail_user_id}
+            detail["report_path"] = self._infer_existing_report_path(str(detail.get("session_id") or ""), str(detail.get("report_path") or ""))
+            detail["status"] = "accepted"
+            detail["message"] = "report_loaded"
+            detail["report_preview"] = self._read_report_preview(str(detail.get("report_path") or ""))
+            detail["report_available"] = self._report_item_has_readable_report(detail)
+            detail.setdefault("report_id", detail.get("session_id", ""))
+            self._last_report_detail = deepcopy(detail)
+            return detail
+
+        return {"status": "session_not_found", "message": "session_not_found", "session_id": session_id, "report_path": report_path, "user_id": user_id}
+
+    def _fetch_latest_report_summary(self, user_id: str = "") -> dict[str, Any]:
+        user_id = str(user_id or "").strip()
+        listing = self._fetch_report_session_list(user_id, compact=False)
+        items = listing.get("items", []) if isinstance(listing, dict) else []
+        if items:
+            first = dict(items[0])
+            detail = self._fetch_report_session_detail(str(first.get("session_id") or ""), user_id)
+            if detail.get("status") == "accepted":
+                return {
+                    "status": "accepted",
+                    "message": "latest_report_loaded",
+                    "user_id": user_id,
+                    "latest_session_id": detail.get("session_id", ""),
+                    "latest_report_path": detail.get("report_path", ""),
+                    "report_available": bool(detail.get("report_path")),
+                    "detail": detail,
+                    "report": detail,
+                    "report_preview": detail.get("report_preview", ""),
+                    "items_count": listing.get("items_count", len(items)),
+                }
+
+        return {
+            "status": "no_report_available",
+            "message": "no_report_available",
+            "user_id": user_id,
+            "latest_session_id": "",
+            "latest_report_path": "",
+            "report_available": False,
+            "items_count": 0,
+        }
 
     def _refresh_report_summary(self, user_id: str = "") -> dict[str, Any]:
+        latest = self._fetch_latest_report_summary(user_id)
+        if latest.get("status") == "accepted":
+            latest["message"] = "report_refreshed"
+            return latest
         session = self.get_session_state() or {}
         latest_report_path = str(session.get("latest_report_path") or session.get("report_path") or "")
         latest_session_id = str(session.get("session_id") or session.get("current_session_id") or "")
+        state_user = str(session.get("user_id") or self.get_app_state().get("current_user_id") or "")
+        if user_id and state_user and state_user != user_id:
+            latest_report_path = ""
+            latest_session_id = ""
         report_available = bool(latest_report_path)
-        return {
+        summary = {
             "status": "accepted",
             "message": "report_refreshed",
-            "user_id": str(user_id or self.get_app_state().get("current_user_id") or ""),
+            "user_id": str(user_id or state_user or ""),
             "latest_report_path": latest_report_path,
             "latest_session_id": latest_session_id,
             "report_available": report_available,
@@ -1343,6 +1580,54 @@ class GuiFacade:
             "session": session,
             "report_preview": self._read_report_preview(latest_report_path),
         }
+        if report_available:
+            self._last_report_detail = deepcopy(summary)
+        return summary
+
+    def _export_report_txt(self, user_id: str = "", session_id: str = "", report_path: str = "", file_index: Any = None, out_dir: str = "reports/exports", allow_latest_fallback: bool = False) -> dict[str, Any]:
+        user_id = str(user_id or "").strip()
+        detail = self._fetch_report_session_detail(session_id=session_id, user_id=user_id, report_path=report_path, file_index=file_index)
+        if allow_latest_fallback and not report_path and (detail.get("status") != "accepted" or not self._report_item_has_readable_report(detail)):
+            latest = self._fetch_latest_report_summary(user_id)
+            latest_detail = latest.get("detail") if isinstance(latest.get("detail"), dict) else {}
+            if latest.get("status") == "accepted" and latest_detail:
+                detail = dict(latest_detail)
+                detail["status"] = "accepted"
+                detail["message"] = "latest_report_fallback_loaded"
+        if detail.get("status") != "accepted":
+            return {"status": detail.get("status", "report_not_found"), "message": detail.get("message", "report_not_found"), "accepted": False, "user_id": user_id, "detail": detail}
+        source_report_path = str(detail.get("report_path") or "").strip()
+        if not source_report_path:
+            return {"status": "report_not_found", "message": "report_path_missing", "accepted": False, "user_id": user_id, "detail": detail}
+        text = self._read_report_preview(source_report_path, max_chars=200000)
+        if not text:
+            return {"status": "report_not_found", "message": "report_file_not_readable", "accepted": False, "user_id": user_id, "source_report_path": source_report_path, "detail": detail}
+        session_id_safe = str(detail.get("session_id") or "report").replace("/", "_").replace("\\", "_").replace(":", "_")
+        out_root = Path(out_dir)
+        if not out_root.is_absolute():
+            out_root = Path.cwd() / out_root
+        out_root.mkdir(parents=True, exist_ok=True)
+        export_path = out_root / f"{session_id_safe}.txt"
+        export_text = text
+        try:
+            export_path.write_text(export_text, encoding="utf-8")
+        except OSError as exc:
+            return {"status": "export_failed", "message": str(exc), "accepted": False, "user_id": user_id, "source_report_path": source_report_path}
+        self._last_export_path = export_path.as_posix()
+        result = {
+            "status": "accepted",
+            "message": "report_exported_txt",
+            "accepted": True,
+            "user_id": user_id,
+            "session_id": detail.get("session_id", ""),
+            "source_report_path": source_report_path,
+            "export_path": export_path.as_posix(),
+            "bytes_written": export_path.stat().st_size,
+            "detail": detail,
+            "report": detail,
+        }
+        self._last_report_detail = deepcopy(detail)
+        return result
 
 
 
@@ -1613,10 +1898,59 @@ class GuiFacade:
                     cal_id = str(item.get("calibration_id") or "").strip()
                     if cal_id and cal_id not in options:
                         options.append(cal_id)
-        if "manual" not in options:
-            options.append("manual")
-        selected = next((item for item in options if item != "manual"), "manual")
-        return "|".join(options), selected
+        if not options:
+            return "no_report_available", "no_report_available"
+        return "|".join(options), options[0]
+
+    def _report_options_text_for_user(self, user_id: str) -> tuple[str, str]:
+        user_id = str(user_id or "").strip()
+        listing = self._fetch_report_session_list(user_id)
+        options: list[str] = []
+        raw_items = listing.get("items") or listing.get("sessions") or []
+        if isinstance(raw_items, list):
+            for item in raw_items:
+                if not isinstance(item, dict):
+                    continue
+                if user_id and str(item.get("user_id") or "").strip() not in {"", user_id}:
+                    continue
+                sid = str(item.get("session_id") or "").strip()
+                if sid and sid not in options:
+                    options.append(sid)
+        if not options:
+            return "no_report_available", "no_report_available"
+        return "|".join(options), options[0]
+
+    def _hydrate_report_layout_payload(self, payload: dict[str, Any], control_state: dict[str, Any]) -> None:
+        if not isinstance(payload, dict) or not isinstance(control_state, dict):
+            return
+        self._hydrate_layout_payload_from_control_state(payload, control_state)
+        current_user_id = str(control_state.get("current_user_id") or self._current_user_id_for_control_state(self.get_app_state()) or "").strip()
+        options_text, default_session_id = self._report_options_text_for_user(current_user_id)
+        options = [item for item in options_text.split("|") if item]
+        candidate = str(control_state.get("report_selected_session_id") or control_state.get("latest_session_id") or "").strip()
+        if candidate not in options or candidate == "n/a":
+            candidate = default_session_id if default_session_id in options else "no_report_available"
+        active_session_id = candidate or "no_report_available"
+        card_count = int(payload.get("card_count") or 0)
+        for card_index in range(1, card_count + 1):
+            for widget_index in range(1, 7):
+                prefix = f"card{card_index}_widget{widget_index}"
+                widget_id = str(payload.get(f"{prefix}_id") or "")
+                if widget_id in {"report_current_user", "report_user_id"}:
+                    payload[f"{prefix}_value"] = current_user_id
+                    payload[f"{prefix}_fallback"] = current_user_id or "current user"
+                elif widget_id in {"report_selector", "selected_report_id", "selected_session_id"}:
+                    payload[f"{prefix}_options_text"] = options_text
+                    payload[f"{prefix}_value"] = active_session_id
+                    payload[f"{prefix}_fallback"] = active_session_id
+                elif widget_id in {"selected_report_path", "latest_report_path"}:
+                    selected_path = str(control_state.get("report_selected_report_path") or control_state.get("latest_report_path") or "").strip()
+                    payload[f"{prefix}_value"] = selected_path or "n/a"
+                    payload[f"{prefix}_fallback"] = selected_path or "n/a"
+                elif widget_id == "export_path":
+                    export_path = str(control_state.get("report_export_path") or "").strip()
+                    payload[f"{prefix}_value"] = export_path or "n/a"
+                    payload[f"{prefix}_fallback"] = export_path or "n/a"
 
     def _hydrate_calibration_layout_payload(self, payload: dict[str, Any], control_state: dict[str, Any]) -> None:
         if not isinstance(payload, dict) or not isinstance(control_state, dict):
@@ -1694,6 +2028,18 @@ class GuiFacade:
                     continue
                 merged_detail.update(src)
 
+        report_options_text, _report_default_session_id = self._report_options_text_for_user(current_user_id)
+        report_list_text = str(merged_detail.get("report_list_text") or "")
+        if not report_list_text:
+            report_list_text = self._format_report_list_text(self._last_report_list) if self._last_report_list else "Click Refresh Report List to show report names."
+        last_action_id = str(last_result.get("action_id") or last_command_id or "")
+        if last_action_id in {"report.export", "report.export_txt"}:
+            report_export_path = str(merged_detail.get("export_path") or "")
+        elif last_action_id.startswith("report."):
+            report_export_path = ""
+        else:
+            report_export_path = self._last_export_path
+
         return {
             "mode": self.mode,
             "control_enabled": self.mode != "core",
@@ -1714,6 +2060,16 @@ class GuiFacade:
             "last_action_accepted": bool(last_result.get("accepted", False)),
             "last_action_result": str(last_result.get("result", ""))[:240],
             "latest_report_path": merged_detail.get("latest_report_path", session.get("latest_report_path") or session.get("report_path") or ""),
+            "report_selected_session_id": merged_detail.get("session_id", merged_detail.get("latest_session_id", "")),
+            "report_selected_report_path": merged_detail.get("report_path", merged_detail.get("source_report_path", merged_detail.get("latest_report_path", session.get("report_path") or session.get("latest_report_path") or ""))),
+            "report_selected_user_id": merged_detail.get("user_id", ""),
+            "report_available": merged_detail.get("report_available", bool(merged_detail.get("report_path") or merged_detail.get("source_report_path") or merged_detail.get("latest_report_path") or session.get("report_path") or session.get("latest_report_path"))),
+            "report_export_path": report_export_path,
+            "report_preview": merged_detail.get("report_preview", ""),
+            "report_selected_report_preview": merged_detail.get("report_preview", ""),
+            "report_preview_available": bool(merged_detail.get("report_preview", "")),
+            "report_options_text": report_options_text,
+            "report_list_text": report_list_text,
             "app_elapsed_ms": now - self._started_at_ms,
             "session_elapsed_ms": session_elapsed_ms if session_active else "n/a",
             "last_session_status": session.get("training_status", "none"),
@@ -1874,9 +2230,9 @@ class GuiFacade:
     def invoke_action(self, action_id: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
         payload = payload or {}
         alias_map = {
-            "report.latest": "report.refresh",
             "report.list_sessions": "report.list",
             "report.show_session": "report.show",
+            "report.export": "report.export_txt",
             "user.load_current": "user.load_current",
         }
         action_id = alias_map.get(action_id, action_id)
@@ -2132,9 +2488,9 @@ class GuiFacade:
             else:
                 summary = self._cancel_calibration_summary(user_id)
                 result = {"action_id": action_id, "status": summary.get("status", "cancelled"), "result": summary, "message": summary.get("message", "cancelled_by_user"), "accepted": summary.get("status") == "cancelled", "detail": summary, "progress": summary.get("progress", self._calibration_progress_summary()), "user_id": user_id}
-        elif action_id in {"report.refresh", "report.list", "report.show", "report.export"}:
+        elif action_id in {"report.refresh", "report.latest", "report.list", "report.show", "report.export_txt"}:
             app = self.get_app_state()
-            raw_user_id = payload.get("user_id") if "user_id" in payload else app.get("current_user_id")
+            raw_user_id = payload.get("user_id") if "user_id" in payload else (self._current_user_override or app.get("current_user_id"))
             user_id = str(raw_user_id or "").strip()
             if action_id == "report.refresh":
                 summary = self._refresh_report_summary(user_id)
@@ -2143,27 +2499,76 @@ class GuiFacade:
                     "status": summary.get("status", "accepted"),
                     "result": summary,
                     "message": summary.get("message", "report_refreshed"),
-                    "accepted": True,
-                    "detail": summary,
-                    "report": summary,
+                    "accepted": summary.get("status") in {"accepted", "no_report_available"},
+                    "detail": summary.get("detail", summary),
+                    "report": summary.get("report", summary.get("detail", summary)),
                     "user_id": user_id,
+                    "session_id": summary.get("latest_session_id", summary.get("session_id", "")),
+                    "report_path": summary.get("latest_report_path", summary.get("report_path", "")),
+                    "latest_report_path": summary.get("latest_report_path", summary.get("report_path", "")),
+                    "report_preview": summary.get("report_preview", ""),
+                }
+            elif action_id == "report.latest":
+                summary = self._fetch_latest_report_summary(user_id)
+                result = {
+                    "action_id": action_id,
+                    "status": summary.get("status", "no_report_available"),
+                    "result": summary,
+                    "message": summary.get("message", "latest_report"),
+                    "accepted": summary.get("status") == "accepted",
+                    "detail": summary.get("detail", summary),
+                    "report": summary.get("report", summary.get("detail", summary)),
+                    "user_id": user_id,
+                    "session_id": summary.get("latest_session_id", ""),
+                    "report_path": summary.get("latest_report_path", ""),
+                    "latest_report_path": summary.get("latest_report_path", ""),
+                    "report_preview": summary.get("report_preview", ""),
                 }
             elif action_id == "report.list":
                 summary = self._fetch_report_session_list(user_id)
+                list_items = summary.get("items", [])
+                list_sessions = summary.get("sessions", [])
+                list_text = summary.get("report_list_text", "")
+                list_count = summary.get("items_count", summary.get("session_count", 0))
+                # Keep report.list action payload lightweight.  The QML card only needs
+                # compact items and report_list_text; duplicating the same list under
+                # result/detail/report made raw JSON very large and caused visible lag.
                 result = {
                     "action_id": action_id,
                     "status": summary.get("status", "accepted"),
-                    "result": summary,
-                    "message": summary.get("message", "session_list"),
+                    "result": {
+                        "status": summary.get("status", "accepted"),
+                        "message": summary.get("message", "report_list"),
+                        "user_id": user_id,
+                        "items_count": list_count,
+                        "session_count": list_count,
+                        "report_list_text": list_text,
+                    },
+                    "message": summary.get("message", "report_list"),
                     "accepted": True,
-                    "items": summary.get("items", []),
-                    "items_count": summary.get("items_count", summary.get("session_count", 0)),
-                    "sessions": summary.get("sessions", []),
+                    "items": list_items,
+                    "items_count": list_count,
+                    "sessions": list_sessions,
+                    "report_list_text": list_text,
                     "user_id": user_id,
+                    "detail": {"items_count": list_count, "report_list_text": list_text},
+                    "report": {"items_count": list_count, "report_list_text": list_text},
                 }
             elif action_id == "report.show":
-                session_id = str(payload.get("session_id") or "").strip()
-                detail = self._fetch_report_session_detail(session_id, user_id)
+                report_identifier = str(payload.get("report_id") or payload.get("session_id") or "").strip()
+                report_path = str(payload.get("report_path") or "").strip()
+                file_index = payload.get("file_index")
+                if report_identifier.isdigit() and not report_path and file_index in (None, "", "n/a"):
+                    file_index = report_identifier
+                    report_identifier = ""
+                detail = self._fetch_report_session_detail(session_id=report_identifier, user_id=user_id, report_path=report_path, file_index=file_index)
+                if bool(payload.get("allow_latest_fallback", False)) and not report_path and (detail.get("status") != "accepted" or not self._report_item_has_readable_report(detail)):
+                    latest = self._fetch_latest_report_summary(user_id)
+                    latest_detail = latest.get("detail") if isinstance(latest.get("detail"), dict) else {}
+                    if latest.get("status") == "accepted" and latest_detail:
+                        detail = dict(latest_detail)
+                        detail["status"] = "accepted"
+                        detail["message"] = "latest_report_fallback_loaded"
                 result = {
                     "action_id": action_id,
                     "status": detail.get("status", "session_not_found"),
@@ -2173,16 +2578,32 @@ class GuiFacade:
                     "detail": detail,
                     "report": detail,
                     "user_id": user_id,
-                    "session_id": session_id,
+                    "session_id": detail.get("session_id", report_identifier),
+                    "report_path": detail.get("report_path", report_path),
+                    "report_preview": detail.get("report_preview", ""),
                 }
             else:
+                report_identifier = str(payload.get("report_id") or payload.get("session_id") or "").strip()
+                report_path = str(payload.get("report_path") or "").strip()
+                file_index = payload.get("file_index")
+                if report_identifier.isdigit() and not report_path and file_index in (None, "", "n/a"):
+                    file_index = report_identifier
+                    report_identifier = ""
+                summary = self._export_report_txt(user_id=user_id, session_id=report_identifier, report_path=report_path, file_index=file_index, out_dir=str(payload.get("out_dir") or "reports/exports"), allow_latest_fallback=bool(payload.get("allow_latest_fallback", False)))
                 result = {
                     "action_id": action_id,
-                    "status": "not_implemented",
-                    "result": "not_implemented",
-                    "message": "report_export_deferred",
-                    "accepted": False,
+                    "status": summary.get("status", "export_failed"),
+                    "result": summary,
+                    "message": summary.get("message", ""),
+                    "accepted": summary.get("status") == "accepted",
+                    "detail": summary.get("detail", summary),
+                    "report": summary.get("report", summary.get("detail", summary)),
                     "user_id": user_id,
+                    "session_id": summary.get("session_id", report_identifier),
+                    "report_path": summary.get("source_report_path", report_path),
+                    "source_report_path": summary.get("source_report_path", report_path),
+                    "export_path": summary.get("export_path", ""),
+                    "report_preview": (summary.get("detail") or {}).get("report_preview", "") if isinstance(summary.get("detail"), dict) else "",
                 }
         elif action_id == "devlab.run":
             result = {"action_id": action_id, "status": "not_implemented_in_this_task", "result": payload, "message": "manual_or_copy_only", "accepted": False}
@@ -2212,7 +2633,7 @@ class GuiFacade:
                             }
                             result = deepcopy(self.last_command_result)
                             self._last_command_error = str(result.get("status") or "")
-                            print(f"[GUI ACTION] action_id={action_id} status={result.get('status')} result={result.get('result')} message='{result.get('message', '')}'", flush=True)
+                            print(f"[GUI ACTION] action_id={action_id} status={result.get('status')} result={self._action_log_summary(result)} message='{result.get('message', '')}'", flush=True)
                             return result
                 self.handle_gui_command(cmd, payload)
                 status = self.last_command_result.get("status", "unknown") if isinstance(self.last_command_result, dict) else "unknown"
@@ -2228,7 +2649,7 @@ class GuiFacade:
         status = str(result.get("status") or "")
         self._last_command_error = "" if status in {"accepted", "completed", "training_started", "training_completed", "live_debug_started", "live_debug_stopped", "noop"} else status
         print(
-            f"[GUI ACTION] action_id={action_id} status={status} result={result.get('result')} message='{result.get('message', result.get('reason', ''))}'",
+            f"[GUI ACTION] action_id={action_id} status={status} result={self._action_log_summary(result)} message='{result.get('message', result.get('reason', ''))}'",
             flush=True,
         )
         return result
