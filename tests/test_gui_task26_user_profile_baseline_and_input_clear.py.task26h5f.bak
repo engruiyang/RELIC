@@ -1,0 +1,43 @@
+from pathlib import Path
+import json
+
+
+def _read(path: str) -> str:
+    return Path(path).read_text(encoding='utf-8')
+
+
+def test_user_credentials_card_has_clear_labels_and_no_overlap() -> None:
+    data = json.loads(_read('assets/layouts/task26_examples/user_page.desktop_demo.json'))
+    cards = {c['id']: c for c in data['cards']}
+    cred = cards['user_credentials_card']
+    assert 'Register:' in cred['subtitle']
+    labels = {w.get('id'): w.get('label') for w in cred['widgets']}
+    assert labels['new_user_id'] == 'Register ID'
+    assert labels['new_display_name'] == 'Display Name'
+    assert labels['login_user_id'] == 'Login ID'
+    assert cred['position']['row_span'] >= 4
+
+    rects = []
+    for card in data['cards']:
+        pos = card['position']
+        rects.append((card['id'], pos['col'], pos['row'], pos['col'] + pos['col_span'] - 1, pos['row'] + pos['row_span'] - 1))
+    for i, a in enumerate(rects):
+        for b in rects[i + 1:]:
+            overlap = not (a[3] < b[1] or b[3] < a[1] or a[4] < b[2] or b[4] < a[2])
+            assert not overlap, f'{a} overlaps {b}'
+
+
+def test_text_field_allows_user_to_clear_default_value() -> None:
+    text = _read('ui_qml/components/DesktopLayoutCardPreview.qml')
+    assert 'text: root.widget1InputText' in text
+    assert 'root.widget1InputText = root.widget1Value.length > 0 ? root.widget1Value : root.widget1Fallback' in text
+    assert 'text: root.widget1InputText.length > 0 ? root.widget1InputText : root.widget1Value' not in text
+
+
+def test_facade_control_state_reads_profile_baseline_without_action_result() -> None:
+    text = _read('gui/gui_facade.py')
+    assert 'baseline_detail' in text
+    assert '_fetch_profile_summary(current_user_id)' in text
+    assert '_fetch_calibration_status(current_user_id)' in text
+    assert '"profile_loaded": merged_detail.get("profile_loaded", "")' in text
+    assert 'self._current_user_override' in text
