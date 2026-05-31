@@ -42,3 +42,36 @@ def test_contract_gate_includes_multi_page_examples() -> None:
     strict = subprocess.run(["python", "tools/check_task26_contracts.py", "--strict"], check=True, capture_output=True, text=True)
     assert "TASK26 contracts ok" in default.stdout
     assert "TASK26 contracts strict ok" in strict.stdout
+
+
+def test_report_desktop_demo_has_no_manual_or_duplicate_show_selected() -> None:
+    data = json.loads(Path("assets/layouts/task26_examples/report_page.desktop_demo.json").read_text(encoding="utf-8"))
+    report_widgets = [w for card in data["cards"] for w in card.get("widgets", [])]
+    labels = [str(w.get("label", "")) for w in report_widgets]
+    ids = [str(w.get("id", "")) for w in report_widgets]
+    joined = json.dumps(data, ensure_ascii=False).lower()
+    assert "show manual" not in joined
+    assert "open_path_manual" not in joined
+    assert "manual id" not in joined
+    assert labels.count("Show Selected") == 1
+    assert labels.count("Refresh Report List") == 1
+    assert "List Reports" not in labels
+    assert "show_selected_report" in ids
+    assert "list_reports_action" not in ids
+
+
+def test_report_desktop_demo_uses_formal_three_column_ratio() -> None:
+    data = json.loads(Path("assets/layouts/task26_examples/report_page.desktop_demo.json").read_text(encoding="utf-8"))
+    cards = {card["id"]: card for card in data["cards"]}
+    assert cards["report_query_card"]["position"] == {"col": 1, "row": 1, "col_span": 4, "row_span": 8}
+    assert cards["report_detail_card"]["position"] == {"col": 5, "row": 1, "col_span": 5, "row_span": 8}
+    assert cards["report_actions_card"]["position"]["col_span"] == 3
+    assert cards["report_popup_card"]["position"]["col_span"] == 3
+
+
+def test_report_context_exposes_preview_and_paths() -> None:
+    resources = GuiFacade(mode="mock").get_render_resources()
+    context = resources.get("task26_report_context")
+    assert isinstance(context, dict)
+    for key in ["report_selected_report_path", "report_export_path", "report_preview", "report_selected_report_preview", "report_list_text"]:
+        assert key in context

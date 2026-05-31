@@ -7,7 +7,7 @@ def test_page_actions_return_status_message_or_result() -> None:
         'user.list','user.create','user.load','user.load_current','user.show_profile',
         'calibration.status','calibration.list','calibration.latest','calibration.cancel',
         'session.start','session.stop','game.status',
-        'report.refresh','report.list','report.show','report.export',
+        'report.refresh','report.latest','report.list','report.show','report.export','report.export_txt',
         'devlab.run'
     ]:
         r = f.invoke_action(action, {'user_id': 'TEST'})
