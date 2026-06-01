@@ -46,6 +46,9 @@ def test_qml_has_page_commands_summary_and_banned_tokens() -> None:
     assert 'pageCommandManifestJson' in qml
     for page_ref in ['HomePage', 'UserPage', 'CalibrationPage', 'TrainingPage', 'ReportPage', 'DiagnosticsPage', 'DeveloperLabPage']:
         assert page_ref in qml
+    assert 'text: "Diagnostics"' not in qml
+    assert 'text: "Go Diagnostics"' not in qml
+    assert 'DeveloperLabPage' in qml
     for page in ['HomePage.qml','UserPage.qml','CalibrationPage.qml','TrainingPage.qml','ReportPage.qml','DiagnosticsPage.qml','DeveloperLabPage.qml']:
         text = Path('ui_qml/pages/' + page).read_text(encoding='utf-8')
         assert 'Page Commands' in text
