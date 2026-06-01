@@ -69,6 +69,9 @@ class GuiFacade:
         self._calibration_output_lines: list[str] = []
         self._calibration_exit_code: int | None = None
         self._calibration_started_at_ms: int | None = None
+        self._calibration_finished_at_ms: int | None = None
+        self._calibration_terminal_status = ""
+        self._calibration_terminal_message = ""
         self._calibration_command: list[str] = []
         self._calibration_user_id = ""
         self._calibration_current_phase = ""
@@ -861,9 +864,12 @@ class GuiFacade:
             except Exception:
                 pass
         self._calibration_process = None
-        self._calibration_started_at_ms = None
-        self._calibration_exit_code = None
-        self._calibration_current_phase = ""
+        self._calibration_started_at_ms = int(time.time() * 1000)
+        self._calibration_finished_at_ms = int(time.time() * 1000)
+        self._calibration_exit_code = -2
+        self._calibration_terminal_status = "cancelled"
+        self._calibration_terminal_message = "cancelled_by_user"
+        self._calibration_current_phase = "cancelled"
         self._calibration_user_id = user_id
         self._calibration_output_lines = ["[gui] Calibration guidance cancelled by user."]
         return {
@@ -946,22 +952,62 @@ class GuiFacade:
                 return dict(item)
         return {}
 
+    def _parse_calibration_output_kv(self) -> dict[str, Any]:
+        parsed: dict[str, Any] = {}
+        for raw_line in self._calibration_output_lines:
+            line = str(raw_line or "").strip()
+            if not line or line.startswith("[") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            key = key.strip()
+            value = value.strip()
+            if not key:
+                continue
+            lowered = value.lower()
+            if lowered == "true":
+                parsed[key] = True
+            elif lowered == "false":
+                parsed[key] = False
+            elif lowered in {"none", "null"}:
+                parsed[key] = None
+            else:
+                parsed[key] = value
+        return parsed
+
+    def _resolve_calibration_terminal_status(self, exit_code: int | None, parsed: dict[str, Any]) -> tuple[str, str]:
+        if self._calibration_terminal_status:
+            return self._calibration_terminal_status, self._calibration_terminal_message or self._calibration_terminal_status
+        failure_reason = str(parsed.get("failure_reason") or "").strip()
+        user_recovery_hint = str(parsed.get("user_recovery_hint") or "").strip()
+        system_state = str(parsed.get("system_state") or "").strip().upper()
+        valid_value = parsed.get("valid")
+        if exit_code not in (None, 0):
+            return "failed", f"process_exit_{exit_code}"
+        if valid_value is False or failure_reason or "FAILED" in system_state:
+            return "failed", user_recovery_hint or failure_reason or "calibration_failed"
+        if exit_code is not None:
+            return "completed", "calibration_completed"
+        return "idle", "idle"
+
     def _calibration_progress_summary(self) -> dict[str, Any]:
         process = self._calibration_process
         if process is not None:
             polled = process.poll()
             if polled is not None:
                 self._calibration_exit_code = int(polled)
+                self._calibration_finished_at_ms = int(time.time() * 1000)
                 self._calibration_process = None
-                self._calibration_started_at_ms = None
-                self._calibration_current_phase = ""
+                parsed = self._parse_calibration_output_kv()
+                self._calibration_terminal_status, self._calibration_terminal_message = self._resolve_calibration_terminal_status(self._calibration_exit_code, parsed)
+                self._calibration_current_phase = "result"
                 self._calibration_output_lines.append(
-                    "[gui] Calibration process completed." if self._calibration_exit_code == 0 else f"[gui] Calibration process exited: {self._calibration_exit_code}"
+                    "[gui] Calibration process completed." if self._calibration_terminal_status == "completed" else f"[gui] Calibration process {self._calibration_terminal_status}: {self._calibration_terminal_message}"
                 )
                 if len(self._calibration_output_lines) > 300:
                     self._calibration_output_lines = self._calibration_output_lines[-300:]
 
         process_running = self._calibration_process is not None and self._calibration_process.poll() is None
+        terminal_active = self._calibration_process is None and self._calibration_started_at_ms is not None and self._calibration_exit_code is not None
         guidance_active = self._calibration_process is None and self._calibration_started_at_ms is not None and self._calibration_exit_code is None
 
         prompts = self._calibration_phase_prompts()
@@ -988,13 +1034,19 @@ class GuiFacade:
             guidance_active = False
             elapsed_ms = 0
 
+        parsed_output = self._parse_calibration_output_kv()
         running = bool(process_running or guidance_active)
         if process_running:
             status = "running"
         elif guidance_active:
             status = "guidance_running"
+        elif terminal_active:
+            status, terminal_message = self._resolve_calibration_terminal_status(self._calibration_exit_code, parsed_output)
+            self._calibration_terminal_status = status
+            self._calibration_terminal_message = terminal_message
         else:
             status = "idle"
+            terminal_message = "idle"
 
         current_phase_detail: dict[str, Any] = {}
         phase_elapsed_ms = 0
@@ -1003,7 +1055,11 @@ class GuiFacade:
         remaining_ms = 0
         progress_fraction = 0.0
 
-        if running and prompts and total_ms > 0:
+        if terminal_active and prompts:
+            current_phase_detail = dict(prompts[-1])
+            self._calibration_current_phase = str(current_phase_detail.get("phase") or "phase 4/4")
+            progress_fraction = 1.0 if status == "completed" else max(0.0, min(0.99, elapsed_ms / float(total_ms or 1)))
+        elif running and prompts and total_ms > 0:
             # Use a clamped finite cursor for both real subprocess and GUI guidance.
             # This keeps the UI countdown meaningful when a real headset is connected,
             # while avoiding the old modulo-loop behavior.
@@ -1038,7 +1094,7 @@ class GuiFacade:
         duration_hint = str(current_phase_detail.get("duration_hint") or "n/a")
         remaining_sec = round(phase_remaining_ms / 1000.0, 1) if running else 0.0
         total_remaining_sec = round(remaining_ms / 1000.0, 1) if running else 0.0
-        elapsed_sec = round(elapsed_ms / 1000.0, 1) if running else 0.0
+        elapsed_sec = round(elapsed_ms / 1000.0, 1) if (running or terminal_active) else 0.0
 
         if running:
             active_prompt_text = (
@@ -1048,29 +1104,41 @@ class GuiFacade:
                 f"本阶段剩余约 {remaining_sec:.1f} 秒；总剩余约 {total_remaining_sec:.1f} 秒。\n"
                 f"{duration_hint}"
             )
+        elif terminal_active:
+            terminal_title = "校准完成" if status == "completed" else ("校准已取消" if status == "cancelled" else "校准失败")
+            terminal_hint = self._calibration_terminal_message or parsed_output.get("user_recovery_hint") or parsed_output.get("failure_reason") or status
+            active_prompt_text = (
+                f"[{status}] {terminal_title}\n"
+                f"{terminal_hint}\n"
+                "可查看 CLI Output Tail 或重新开始校准。"
+            )
         else:
             active_prompt_text = "[idle] 等待校准\n点击 Start Calibration 开始校准提示。\n校准结束或取消后会回到此状态。"
 
         phase_prompt_text = self._format_calibration_phase_prompts()
-        output_text = "\n".join(output_tail) if running and output_tail else active_prompt_text
+        output_text = "\n".join(output_tail) if (running or terminal_active) and output_tail else active_prompt_text
 
         return {
             "status": status,
             "running": running,
+            "terminal": bool(terminal_active),
             "guidance_running": bool(guidance_active),
             "process_running": bool(process_running),
+            "terminal_status": self._calibration_terminal_status,
+            "terminal_message": self._calibration_terminal_message,
+            "parsed_output": parsed_output,
             "user_id": self._calibration_user_id,
             "started_at_ms": self._calibration_started_at_ms,
-            "elapsed_ms": elapsed_ms if running else 0,
-            "elapsed_sec": elapsed_sec,
+            "elapsed_ms": elapsed_ms if (running or terminal_active) else 0,
+            "elapsed_sec": elapsed_sec if (running or terminal_active) else 0.0,
             "remaining_ms": phase_remaining_ms if running else 0,
             "remaining_sec": remaining_sec,
             "total_remaining_ms": remaining_ms if running else 0,
             "total_remaining_sec": total_remaining_sec,
             "phase_elapsed_ms": phase_elapsed_ms if running else 0,
             "phase_duration_ms": phase_duration_ms if running else 0,
-            "progress_fraction": round(progress_fraction, 3) if running else 0.0,
-            "progress_percent": round(progress_fraction * 100.0, 1) if running else 0.0,
+            "progress_fraction": round(progress_fraction, 3) if (running or terminal_active) else 0.0,
+            "progress_percent": round(progress_fraction * 100.0, 1) if (running or terminal_active) else 0.0,
             "exit_code": self._calibration_exit_code,
             "current_phase": current_phase,
             "current_phase_detail": current_phase_detail,
@@ -1096,6 +1164,9 @@ class GuiFacade:
                     self._calibration_output_lines = self._calibration_output_lines[-300:]
         process.wait()
         self._calibration_exit_code = int(process.returncode or 0)
+        self._calibration_finished_at_ms = int(time.time() * 1000)
+        parsed = self._parse_calibration_output_kv()
+        self._calibration_terminal_status, self._calibration_terminal_message = self._resolve_calibration_terminal_status(self._calibration_exit_code, parsed)
 
     def _start_calibration_summary(self, user_id: str, payload: dict[str, Any]) -> dict[str, Any]:
         if not user_id:
@@ -1129,7 +1200,10 @@ class GuiFacade:
         if self.mode == "mock":
             self._calibration_user_id = user_id
             self._calibration_started_at_ms = int(time.time() * 1000)
+            self._calibration_finished_at_ms = int(time.time() * 1000)
             self._calibration_exit_code = 0
+            self._calibration_terminal_status = "completed"
+            self._calibration_terminal_message = "mock_gui_progress_completed"
             self._calibration_current_phase = "phase guide"
             self._calibration_output_lines = ["[calibration] mock start guidance"] + self._format_calibration_phase_prompts().splitlines() + ["mock_gui_progress_completed"]
             return {
@@ -1176,6 +1250,9 @@ class GuiFacade:
             "[gui] Waiting for CLI phase prompts...",
         ] + self._format_calibration_phase_prompts().splitlines()
         self._calibration_exit_code = None
+        self._calibration_finished_at_ms = None
+        self._calibration_terminal_status = ""
+        self._calibration_terminal_message = ""
         self._calibration_started_at_ms = int(time.time() * 1000)
         self._calibration_current_phase = "phase 1/4"
         try:
@@ -1191,6 +1268,9 @@ class GuiFacade:
         except Exception as exc:
             self._calibration_process = None
             self._calibration_exit_code = -1
+            self._calibration_finished_at_ms = int(time.time() * 1000)
+            self._calibration_terminal_status = "failed"
+            self._calibration_terminal_message = f"failed_to_start: {exc}"
             self._calibration_output_lines.append(f"[gui] failed_to_start: {exc}")
             return {
                 "status": "start_failed",
@@ -2546,7 +2626,10 @@ class GuiFacade:
                 self._set_current_user_context(user_id)
                 self._calibration_user_id = user_id
                 self._calibration_started_at_ms = int(time.time() * 1000)
+                self._calibration_finished_at_ms = None
                 self._calibration_exit_code = None
+                self._calibration_terminal_status = ""
+                self._calibration_terminal_message = ""
                 self._calibration_current_phase = "phase 1/4"
                 self._calibration_output_lines = [
                     "[gui] Calibration start requested from desktop card.",
@@ -2555,7 +2638,7 @@ class GuiFacade:
                 progress = self._calibration_progress_summary()
                 result = {
                     "action_id": action_id,
-                    "status": "live_control_required",
+                    "status": "not_implemented",
                     "result": "calibration_progress",
                     "message": "calibration_start_requires_live_control",
                     "accepted": False,

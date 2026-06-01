@@ -18,7 +18,7 @@ from .gui_live_readonly_source import GuiLiveReadonlySource
 
 
 class GuiLiveControlSource:
-    def __init__(self, host: str = "127.0.0.1", port: int = 8000, poll_interval_sec: float = 0.1, live_source: GuiLiveReadonlySource | None = None, user_id: str = "demo_user", game_id: str = "fake_game") -> None:
+    def __init__(self, host: str = "127.0.0.1", port: int = 8000, poll_interval_sec: float = 0.05, live_source: GuiLiveReadonlySource | None = None, user_id: str = "demo_user", game_id: str = "fake_game") -> None:
         self.user_id = user_id
         self.game_id = game_id
         self.poll_interval_sec = poll_interval_sec
@@ -63,6 +63,10 @@ class GuiLiveControlSource:
         self._dda_state: dict[str, Any] = {}
         self._last_behavior_snapshot_ms = 0
         self._behavior_snapshot_interval_ms = 1000
+        self._last_tick_started_wall_ms = 0
+        self._last_tick_built_wall_ms = 0
+        self._last_tick_elapsed_ms = 0
+        self._last_tick_seq = 0
 
     def start(self) -> None:
         self._live_source.start()
@@ -260,18 +264,53 @@ class GuiLiveControlSource:
         if self.interaction_enabled and self.session_type == "training":
             self._training_events.append(dict(evt_dict))
 
+    def _stamp_game_view_dict(self, view_dict: dict[str, Any], *, tick_started_ms: int | None = None, tick_built_ms: int | None = None, tick_elapsed_ms: int | None = None) -> dict[str, Any]:
+        """Attach timing diagnostics to the existing GameView dict.
+
+        This does not create a new game pipeline.  It only marks when the
+        existing backend view was built so QML can report whether it is
+        displaying a stale frame.
+        """
+        out = dict(view_dict or {})
+        hints = dict(out.get("layout_hints") or {})
+        built_ms = int(tick_built_ms or int(time.time() * 1000))
+        hints.update(
+            {
+                "backend_view_built_wall_ms": built_ms,
+                "backend_tick_started_wall_ms": int(tick_started_ms or built_ms),
+                "backend_tick_elapsed_ms": int(tick_elapsed_ms or 0),
+                "backend_game_update_count": int(self.game_update_count),
+                "backend_poll_interval_ms": int(self.poll_interval_sec * 1000),
+                "backend_last_tick_seq": int(self._last_tick_seq),
+            }
+        )
+        out["layout_hints"] = hints
+        return out
+
     def _tick_loop(self) -> None:
         while not self._stop.is_set():
+            tick_started_ms = int(time.time() * 1000)
             runtime = self._live_source.get_runtime_snapshot()
-            self._client.update(runtime, int(self.poll_interval_sec * 1000))
-            self._drain_game_events()
-            view = self._client.build_game_view()
             with self._lock:
+                self._last_tick_seq += 1
+                self._last_tick_started_wall_ms = tick_started_ms
+                self._client.update(runtime, int(self.poll_interval_sec * 1000))
+                self._drain_game_events()
+                view = self._client.build_game_view()
+                tick_built_ms = int(time.time() * 1000)
+                tick_elapsed_ms = max(0, tick_built_ms - tick_started_ms)
+                self._last_tick_built_wall_ms = tick_built_ms
+                self._last_tick_elapsed_ms = tick_elapsed_ms
                 self.game_update_count += 1
                 self.last_runtime_attention = runtime.get("attention")
                 self.last_runtime_attention_fresh = bool(runtime.get("attention_fresh"))
                 self.last_runtime_gyro_fresh = bool(runtime.get("gyro_fresh"))
-                self.last_game_view = asdict(view)
+                self.last_game_view = self._stamp_game_view_dict(
+                    asdict(view),
+                    tick_started_ms=tick_started_ms,
+                    tick_built_ms=tick_built_ms,
+                    tick_elapsed_ms=tick_elapsed_ms,
+                )
                 if self.interaction_enabled and self.session_type == "training":
                     self._training_runtime.append(self._normalize_training_runtime_sample(runtime))
                     now_ms = int(time.time() * 1000)
@@ -360,14 +399,21 @@ class GuiLiveControlSource:
         # This is the hard guarantee: even if the operator only selects manual/auto
         # in the GUI and immediately starts training, the game client receives it.
         requested_mode = str(difficulty_mode or "").strip().lower()
-        if requested_mode in {"auto", "manual"}:
-            if requested_mode == "auto":
+        requested_level_text = str(difficulty_level if difficulty_level is not None else "").strip().lower()
+        if requested_mode == "manual":
+            try:
+                self.set_debug_difficulty(max(1, min(5, int(difficulty_level))))
+            except (TypeError, ValueError):
                 self.set_debug_difficulty(None)
-            else:
-                try:
-                    self.set_debug_difficulty(max(1, min(5, int(difficulty_level))))
-                except (TypeError, ValueError):
-                    self.set_debug_difficulty(None)
+        elif requested_mode == "auto":
+            # Desktop-card start buttons can carry a stale auto template even after
+            # the operator applied a manual difficulty before starting.  Treat
+            # auto/auto as "no explicit override" when a manual debug difficulty
+            # is already staged, so pre-start Apply Difficulty is not cancelled.
+            # A deliberate Apply Auto action sets _debug_difficulty_level to None
+            # before session.start and therefore still starts in dynamic mode.
+            if self._debug_difficulty_level is None or requested_level_text not in {"", "auto", "dynamic", "none", "null", "nan"}:
+                self.set_debug_difficulty(None)
 
         duration_ms = self._training_duration_ms
         if game_duration_ms not in (None, "", "auto"):
@@ -887,35 +933,78 @@ class GuiLiveControlSource:
         active_session_id = self.training_session_id if self.session_type == "training" else self.live_debug_session_id
         if not self.interaction_enabled or not active_session_id:
             return {"result": "no_active_live_debug_session", "status": "ignored", "reason": "no_active_live_debug_session", "source": "live_control"}
-        self._event_seq += 1
-        ge = GameInputEvent(event_id=f"live_ctrl_input_{self._event_seq}", session_id=active_session_id, game_id=self.game_id, input_type="pointer_click", created_at_ms=int(time.time() * 1000), source="minimal_game_canvas", x_norm=float(payload.get("x_norm", 0.0)), y_norm=float(payload.get("y_norm", 0.0)), button=0, raw_event_type="pointer_click", debug_hit=payload.get("hit"), payload=dict(payload))
-        print(f"[GAME INPUT] type={ge.input_type} x={ge.x_norm:.3f} y={ge.y_norm:.3f} session_id={ge.session_id}", flush=True)
-        self._client.handle_input(ge)
-        events = self._client.collect_game_events()
-        result = "recorded_only"
-        public_event: dict[str, Any] | None = None
-        for evt in events:
-            evt_dict = evt.to_dict()
-            self._record_training_event(evt_dict)
-            self.game_event_count += 1
-            ep = evt.payload or {}
+        with self._lock:
+            self._event_seq += 1
+            now_ms = int(time.time() * 1000)
+            raw_created_at = payload.get("client_created_at_ms")
+            try:
+                created_at_ms = int(raw_created_at)
+            except (TypeError, ValueError):
+                created_at_ms = now_ms
+            # Guard against stale/out-of-clock payloads while still preserving
+            # the low-latency press timestamp from QML when available.
+            if created_at_ms <= 0 or abs(now_ms - created_at_ms) > 5000:
+                created_at_ms = now_ms
+            ge = GameInputEvent(event_id=f"live_ctrl_input_{self._event_seq}", session_id=active_session_id, game_id=self.game_id, input_type="pointer_click", created_at_ms=created_at_ms, source="minimal_game_canvas", x_norm=float(payload.get("x_norm", 0.0)), y_norm=float(payload.get("y_norm", 0.0)), button=0, raw_event_type="pointer_click", debug_hit=payload.get("hit"), payload=dict(payload))
+            input_diag = payload.get("diagnostic") if isinstance(payload.get("diagnostic"), dict) else {}
+            print(f"[GAME INPUT] type={ge.input_type} x={ge.x_norm:.3f} y={ge.y_norm:.3f} session_id={ge.session_id}", flush=True)
             print(
-                f"[GAME EVENT] event_type={evt.event_type} target_index={ep.get('target_index')} action={ep.get('action_name')} hit={ep.get('hit')}",
+                "[GAME INPUT DEBUG] "
+                + json.dumps(
+                    {
+                        "now_ms": now_ms,
+                        "client_created_at_ms": created_at_ms,
+                        "delivery_latency_ms": max(0, now_ms - created_at_ms),
+                        "x_norm": ge.x_norm,
+                        "y_norm": ge.y_norm,
+                        "display_frame_id": input_diag.get("frame_id", payload.get("display_frame_id")),
+                        "display_target_id": input_diag.get("display_target_id", payload.get("display_target_id", "")),
+                        "display_target_x": input_diag.get("display_target_x", payload.get("display_target_x")),
+                        "display_target_y": input_diag.get("display_target_y", payload.get("display_target_y")),
+                        "display_hit_radius": input_diag.get("display_hit_radius", payload.get("display_hit_radius")),
+                        "display_dist": input_diag.get("display_dist", payload.get("display_dist")),
+                        "display_hit_candidate": input_diag.get("display_hit_candidate", payload.get("display_hit_candidate")),
+                        "display_target_age_ms": input_diag.get("display_target_age_ms", payload.get("display_target_age_ms")),
+                        "display_progress": input_diag.get("display_progress", payload.get("display_progress")),
+                        "ring_progress": input_diag.get("ring_progress", payload.get("ring_progress")),
+                    },
+                    ensure_ascii=False,
+                    sort_keys=True,
+                ),
                 flush=True,
             )
-            if not evt.reportable:
-                # Keep target_spawn/score_update/target_omitted in the training
-                # log, but do not let them overwrite the user-action event shown
-                # to GUI tests or sent to the platform adapter.
-                continue
-            self._set_public_last_game_event(evt_dict)
-            public_event = evt_dict
-            platform_res = self._platform_adapter.process_game_event(evt_dict, allow_mock=True)
-            result = str(platform_res.get("platform_result") or result)
-        self.last_game_view = asdict(self._client.build_game_view())
-        if self.interaction_enabled and self.session_type == "training":
-            self._training_samples.append(self._snapshot_behavior_sample("pointer_click"))
-        return {"result": result, "status": "accepted", "reason": result, "source": "live_control", "game_input": ge.to_dict(), "last_game_event": dict(public_event or self.last_game_event), "game_event_count": self.game_event_count, "platform_message_count": self._platform_adapter.platform_message_count, "last_platform_message": dict(self._platform_adapter.last_platform_message), "last_platform_result": self._platform_adapter.last_platform_result}
+            self._client.handle_input(ge)
+            events = self._client.collect_game_events()
+            result = "recorded_only"
+            public_event: dict[str, Any] | None = None
+            for evt in events:
+                evt_dict = evt.to_dict()
+                self._record_training_event(evt_dict)
+                self.game_event_count += 1
+                ep = evt.payload or {}
+                print(
+                    f"[GAME EVENT] event_type={evt.event_type} target_index={ep.get('target_index')} action={ep.get('action_name')} hit={ep.get('hit')}",
+                    flush=True,
+                )
+                if not evt.reportable:
+                    # Keep target_spawn/score_update/target_omitted in the training
+                    # log, but do not let them overwrite the user-action event shown
+                    # to GUI tests or sent to the platform adapter.
+                    continue
+                self._set_public_last_game_event(evt_dict)
+                public_event = evt_dict
+                platform_res = self._platform_adapter.process_game_event(evt_dict, allow_mock=True)
+                result = str(platform_res.get("platform_result") or result)
+            self.last_game_view = asdict(self._client.build_game_view())
+            if self.interaction_enabled and self.session_type == "training":
+                self._training_samples.append(self._snapshot_behavior_sample("pointer_click"))
+            game_view = dict(self.last_game_view)
+            last_game_event = dict(public_event or self.last_game_event)
+            game_event_count = self.game_event_count
+            platform_message_count = self._platform_adapter.platform_message_count
+            last_platform_message = dict(self._platform_adapter.last_platform_message)
+            last_platform_result = self._platform_adapter.last_platform_result
+        return {"result": result, "status": "accepted", "reason": result, "source": "live_control", "game_input": ge.to_dict(), "last_game_event": last_game_event, "game_event_count": game_event_count, "platform_message_count": platform_message_count, "last_platform_message": last_platform_message, "last_platform_result": last_platform_result, "game_view": game_view}
 
     def get_runtime_snapshot(self) -> dict[str, Any]:
         rt = self._live_source.get_runtime_snapshot()
@@ -938,7 +1027,18 @@ class GuiLiveControlSource:
         return {"session_id": sid, "session_type": self.session_type or "none", "training_status": self.last_training_status, "latest_session_id": self.last_session_id, "latest_report_path": report_path, "user_id": self.user_id, "game_id": self.game_id, "session_active": self.interaction_enabled, "score": self.last_game_view.get("score", 0), "warning_count": 0, "error_count": 0, "log_path": log_path, "report_path": report_path, "platform_report_status": "mock_only", "source": "live_control", "difficulty_mode": self._difficulty_mode, "debug_difficulty": self._debug_difficulty_level if self._debug_difficulty_level is not None else "auto", "effective_level": hud.get("effective_level", hud.get("level")), "dynamic_difficulty_enabled": hud.get("dynamic_difficulty_enabled"), "dda_enabled": bool((self._dda_state or {}).get("enabled", True)), "dda_mode": ("manual" if self._difficulty_mode == "manual" else "auto"), "latest_difficulty_decision": latest_decision, "latest_difficulty_changed": latest_changed, "dda_applied_count": sum(1 for d in self._difficulty_decisions if d.get("applied")), "game_duration_ms": hud.get("game_duration_ms"), "elapsed_ms": hud.get("elapsed_ms"), "time_left_ms": hud.get("time_left_ms"), "game_completed": hud.get("game_completed")}
 
     def get_game_view(self) -> dict[str, Any]:
+        now_ms = int(time.time() * 1000)
         view = dict(self.last_game_view)
+        hints = dict(view.get("layout_hints") or {})
+        built_ms = int(hints.get("backend_view_built_wall_ms") or 0)
+        hints.update(
+            {
+                "backend_get_game_view_wall_ms": now_ms,
+                "backend_view_age_at_get_ms": (max(0, now_ms - built_ms) if built_ms > 0 else -1),
+                "backend_game_update_count_at_get": int(self.game_update_count),
+            }
+        )
+        view["layout_hints"] = hints
         hud = dict(view.get("hud") or {})
         hud["dda_enabled"] = bool((self._dda_state or {}).get("enabled", True))
         hud["external_training_control_enabled"] = bool(getattr(self._client, "_external_training_control_enabled", False))

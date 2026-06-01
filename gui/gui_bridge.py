@@ -16,6 +16,8 @@ class GuiBridge(QObject):
     runtimeSnapshotChanged = Signal()
     sessionStateChanged = Signal()
     gameHudJsonChanged = Signal()
+    gameViewJsonChanged = Signal()
+    renderResourcesJsonChanged = Signal()
     controlManifestJsonChanged = Signal()
     controlStateJsonChanged = Signal()
     pageCommandManifestJsonChanged = Signal()
@@ -28,6 +30,7 @@ class GuiBridge(QObject):
         self._session_state = "{}"
         self._game_view_json = "{}"
         self._render_resources_json = "{}"
+        self._render_resources_loaded = False
         self._game_hud_json = "{}"
         self._last_command = ""
         self._last_event = ""
@@ -57,16 +60,86 @@ class GuiBridge(QObject):
         self._page_command_manifest_json = "{}"
         self.update_state_from_facade()
 
+    def _refresh_render_resources_from_facade(self, force: bool = False) -> bool:
+        """Refresh heavyweight render resources only when explicitly needed.
+
+        GameCanvas is fed by update_game_state_from_facade() at 50 ms.  The
+        full GUI refresh may perform slower resource/control work; it must not
+        rebuild render resources every tick or emit an older gameView after the
+        game-only refresh has already delivered a newer frame.
+        """
+        if self._render_resources_loaded and not force:
+            return False
+        try:
+            next_render_resources_json = dumps(self._facade.get_render_resources(), ensure_ascii=False)
+        except Exception as exc:
+            next_render_resources_json = dumps({"status": "error", "error": str(exc)}, ensure_ascii=False)
+        self._render_resources_loaded = True
+        if next_render_resources_json != self._render_resources_json:
+            self._render_resources_json = next_render_resources_json
+            self.renderResourcesJsonChanged.emit()
+            return True
+        return False
+
+    @Slot()
+    def refreshRenderResources(self) -> None:
+        self._refresh_render_resources_from_facade(force=True)
+
+    @Slot()
+    def update_game_state_from_facade(self) -> None:
+        """Refresh only the existing game view/HUD path for low-latency canvas updates.
+
+        The full bridge refresh also rebuilds render resources and page/control JSON.
+        That is too expensive to run at the GameCanvas feedback rate. This method
+        deliberately reuses the existing facade.get_game_view()/get_game_hud()
+        contract and only emits the existing gameView/gameHud signals.
+        """
+        next_game_hud_json = dumps(self._facade.get_game_hud(), ensure_ascii=False)
+        next_game_view_json = dumps(self._facade.get_game_view(), ensure_ascii=False)
+        changed = False
+        if next_game_hud_json != self._game_hud_json:
+            self._game_hud_json = next_game_hud_json
+            self.gameHudJsonChanged.emit()
+            changed = True
+        if next_game_view_json != self._game_view_json:
+            self._game_view_json = next_game_view_json
+            self.gameViewJsonChanged.emit()
+            changed = True
+
+        self._last_pointer_x = "" if self._facade.last_pointer_x is None else str(self._facade.last_pointer_x)
+        self._last_pointer_y = "" if self._facade.last_pointer_y is None else str(self._facade.last_pointer_y)
+        self._last_hit_state = "" if self._facade.last_hit_state is None else ("true" if self._facade.last_hit_state else "false")
+        self._game_event_count = self._facade.game_event_count
+        self._last_game_event = dumps(self._facade.last_game_event) if self._facade.last_game_event else ""
+        self._last_game_event_type = self._facade.last_game_event_type
+        self._last_game_action_name = self._facade.last_game_action_name
+        self._last_game_target_index = "" if self._facade.last_game_target_index is None else str(self._facade.last_game_target_index)
+        summary = self._facade.last_game_view_summary
+        self._game_view_score = str(summary.get("score", "")) if summary else ""
+        self._game_view_combo = str(summary.get("combo", "")) if summary else ""
+        self._game_view_entity_count = str(summary.get("entity_count", "")) if summary else ""
+        self._game_view_visual_event_count = str(summary.get("visual_event_count", "")) if summary else ""
+
+        # Do not emit stateChanged for the 50 ms game-only refresh. MinimalGui
+        # listens to gameViewJsonChanged/gameHudJsonChanged and updates only
+        # those lightweight objects; emitting stateChanged here would force a
+        # full JSON pull/render-resource parse on every game frame.
+        _ = changed
+
     def update_state_from_facade(self) -> None:
         next_app_state = dumps(self._facade.get_app_state())
         next_runtime_snapshot = dumps(self._facade.get_runtime_snapshot())
         next_session_state = dumps(self._facade.get_session_state())
-        next_game_hud_json = dumps(self._facade.get_game_hud(), ensure_ascii=False)
         next_control_manifest_json = dumps(self._facade.get_control_manifest(), ensure_ascii=False)
         next_control_state_json = dumps(self._facade.get_control_state(), ensure_ascii=False)
         next_page_command_manifest_json = dumps(self._facade.get_page_command_manifest(), ensure_ascii=False)
 
-        changed = False
+        # Do not fetch or emit gameView/gameHud here.  This method can perform
+        # heavier page/control/resource work and may complete later than the
+        # dedicated 50 ms game refresh.  Emitting gameViewJsonChanged here can
+        # overwrite a fresh frame with an older frame and creates the visible
+        # 500-600 ms target/ring lag diagnosed in TASK26 GameCanvas.
+        changed = self._refresh_render_resources_from_facade(force=False)
         if next_app_state != self._app_state:
             self._app_state = next_app_state
             self.appStateChanged.emit()
@@ -78,10 +151,6 @@ class GuiBridge(QObject):
         if next_session_state != self._session_state:
             self._session_state = next_session_state
             self.sessionStateChanged.emit()
-            changed = True
-        if next_game_hud_json != self._game_hud_json:
-            self._game_hud_json = next_game_hud_json
-            self.gameHudJsonChanged.emit()
             changed = True
         if next_control_manifest_json != self._control_manifest_json:
             self._control_manifest_json = next_control_manifest_json
@@ -96,11 +165,6 @@ class GuiBridge(QObject):
             self.pageCommandManifestJsonChanged.emit()
             changed = True
 
-        self._game_view_json = dumps(self._facade.get_game_view())
-        try:
-            self._render_resources_json = dumps(self._facade.get_render_resources(), ensure_ascii=False)
-        except Exception as exc:
-            self._render_resources_json = dumps({"status": "error", "error": str(exc)}, ensure_ascii=False)
         self._command_count = self._facade.command_count
         self._event_count = self._facade.event_count
         self._last_command = dumps(self._facade.last_command) if self._facade.last_command else ""
@@ -141,11 +205,11 @@ class GuiBridge(QObject):
     def sessionState(self) -> str:
         return self._session_state
 
-    @Property(str, notify=stateChanged)
+    @Property(str, notify=gameViewJsonChanged)
     def gameViewJson(self) -> str:
         return self._game_view_json
 
-    @Property(str, notify=stateChanged)
+    @Property(str, notify=renderResourcesJsonChanged)
     def renderResourcesJson(self) -> str:
         return self._render_resources_json
 
@@ -261,6 +325,7 @@ class GuiBridge(QObject):
     def refresh(self) -> None:
         self._facade.handle_gui_command("refresh_snapshot", {"silent": True})
         self.update_state_from_facade()
+        self.update_game_state_from_facade()
 
     @Slot(str, str, result=str)
     def invokeAction(self, action_id: str, payload_json: str = "{}") -> str:
@@ -270,6 +335,7 @@ class GuiBridge(QObject):
             payload = {}
         result = self._facade.invoke_action(action_id, payload)
         self.update_state_from_facade()
+        self.update_game_state_from_facade()
         # Desktop card buttons depend on stateChanged to make MinimalGui pull fresh
         # control/session/runtime objects after an action. Some actions only update
         # last_command_result, which does not always change the app/runtime/session
@@ -289,6 +355,7 @@ class GuiBridge(QObject):
             args = {}
         self._facade.handle_gui_command(command, args)
         self.update_state_from_facade()
+        self.update_game_state_from_facade()
 
     @Slot(str, str)
     def sendEvent(self, event_type: str, payload_json: str = "{}") -> None:
@@ -301,4 +368,22 @@ class GuiBridge(QObject):
             )
             payload = {}
         self._facade.handle_gui_event(event_type, payload)
-        self.update_state_from_facade()
+        if event_type == "pointer_click":
+            self.update_game_state_from_facade()
+        else:
+            self.update_state_from_facade()
+
+    @Slot(str, result=str)
+    def handleGamePointerClick(self, payload_json: str = "{}") -> str:
+        try:
+            payload = loads(payload_json or "{}")
+        except JSONDecodeError:
+            print(f"[GUI BRIDGE ERROR] invalid game pointer payload_json: {payload_json}", flush=True)
+            payload = {}
+        self._facade.handle_gui_event("pointer_click", payload)
+        self.update_game_state_from_facade()
+        result = dict(self._facade.last_event_result or {})
+        result.setdefault("status", "accepted")
+        result["game_view"] = self._facade.get_game_view()
+        result["game_hud"] = self._facade.get_game_hud()
+        return dumps(result, ensure_ascii=False)
