@@ -27,6 +27,7 @@ def test_task24_training_game_canvas_tokens_present() -> None:
         "gameStyleObj",
         "effectStyleObj",
         "DesignMetricCard",
+        "trainingGameCanvasLoader",
     ]:
         assert token in text
 
@@ -53,6 +54,11 @@ def test_task24_game_canvas_component_contract() -> None:
         "targetImageSource",
         "targetFallbackShape",
         "fallback_shape",
+        "progressValueFromModel",
+        "animationTick",
+        "client_created_at_ms",
+        "input_phase",
+        "Canvas {",
     ]:
         assert token in text
 
@@ -61,7 +67,11 @@ def test_task26_desktop_card_preview_embeds_live_game_canvas_and_hud_overlay() -
     text = Path("ui_qml/components/DesktopLayoutCardPreview.qml").read_text(encoding="utf-8")
     for token in [
         "function isGameCanvasCard()",
+        "desktopGameCanvasLoader",
+        "active: root.visible && root.isGameCanvasCard()",
+        "sourceComponent: Component",
         "GameCanvas {",
+        "diagnosticEnabled: false",
         "HEAD UP DISPLAY",
         "gameHudJson.score",
         "gameHudJson.time_left_ms",
