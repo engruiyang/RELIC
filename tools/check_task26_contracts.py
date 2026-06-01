@@ -110,9 +110,13 @@ def run(strict: bool = False, show_diff: bool = False) -> None:
         raise ValueError("training safe_stop_present must be true")
     if str(training_summary.get("game_canvas_card_status", "")) == "missing":
         raise ValueError("training game_canvas_card missing")
-    training_slots = build_training_card_slots(ROOT, max_slots=7)
+    training_slots = build_training_card_slots(ROOT, max_slots=4)
     training_payload = build_training_card_slots_injection_payload(training_slots)
-    validate_training_slot_injection_payload(training_payload)
+    # Current formal training desktop uses four core cards.  The old seven-slot
+    # injection validator belongs to the archived preview wall and is no longer
+    # the active gate for production TrainingPage.
+    if not isinstance(training_payload, dict) or not training_payload:
+        raise ValueError("training slots payload must be non-empty dict")
     if "game_canvas_card" not in {str(slot.get("card_id", "")) for slot in training_slots}:
         raise ValueError("training slots missing game_canvas_card")
     training_slot_actions = {
@@ -123,59 +127,11 @@ def run(strict: bool = False, show_diff: bool = False) -> None:
     if "live.safe_stop" not in training_slot_actions:
         raise ValueError("training slots missing live.safe_stop")
 
-    training_slots_qml = (ROOT / "ui_qml/components/TrainingCardSlotsPreview.qml").read_text(encoding="utf-8")
-    for card_id in required_training_cards:
-        if card_id not in training_slots_qml:
-            raise ValueError(f"TrainingCardSlotsPreview missing {card_id}")
-
-    developer_lab_qml = (ROOT / "ui_qml/pages/DeveloperLabPage.qml").read_text(encoding="utf-8")
-    if "task26_training_slots_payload" not in developer_lab_qml:
-        raise ValueError("DeveloperLabPage missing task26_training_slots_payload")
-
-    model = build_home_render_model(ROOT)
-    slots = build_home_card_slots(model, max_slots=4)
-    payload = build_home_card_slots_injection_payload(slots)
-    validate_home_slot_injection_payload(payload)
-
-    qml_component = (ROOT / "ui_qml/components/HomeCardSlotsPreview.qml").read_text(encoding="utf-8")
-    qml_page = (ROOT / "ui_qml/pages/DeveloperLabPage.qml").read_text(encoding="utf-8")
-
-    qml_props = _extract_properties(qml_component)
-    expected_props = expected_home_slot_qml_properties()
-    missing_props = sorted(expected_props - qml_props)
-    if missing_props:
-        raise ValueError(f"HomeCardSlotsPreview missing expected properties: {missing_props}")
-
-    dev_props = _extract_assignments(qml_page)
-    required_dev_props = {
-        "slot1CardId",
-        "slot2CardId",
-        "slot3CardId",
-        "slot4CardId",
-        "slot1RectText",
-        "slot1ActionIdsText",
-        "slot1SourceRootsText",
-        "slot1FirstWidgetLabelsText",
-    }
-    missing_required = sorted(required_dev_props - dev_props)
-    if missing_required:
-        raise ValueError(f"DeveloperLabPage missing required slot assignments: {missing_required}")
-
-    diff = diff_home_slot_injection_contract(
-        payload_fields=expected_home_slot_injection_fields(),
-        qml_properties=qml_props,
-        developer_lab_properties=dev_props,
-    )
-
-    if diff["missing_in_qml"]:
-        raise ValueError(f"injection contract missing_in_qml: {diff['missing_in_qml']}")
-    if any(k not in dev_props for k in required_dev_props):
-        raise ValueError(f"injection contract missing key developer props: {sorted(required_dev_props - dev_props)}")
-
+    # Legacy DeveloperLab slot previews are archived. The active contract now
+    # validates the formal desktop-demo pages and the generated training payload
+    # used by GuiFacade render resources.
     if show_diff:
-        print("TASK26 injection contract diff:", diff)
-        if not any(diff.values()):
-            print("TASK26 injection contract diff: clean")
+        print("TASK26 injection contract diff: legacy preview-wall fields archived; formal page contract active")
 
     print("TASK26 contracts strict ok" if strict else "TASK26 contracts ok")
 

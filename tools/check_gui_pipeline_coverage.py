@@ -46,6 +46,9 @@ def main() -> None:
     desktop = load_json(desktop_path)
     home = load_json(home_path)
     training = load_json(training_path)
+    page_configs = []
+    for page_path in sorted(examples.glob("*_page.desktop_demo.json")):
+        page_configs.append(load_json(page_path))
 
     for p in sorted(examples.glob("*.json")):
         obj = json.loads(p.read_text(encoding="utf-8"))
@@ -72,7 +75,7 @@ def main() -> None:
     known_asset_ids = load_known_asset_ids(root / "assets" / "manifest.json", root / "assets" / "packs" / "default" / "pack.json")
     validate_asset_ids(asset_ids, known_asset_ids)
 
-    inventory = collect_cards_fields_buttons_from_pages([home, training], desktop)
+    inventory = collect_cards_fields_buttons_from_pages(page_configs, desktop)
     bindings = load_pipeline_bindings(bindings_path)
     validate_pipeline_coverage(bindings, inventory, strict=args.strict)
     validate_safe_stop_accessible(inventory)

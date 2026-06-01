@@ -77,6 +77,8 @@ class GuiFacade:
         self._calibration_current_phase = ""
         self._last_report_detail: dict[str, Any] = {}
         self._last_report_list: list[dict[str, Any]] = []
+        self._last_user_profile_detail: dict[str, Any] = {}
+        self._last_user_calibration_detail: dict[str, Any] = {}
         self._last_export_path = ""
 
         self._core_source: GuiCoreSnapshotSource | None = None
@@ -1943,12 +1945,29 @@ class GuiFacade:
             return override
         return str(app.get("current_user_id") or app.get("user_id") or "").strip()
 
+    def _remember_user_profile_context(self, user_id: str, profile_detail: dict[str, Any] | None = None, calibration_detail: dict[str, Any] | None = None) -> None:
+        user_id = str(user_id or "").strip()
+        if not user_id:
+            return
+        if isinstance(profile_detail, dict) and profile_detail:
+            detail = dict(profile_detail)
+            detail.setdefault("current_user_id", user_id)
+            detail.setdefault("user_id", user_id)
+            self._last_user_profile_detail = detail
+        if isinstance(calibration_detail, dict) and calibration_detail:
+            detail = dict(calibration_detail)
+            detail.setdefault("current_user_id", user_id)
+            detail.setdefault("user_id", user_id)
+            self._last_user_calibration_detail = detail
+
     def _baseline_user_profile_context(self, user_id: str) -> dict[str, Any]:
         user_id = str(user_id or "").strip()
         if not user_id:
             return {}
         profile = self._fetch_profile_summary(user_id)
         calibration = self._fetch_calibration_status(user_id)
+        if isinstance(profile, dict) or isinstance(calibration, dict):
+            self._remember_user_profile_context(user_id, profile if isinstance(profile, dict) else {}, calibration if isinstance(calibration, dict) else {})
         merged: dict[str, Any] = {}
         if isinstance(profile, dict):
             merged.update(profile)
@@ -1981,7 +2000,9 @@ class GuiFacade:
                     if cal_id and cal_id not in options:
                         options.append(cal_id)
         if not options:
-            return "no_report_available", "no_report_available"
+            return "manual", "manual"
+        if "manual" not in options:
+            options.insert(0, "manual")
         return "|".join(options), options[0]
 
     def _report_options_text_for_user(self, user_id: str) -> tuple[str, str]:
@@ -2103,7 +2124,7 @@ class GuiFacade:
         baseline_detail = self._baseline_user_profile_context(current_user_id)
         progress_baseline = self._calibration_progress_summary()
         merged_detail: dict[str, Any] = {}
-        for src in (baseline_detail, progress_baseline, result_detail, progress_detail, detail, calibration_detail, profile_detail, report_detail, last_result):
+        for src in (baseline_detail, self._last_user_profile_detail, self._last_user_calibration_detail, progress_baseline, result_detail, progress_detail, detail, calibration_detail, profile_detail, report_detail, last_result):
             if isinstance(src, dict):
                 src_user = str(src.get("user_id") or src.get("current_user_id") or "").strip()
                 if src_user and current_user_id and src_user != current_user_id:
@@ -2717,6 +2738,7 @@ class GuiFacade:
                     "user_id": uid,
                     "detail": s.get("profile", s),
                 }
+                self._remember_user_profile_context(uid, result.get("detail") if isinstance(result.get("detail"), dict) else {}, {})
         elif action_id in {"calibration.list", "calibration.latest", "calibration.show", "calibration.bind", "calibration.cancel"}:
             app = self.get_app_state()
             # A payload that explicitly provides user_id must be respected even when it is blank.
@@ -2755,7 +2777,9 @@ class GuiFacade:
             else:
                 summary = self._cancel_calibration_summary(user_id)
                 result = {"action_id": action_id, "status": summary.get("status", "cancelled"), "result": summary, "message": summary.get("message", "cancelled_by_user"), "accepted": summary.get("status") == "cancelled", "detail": summary, "progress": summary.get("progress", self._calibration_progress_summary()), "user_id": user_id}
-        elif action_id in {"report.refresh", "report.latest", "report.list", "report.show", "report.export_txt"}:
+        elif action_id in {"report.refresh", "report.latest", "report.list", "report.show", "report.export_txt", "report.list_sessions", "report.show_session"}:
+            report_aliases = {"report.latest": "report.refresh", "report.list_sessions": "report.list", "report.show_session": "report.show"}
+            action_id = report_aliases.get(action_id, action_id)
             app = self.get_app_state()
             raw_user_id = payload.get("user_id") if "user_id" in payload else (self._current_user_override or app.get("current_user_id"))
             user_id = str(raw_user_id or "").strip()

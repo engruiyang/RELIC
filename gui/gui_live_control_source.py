@@ -381,6 +381,17 @@ class GuiLiveControlSource:
         difficulty_level: Any | None = None,
         game_duration_ms: Any | None = None,
     ) -> dict[str, Any]:
+        if self.game_id != "trace_lock":
+            return {
+                "command": "start_training_session",
+                "accepted": False,
+                "status": "unsupported_game",
+                "message": "training_session_requires_trace_lock",
+                "result": "unsupported_game",
+                "source": "live_control",
+                "game_id": self.game_id,
+                "supported_game_ids": ["trace_lock"],
+            }
         if self.interaction_enabled:
             return {"command": "start_training_session", "accepted": False, "status": "conflict", "message": "active_session_exists", "result": "conflict", "source": "live_control"}
         uid = str(user_id or self.user_id)
@@ -492,9 +503,17 @@ class GuiLiveControlSource:
             return []
         step_ms = max(1, int(self.poll_interval_sec * 1000))
         size = max(1, int(self._training_window_ms / step_ms))
+        # Build rolling windows with 50% overlap.  The DDA layer needs enough
+        # temporal resolution to notice behavior changes inside a session; using
+        # only non-overlapping chunks can collapse short test/training sessions
+        # into two windows and hide transitions.  Keep trailing partial windows
+        # for final-session summaries and carried-forward behavior evidence.
+        stride = max(1, size // 2)
         windows: list[dict[str, Any]] = []
-        for idx, start in enumerate(range(0, len(runtime_rows), size)):
+        for idx, start in enumerate(range(0, len(runtime_rows), stride)):
             rows = runtime_rows[start:start + size]
+            if not rows:
+                continue
             fi_valid = [float(r["fi"]) for r in rows if r.get("fi_valid") and r.get("fi") is not None]
             sqi_valid = [float(r["sqi"]) for r in rows if r.get("sqi_valid") and r.get("sqi") is not None]
             fi_sources = self._summarize_field("fi_source", rows)
