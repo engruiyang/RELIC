@@ -39,7 +39,7 @@
   "slot4_subtitle": "Brand and visual",
   "slot4_required": false,
   "slot4_locked": false,
-  "slot4_rect_text": "x=505.0, y=108.5, w=388.0, h=189.0",
+  "slot4_rect_text": "x=604.0, y=305.5, w=586.0, h=287.5",
   "slot4_widget_count": 2,
   "slot4_action_ids_text": "n/a",
   "slot4_source_roots_text": "renderResourcesJson",

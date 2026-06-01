@@ -264,30 +264,6 @@
           "visible_when": "always"
         },
         {
-          "type": "metric",
-          "id": "current_user_id",
-          "label": "User",
-          "source": "controlStateJson.current_user_id",
-          "fallback": "n/a",
-          "format": "plain",
-          "unit": "",
-          "preset": "metric_default",
-          "style": {},
-          "visible_when": "always"
-        },
-        {
-          "type": "metric",
-          "id": "calibration_usable",
-          "label": "Calibration",
-          "source": "controlStateJson.calibration_usable",
-          "fallback": "false",
-          "format": "bool",
-          "unit": "",
-          "preset": "metric_default",
-          "style": {},
-          "visible_when": "always"
-        },
-        {
           "type": "button",
           "id": "start_session_btn",
           "label": "Start Session",
@@ -347,6 +323,30 @@
           "style": {
             "preset": "button_secondary"
           }
+        },
+        {
+          "type": "metric",
+          "id": "current_user_id",
+          "label": "User",
+          "source": "controlStateJson.current_user_id",
+          "fallback": "n/a",
+          "format": "plain",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
+        },
+        {
+          "type": "metric",
+          "id": "calibration_usable",
+          "label": "Calibration",
+          "source": "controlStateJson.calibration_usable",
+          "fallback": "false",
+          "format": "bool",
+          "unit": "",
+          "preset": "metric_default",
+          "style": {},
+          "visible_when": "always"
         },
         {
           "type": "button",
