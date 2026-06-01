@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from copy import deepcopy
+import glob
+import json
 import sqlite3
 import subprocess
 import sys
@@ -2227,6 +2229,188 @@ class GuiFacade:
             },
         }
 
+
+    def _task6b_config_summary(self, config_path: str = "config/task6b.yaml") -> dict[str, Any]:
+        path = Path(str(config_path or "config/task6b.yaml"))
+        if not path.is_absolute():
+            path = Path.cwd() / path
+        summary: dict[str, Any] = {
+            "config_path": str(config_path or "config/task6b.yaml"),
+            "exists": path.exists(),
+        }
+        if not path.exists():
+            summary["status"] = "missing_config"
+            return summary
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError as exc:
+            summary.update({"status": "read_failed", "error": str(exc)})
+            return summary
+        keys = (
+            "sqi_ok_threshold",
+            "sqi_invalid_threshold",
+            "fi_ema_alpha",
+            "attention_low_fallback",
+            "attention_high_fallback",
+            "stable_enter",
+            "distracted_enter",
+            "default_behavior_score",
+        )
+        for line in text.splitlines():
+            stripped = line.strip()
+            if not stripped or stripped.startswith("#") or ":" not in stripped:
+                continue
+            key, value = stripped.split(":", 1)
+            key = key.strip()
+            if key in keys:
+                summary[key] = value.strip().strip('"\'')
+        summary["status"] = "accepted"
+        return summary
+
+    def _devlab_grid_limit(self, raw: Any, default: int = 50, maximum: int = 200) -> int:
+        try:
+            value = int(raw)
+        except (TypeError, ValueError):
+            value = default
+        return max(1, min(value, maximum))
+
+    def _devlab_grid_plan(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+        payload = payload or {}
+        input_glob = str(payload.get("input_glob") or payload.get("input") or "logs/task6b/*.jsonl").strip()
+        labels_glob = str(payload.get("labels_glob") or payload.get("labels") or "labels/task6b/*.frames.csv").strip()
+        base_config = str(payload.get("base_config") or "config/task6b.yaml").strip()
+        out_dir = Path(str(payload.get("out_dir") or "reports/devlab").strip())
+        if not out_dir.is_absolute():
+            out_dir = Path.cwd() / out_dir
+        out_dir.mkdir(parents=True, exist_ok=True)
+        stage_limit = self._devlab_grid_limit(payload.get("stage_limit", payload.get("max_combinations", 50)))
+        top_k = self._devlab_grid_limit(payload.get("top_k", 10), default=10, maximum=50)
+        timeout_sec = self._devlab_grid_limit(payload.get("timeout_sec", 60), default=60, maximum=300)
+        tag = time.strftime("%Y%m%d_%H%M%S")
+        out_config = out_dir / f"task6b_grid_small_{tag}.json"
+        report = out_dir / f"task6b_grid_small_report_{tag}.json"
+        misclassified = out_dir / f"task6b_grid_small_misclassified_{tag}.csv"
+        candidate_log = out_dir / f"task6b_grid_small_candidates_{tag}.jsonl"
+        input_matches = sorted(glob.glob(input_glob))
+        label_matches = sorted(glob.glob(labels_glob))
+        base_path = Path(base_config)
+        if not base_path.is_absolute():
+            base_path = Path.cwd() / base_path
+        command = [
+            sys.executable,
+            "-m",
+            "ui_cli.grid_calibrate_task6b",
+            "--optimizer",
+            "staged_grid",
+            "--search-mode",
+            "staged",
+            "--input",
+            input_glob,
+            "--labels",
+            labels_glob,
+            "--base-config",
+            base_config,
+            "--out-config",
+            str(out_config),
+            "--report",
+            str(report),
+            "--misclassified-out",
+            str(misclassified),
+            "--stage1-max-combinations",
+            str(stage_limit),
+            "--stage2-max-combinations",
+            str(stage_limit),
+            "--stage3-max-combinations",
+            str(stage_limit),
+            "--top-k",
+            str(top_k),
+            "--candidate-log",
+            str(candidate_log),
+        ]
+        plan = {
+            "status": "accepted",
+            "message": "fi_grid_plan_ready",
+            "accepted": True,
+            "dry_run": True,
+            "input_glob": input_glob,
+            "labels_glob": labels_glob,
+            "base_config": base_config,
+            "base_config_exists": base_path.exists(),
+            "input_match_count": len(input_matches),
+            "labels_match_count": len(label_matches),
+            "stage_limit": stage_limit,
+            "top_k": top_k,
+            "timeout_sec": timeout_sec,
+            "out_dir": str(out_dir),
+            "out_config": str(out_config),
+            "report_path": str(report),
+            "misclassified_out": str(misclassified),
+            "candidate_log": str(candidate_log),
+            "command": command,
+            "command_preview": " ".join(command),
+            "config_summary": self._task6b_config_summary(base_config),
+            "safety_note": "Small-grid GUI wrapper only; it does not modify ui_cli.grid_calibrate_task6b.py or overwrite config/task6b.yaml.",
+        }
+        return plan
+
+    def _devlab_grid_small_run(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+        plan = self._devlab_grid_plan(payload)
+        if not plan.get("base_config_exists"):
+            return {**plan, "status": "missing_config", "message": "base_config_missing", "accepted": False, "result": "missing_config"}
+        if int(plan.get("input_match_count") or 0) <= 0 or int(plan.get("labels_match_count") or 0) <= 0:
+            return {**plan, "status": "missing_input", "message": "input_or_labels_missing", "accepted": False, "result": "missing_input"}
+        t0 = time.time()
+        try:
+            completed = subprocess.run(
+                list(plan.get("command") or []),
+                cwd=str(Path.cwd()),
+                text=True,
+                capture_output=True,
+                timeout=int(plan.get("timeout_sec") or 60),
+                check=False,
+            )
+        except subprocess.TimeoutExpired as exc:
+            return {
+                **plan,
+                "status": "timeout",
+                "message": "fi_grid_small_run_timeout",
+                "accepted": False,
+                "result": "timeout",
+                "elapsed_ms": int((time.time() - t0) * 1000),
+                "stdout_tail": (exc.stdout or "")[-1200:] if isinstance(exc.stdout, str) else "",
+                "stderr_tail": (exc.stderr or "")[-1200:] if isinstance(exc.stderr, str) else "",
+            }
+        elapsed_ms = int((time.time() - t0) * 1000)
+        report_data: dict[str, Any] = {}
+        report_path = Path(str(plan.get("report_path") or ""))
+        if report_path.exists():
+            try:
+                report_data = json.loads(report_path.read_text(encoding="utf-8"))
+            except Exception as exc:  # pragma: no cover - defensive summary only
+                report_data = {"report_parse_error": str(exc)}
+        status = "accepted" if completed.returncode == 0 else "grid_run_failed"
+        return {
+            **plan,
+            "status": status,
+            "message": "fi_grid_small_run_completed" if completed.returncode == 0 else "fi_grid_small_run_failed",
+            "accepted": completed.returncode == 0,
+            "result": "fi_grid_small_run",
+            "returncode": completed.returncode,
+            "elapsed_ms": elapsed_ms,
+            "stdout_tail": (completed.stdout or "")[-1200:],
+            "stderr_tail": (completed.stderr or "")[-1200:],
+            "report_exists": report_path.exists(),
+            "out_config_exists": Path(str(plan.get("out_config") or "")).exists(),
+            "report_summary": {
+                "accepted": report_data.get("accepted", "n/a"),
+                "score": report_data.get("best_score", report_data.get("score", "n/a")),
+                "stage1": bool(report_data.get("stage1_gate_search")),
+                "stage2": bool(report_data.get("stage2_fi_search")),
+                "stage3": bool(report_data.get("stage3_transition_search")),
+                "failed_checks": report_data.get("failed_checks", []),
+            },
+        }
+
     def invoke_action(self, action_id: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
         payload = payload or {}
         alias_map = {
@@ -2607,6 +2791,20 @@ class GuiFacade:
                 }
         elif action_id == "devlab.run":
             result = {"action_id": action_id, "status": "not_implemented_in_this_task", "result": payload, "message": "manual_or_copy_only", "accepted": False}
+        elif action_id in {"devlab.fi_grid_plan", "devlab.fi_grid_small_run"}:
+            summary = self._devlab_grid_plan(payload) if action_id == "devlab.fi_grid_plan" else self._devlab_grid_small_run(payload)
+            result = {
+                "action_id": action_id,
+                "status": summary.get("status", "unknown"),
+                "result": summary,
+                "message": summary.get("message", ""),
+                "accepted": bool(summary.get("accepted", False)),
+                "detail": summary,
+                "out_config": summary.get("out_config", ""),
+                "report_path": summary.get("report_path", ""),
+                "elapsed_ms": summary.get("elapsed_ms", ""),
+                "items_count": summary.get("input_match_count", ""),
+            }
         else:
             cmd = map_cmd.get(action_id)
             if not cmd:
