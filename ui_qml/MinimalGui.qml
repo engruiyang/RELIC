@@ -76,6 +76,67 @@ ApplicationWindow {
         return v === undefined || v === null || v === "" ? fallbackValue : v
     }
 
+    function shellCardValue(key, fallbackValue) {
+        return root.appShellLayoutValue(key, fallbackValue)
+    }
+
+    function isCurrentPage(pageId) {
+        return root.currentPage === pageId
+    }
+
+    // shell_nav_readability_tokens: navInfoCardBackground navActionCardBackground navActionCardText navInfoCardText
+    function navInfoCardBackground() {
+        return String(root.appShellLayoutValue("nav_info_background", "#08111D"))
+    }
+
+    function navInfoCardBorder() {
+        return String(root.appShellLayoutValue("nav_info_border", "#1F3A52"))
+    }
+
+    function navInfoCardText() {
+        return String(root.appShellLayoutValue("nav_info_text", "#CFE8F7"))
+    }
+
+    function navInfoMutedText() {
+        return String(root.appShellLayoutValue("nav_info_muted_text", "#7FA4B8"))
+    }
+
+    function navCardBackground(pageId) {
+        return root.isCurrentPage(pageId)
+            ? String(root.appShellLayoutValue("active_page_background", "#1D6D88"))
+            : String(root.appShellLayoutValue("inactive_page_background", "#15283A"))
+    }
+
+    function navCardBorder(pageId) {
+        return root.isCurrentPage(pageId)
+            ? String(root.appShellLayoutValue("active_page_border_color", "#A7F3FF"))
+            : String(root.appShellLayoutValue("inactive_page_border_color", "#36536B"))
+    }
+
+    function navCardText(pageId) {
+        return root.isCurrentPage(pageId)
+            ? String(root.appShellLayoutValue("active_page_text", "#FFFFFF"))
+            : String(root.appShellLayoutValue("inactive_page_text", "#EAF6FF"))
+    }
+
+    function navCardMutedText(pageId) {
+        return root.isCurrentPage(pageId)
+            ? String(root.appShellLayoutValue("active_page_muted_text", "#DDF8FF"))
+            : String(root.appShellLayoutValue("inactive_page_muted_text", "#9DBBD0"))
+    }
+
+    function safetyCardBackground() {
+        return String(root.appShellLayoutValue("safety_card_background", "#16131D"))
+    }
+
+    function safetyCardBorder() {
+        return String(root.appShellLayoutValue("safety_card_border", "#6A4E66"))
+    }
+
+    function goPage(pageId) {
+        root.currentPage = pageId
+    }
+
     function commandsFor(pageId) {
         var pages = pageCommandManifestObj.pages || ({})
         var arr = pages[pageId] || []
@@ -134,66 +195,531 @@ ApplicationWindow {
         spacing: Number(root.appShellLayoutValue("section_gap", root.designSpacing("section_gap", 6)))
 
         DesignPanel {
+            id: shell_top_status_card
+            objectName: "shell_top_status_card"
             width: parent.width
-            height: Number(root.appShellLayoutValue("top_bar_height", 64))
-            panelStyleObj: root.componentStyle("header")
+            height: Number(root.appShellLayoutValue("top_bar_height", 86))
+            panelStyleObj: ({
+                "background": String(root.appShellLayoutValue("top_bar_background", "#102033")),
+                "border": String(root.appShellLayoutValue("top_bar_border", "#406780")),
+                "border_width": 1,
+                "radius": Number(root.appShellLayoutValue("corner_radius", 22)),
+                "opacity": 0.96
+            })
             themeObj: root.designThemeObj
+            renderResourcesObj: root.renderResourcesObj
 
             Row {
                 anchors.fill: parent
-                spacing: 12
+                anchors.leftMargin: 16
+                anchors.rightMargin: 16
+                anchors.topMargin: 12
+                anchors.bottomMargin: 12
+                spacing: Number(root.appShellLayoutValue("top_bar_status_chip_gap", 10))
 
-                Label {
-                    text: "RELIC / 意念玩家"
-                    font.pixelSize: Number((root.designThemeObj.typography || ({})).title_size || 18)
-                    font.bold: true
-                    color: root.designColor("text", "#e6edf5")
+                Rectangle {
+                    id: shell_brand_card
+                    objectName: "shell_brand_card"
+                    width: 278
+                    height: parent.height
+                    radius: Number(root.appShellLayoutValue("status_chip_radius", 18))
+                    color: String(root.appShellLayoutValue("brand_card_background", "#13283D"))
+                    border.color: String(root.appShellLayoutValue("brand_card_border", "#4FAED0"))
+                    border.width: 1
+
+                    Column {
+                        anchors.fill: parent
+                        anchors.margins: 10
+                        spacing: 2
+
+                        Text {
+                            text: "RELIC / 意念玩家"
+                            color: root.designColor("text", "#e6edf5")
+                            font.pixelSize: Number((root.designThemeObj.typography || ({})).title_size || 18)
+                            font.bold: true
+                            elide: Text.ElideRight
+                            width: parent.width
+                        }
+
+                        Text {
+                            text: "Focus training control shell"
+                            color: root.designColor("text_muted", "#9aacbd")
+                            font.pixelSize: 11
+                            elide: Text.ElideRight
+                            width: parent.width
+                        }
+                    }
                 }
-                Label { text: "current_user_id: " + root.safeText(root.getField(root.controlStateObj, "current_user_id")); color: root.designColor("text", "#e6edf5") }
-                Label { text: "connection_status: " + root.safeText(root.getField(root.runtimeObj, "connection_status")); color: root.designColor("text", "#e6edf5") }
-                Label { text: "stream_alive: " + root.safeText(root.getField(root.runtimeObj, "stream_alive")); color: root.designColor("text", "#e6edf5") }
-                Label { text: "quality_state: " + root.safeText(root.getField(root.runtimeObj, "quality_state")); color: root.designColor("text", "#e6edf5") }
-                Label { text: "session_active: " + root.safeText(root.getField(root.controlStateObj, "session_active")); color: root.designColor("text", "#e6edf5") }
-                Label { text: "currentPage: " + root.currentPage; color: root.designColor("text", "#e6edf5") }
+
+                Rectangle {
+                    id: shell_status_chip_user
+                    objectName: "shell_status_chip_current_user"
+                    width: 180
+                    height: parent.height
+                    radius: Number(root.appShellLayoutValue("status_chip_radius", 18))
+                    color: String(root.appShellLayoutValue("status_chip_background", "#132A3D"))
+                    border.color: String(root.appShellLayoutValue("status_chip_border", "#3D6780"))
+                    border.width: 1
+
+                    Column {
+                        anchors.fill: parent
+                        anchors.margins: 9
+                        spacing: 2
+                        Text { text: "current_user_id"; color: "#8FB5CC"; font.pixelSize: 10; width: parent.width; elide: Text.ElideRight }
+                        Text { text: root.safeText(root.getField(root.controlStateObj, "current_user_id")); color: root.designColor("text", "#e6edf5"); font.pixelSize: 13; font.bold: true; width: parent.width; elide: Text.ElideRight }
+                    }
+                }
+
+                Rectangle {
+                    id: shell_status_chip_connection
+                    objectName: "shell_status_chip_connection"
+                    width: 160
+                    height: parent.height
+                    radius: Number(root.appShellLayoutValue("status_chip_radius", 18))
+                    color: String(root.appShellLayoutValue("status_chip_background", "#132A3D"))
+                    border.color: String(root.appShellLayoutValue("status_chip_border", "#3D6780"))
+                    border.width: 1
+
+                    Column {
+                        anchors.fill: parent
+                        anchors.margins: 9
+                        spacing: 2
+                        Text { text: "connection_status"; color: "#8FB5CC"; font.pixelSize: 10; width: parent.width; elide: Text.ElideRight }
+                        Text { text: root.safeText(root.getField(root.runtimeObj, "connection_status")); color: root.designColor("text", "#e6edf5"); font.pixelSize: 13; font.bold: true; width: parent.width; elide: Text.ElideRight }
+                    }
+                }
+
+                Rectangle {
+                    id: shell_status_chip_quality
+                    objectName: "shell_status_chip_quality"
+                    width: 160
+                    height: parent.height
+                    radius: Number(root.appShellLayoutValue("status_chip_radius", 18))
+                    color: String(root.appShellLayoutValue("status_chip_background", "#132A3D"))
+                    border.color: String(root.appShellLayoutValue("status_chip_border", "#3D6780"))
+                    border.width: 1
+
+                    Column {
+                        anchors.fill: parent
+                        anchors.margins: 9
+                        spacing: 2
+                        Text { text: "quality_state"; color: "#8FB5CC"; font.pixelSize: 10; width: parent.width; elide: Text.ElideRight }
+                        Text { text: root.safeText(root.getField(root.runtimeObj, "quality_state")); color: root.designColor("text", "#e6edf5"); font.pixelSize: 13; font.bold: true; width: parent.width; elide: Text.ElideRight }
+                    }
+                }
+
+                Rectangle {
+                    id: shell_status_chip_control
+                    objectName: "shell_status_chip_control"
+                    width: 160
+                    height: parent.height
+                    radius: Number(root.appShellLayoutValue("status_chip_radius", 18))
+                    color: String(root.appShellLayoutValue("status_chip_background", "#132A3D"))
+                    border.color: String(root.appShellLayoutValue("status_chip_border", "#3D6780"))
+                    border.width: 1
+
+                    Column {
+                        anchors.fill: parent
+                        anchors.margins: 9
+                        spacing: 2
+                        Text { text: "control_state"; color: "#8FB5CC"; font.pixelSize: 10; width: parent.width; elide: Text.ElideRight }
+                        Text { text: root.safeText(root.getField(root.runtimeObj, "control_state")); color: root.designColor("text", "#e6edf5"); font.pixelSize: 13; font.bold: true; width: parent.width; elide: Text.ElideRight }
+                    }
+                }
+
+                Rectangle {
+                    id: shell_status_chip_session
+                    objectName: "shell_status_chip_session"
+                    width: 150
+                    height: parent.height
+                    radius: Number(root.appShellLayoutValue("status_chip_radius", 18))
+                    color: String(root.appShellLayoutValue("status_chip_background", "#132A3D"))
+                    border.color: String(root.appShellLayoutValue("status_chip_border", "#3D6780"))
+                    border.width: 1
+
+                    Column {
+                        anchors.fill: parent
+                        anchors.margins: 9
+                        spacing: 2
+                        Text { text: "session_active"; color: "#8FB5CC"; font.pixelSize: 10; width: parent.width; elide: Text.ElideRight }
+                        Text { text: root.safeText(root.getField(root.controlStateObj, "session_active")); color: root.designColor("text", "#e6edf5"); font.pixelSize: 13; font.bold: true; width: parent.width; elide: Text.ElideRight }
+                    }
+                }
+
+                Rectangle {
+                    id: shell_status_chip_page
+                    objectName: "shell_status_chip_current_page"
+                    width: 150
+                    height: parent.height
+                    radius: Number(root.appShellLayoutValue("status_chip_radius", 18))
+                    color: String(root.appShellLayoutValue("status_chip_background", "#132A3D"))
+                    border.color: String(root.appShellLayoutValue("status_chip_border", "#3D6780"))
+                    border.width: 1
+
+                    Column {
+                        anchors.fill: parent
+                        anchors.margins: 9
+                        spacing: 2
+                        Text { text: "currentPage"; color: "#8FB5CC"; font.pixelSize: 10; width: parent.width; elide: Text.ElideRight }
+                        Text { text: root.currentPage; color: root.designColor("text", "#e6edf5"); font.pixelSize: 13; font.bold: true; width: parent.width; elide: Text.ElideRight }
+                    }
+                }
             }
         }
 
         Row {
+            id: shell_body_row
+            objectName: "shell_body_row"
             width: parent.width
-            height: parent.height - Number(root.appShellLayoutValue("top_bar_height", 64)) - parent.spacing
-            spacing: Number(root.designSpacing("section_gap", 6))
+            height: parent.height - shell_top_status_card.height - parent.spacing
+            spacing: Number(root.appShellLayoutValue("body_gap", root.designSpacing("section_gap", 6)))
 
             DesignPanel {
-                width: Number(root.appShellLayoutValue("nav_width", 230))
+                id: shell_left_nav_card
+                objectName: "shell_left_nav_card"
+                width: Number(root.appShellLayoutValue("nav_width", 252))
                 height: parent.height
-                panelStyleObj: root.componentStyle("panel")
+                panelStyleObj: ({
+                    "background": String(root.appShellLayoutValue("nav_shell_background", "#0C1724")),
+                    "border": String(root.appShellLayoutValue("nav_shell_border", "#2E526B")),
+                    "border_width": 1,
+                    "radius": Number(root.appShellLayoutValue("corner_radius", 22)),
+                    "opacity": 0.96
+                })
                 themeObj: root.designThemeObj
+                renderResourcesObj: root.renderResourcesObj
 
                 Column {
                     anchors.fill: parent
-                    spacing: Number(root.designSpacing("nav_gap", 7))
+                    anchors.margins: Number(root.appShellLayoutValue("nav_card_padding", 14))
+                    spacing: Number(root.appShellLayoutValue("nav_item_gap", 9))
 
-                    Label { text: "Navigation"; color: root.designColor("text", "#e6edf5"); font.bold: true }
-                    DesignButton { renderResourcesObj: root.renderResourcesObj; text: "Home"; buttonStyleObj: root.componentStyle("button"); themeObj: root.designThemeObj; onClicked: root.currentPage = "home" }
-                    DesignButton { renderResourcesObj: root.renderResourcesObj; text: "User"; buttonStyleObj: root.componentStyle("button"); themeObj: root.designThemeObj; onClicked: root.currentPage = "user" }
-                    DesignButton { renderResourcesObj: root.renderResourcesObj; text: "Calibration"; buttonStyleObj: root.componentStyle("button"); themeObj: root.designThemeObj; onClicked: root.currentPage = "calibration" }
-                    DesignButton { renderResourcesObj: root.renderResourcesObj; text: "Training"; buttonStyleObj: root.componentStyle("button"); themeObj: root.designThemeObj; onClicked: root.currentPage = "training" }
-                    DesignButton { renderResourcesObj: root.renderResourcesObj; text: "Report"; buttonStyleObj: root.componentStyle("button"); themeObj: root.designThemeObj; onClicked: root.currentPage = "report" }
-                    DesignButton { renderResourcesObj: root.renderResourcesObj; text: "Diagnostics"; buttonStyleObj: root.componentStyle("button"); themeObj: root.designThemeObj; onClicked: root.currentPage = "diagnostics" }
-                    DesignButton { renderResourcesObj: root.renderResourcesObj; text: "Developer Lab"; buttonStyleObj: root.componentStyle("button"); themeObj: root.designThemeObj; onClicked: root.currentPage = "developer_lab" }
-                    Label { text: "Global Safety"; color: root.designColor("text_muted", "#9aacbd") }
-                    DesignButton { renderResourcesObj: root.renderResourcesObj; text: "Refresh"; buttonStyleObj: root.componentStyle("button"); themeObj: root.designThemeObj; onClicked: root.invokeNative("app.refresh_now") }
-                    DesignButton { renderResourcesObj: root.renderResourcesObj; text: "Safe Stop"; buttonStyleObj: root.componentStyle("button"); themeObj: root.designThemeObj; onClicked: root.invokeNative("live.safe_stop") }
-                    DesignButton { renderResourcesObj: root.renderResourcesObj; text: "Go Diagnostics"; buttonStyleObj: root.componentStyle("button"); themeObj: root.designThemeObj; onClicked: root.currentPage = "diagnostics" }
-                    DesignButton { renderResourcesObj: root.renderResourcesObj; text: "Quit"; buttonStyleObj: root.componentStyle("button"); themeObj: root.designThemeObj; onClicked: Qt.quit() }
+                    Rectangle {
+                        id: shell_nav_header_card
+                        objectName: "shell_nav_header_card"
+                        width: parent.width
+                        height: 74
+                        radius: 18
+                        color: root.navInfoCardBackground()
+                        border.color: root.navInfoCardBorder()
+                        border.width: 1
+                        opacity: 0.92
+
+                        Rectangle {
+                            id: shell_nav_info_accent_strip
+                            objectName: "shell_nav_info_accent_strip"
+                            width: 4
+                            radius: 2
+                            anchors.left: parent.left
+                            anchors.leftMargin: 10
+                            anchors.top: parent.top
+                            anchors.topMargin: 12
+                            anchors.bottom: parent.bottom
+                            anchors.bottomMargin: 12
+                            color: String(root.appShellLayoutValue("nav_info_accent", "#5AC8FA"))
+                        }
+
+                        Column {
+                            anchors.left: shell_nav_info_accent_strip.right
+                            anchors.right: parent.right
+                            anchors.top: parent.top
+                            anchors.bottom: parent.bottom
+                            anchors.leftMargin: 10
+                            anchors.rightMargin: 12
+                            anchors.topMargin: 9
+                            anchors.bottomMargin: 9
+                            spacing: 3
+
+                            Text {
+                                text: "NAVIGATION INFO"
+                                color: root.navInfoMutedText()
+                                font.pixelSize: 10
+                                font.letterSpacing: 0.6
+                                width: parent.width
+                                elide: Text.ElideRight
+                            }
+
+                            Text {
+                                text: "Page shortcuts"
+                                color: root.navInfoCardText()
+                                font.bold: true
+                                font.pixelSize: 15
+                                width: parent.width
+                                elide: Text.ElideRight
+                            }
+
+                            Text {
+                                text: "Cards below are clickable"
+                                color: root.navInfoMutedText()
+                                font.pixelSize: 11
+                                width: parent.width
+                                elide: Text.ElideRight
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        id: shell_nav_card_home
+                        objectName: "shell_nav_card_home"
+                        width: parent.width
+                        height: 50
+                        radius: 16
+                        color: root.navCardBackground("home")
+                        border.color: root.navCardBorder("home")
+                        border.width: root.isCurrentPage("home") ? 2 : 1
+
+                        Rectangle {
+                            objectName: "shell_nav_active_strip_home"
+                            visible: root.isCurrentPage("home")
+                            width: 4
+                            radius: 2
+                            anchors.left: parent.left
+                            anchors.leftMargin: 7
+                            anchors.top: parent.top
+                            anchors.topMargin: 10
+                            anchors.bottom: parent.bottom
+                            anchors.bottomMargin: 10
+                            color: String(root.appShellLayoutValue("active_page_accent_strip", "#EAFBFF"))
+                        }
+
+                        Text {
+                            anchors.left: parent.left
+                            anchors.leftMargin: 20
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "Home"
+                            color: root.navCardText("home")
+                            font.pixelSize: 14
+                            font.bold: root.isCurrentPage("home")
+                        }
+
+                        Text {
+                            anchors.right: parent.right
+                            anchors.rightMargin: 14
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "⌂"
+                            color: root.navCardText("home")
+                            font.pixelSize: 15
+                        }
+
+                        MouseArea { anchors.fill: parent; onClicked: root.goPage("home") }
+                    }
+
+                    Rectangle {
+                        id: shell_nav_card_user
+                        objectName: "shell_nav_card_user"
+                        width: parent.width
+                        height: 50
+                        radius: 16
+                        color: root.navCardBackground("user")
+                        border.color: root.navCardBorder("user")
+                        border.width: root.isCurrentPage("user") ? 2 : 1
+
+                        Rectangle {
+                            objectName: "shell_nav_active_strip_user"
+                            visible: root.isCurrentPage("user")
+                            width: 4
+                            radius: 2
+                            anchors.left: parent.left
+                            anchors.leftMargin: 7
+                            anchors.top: parent.top
+                            anchors.topMargin: 10
+                            anchors.bottom: parent.bottom
+                            anchors.bottomMargin: 10
+                            color: String(root.appShellLayoutValue("active_page_accent_strip", "#EAFBFF"))
+                        }
+
+                        Text { anchors.left: parent.left; anchors.leftMargin: 20; anchors.verticalCenter: parent.verticalCenter; text: "User"; color: root.navCardText("user"); font.pixelSize: 14; font.bold: root.isCurrentPage("user") }
+                        Text { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; text: "ID"; color: root.navCardText("user"); font.pixelSize: 12; font.bold: true }
+                        MouseArea { anchors.fill: parent; onClicked: root.goPage("user") }
+                    }
+
+                    Rectangle {
+                        id: shell_nav_card_calibration
+                        objectName: "shell_nav_card_calibration"
+                        width: parent.width
+                        height: 50
+                        radius: 16
+                        color: root.navCardBackground("calibration")
+                        border.color: root.navCardBorder("calibration")
+                        border.width: root.isCurrentPage("calibration") ? 2 : 1
+
+                        Rectangle {
+                            objectName: "shell_nav_active_strip_calibration"
+                            visible: root.isCurrentPage("calibration")
+                            width: 4
+                            radius: 2
+                            anchors.left: parent.left
+                            anchors.leftMargin: 7
+                            anchors.top: parent.top
+                            anchors.topMargin: 10
+                            anchors.bottom: parent.bottom
+                            anchors.bottomMargin: 10
+                            color: String(root.appShellLayoutValue("active_page_accent_strip", "#EAFBFF"))
+                        }
+
+                        Text { anchors.left: parent.left; anchors.leftMargin: 20; anchors.verticalCenter: parent.verticalCenter; text: "Calibration"; color: root.navCardText("calibration"); font.pixelSize: 14; font.bold: root.isCurrentPage("calibration") }
+                        Text { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; text: "CAL"; color: root.navCardText("calibration"); font.pixelSize: 12; font.bold: true }
+                        MouseArea { anchors.fill: parent; onClicked: root.goPage("calibration") }
+                    }
+
+                    Rectangle {
+                        id: shell_nav_card_training
+                        objectName: "shell_nav_card_training"
+                        width: parent.width
+                        height: 50
+                        radius: 16
+                        color: root.navCardBackground("training")
+                        border.color: root.navCardBorder("training")
+                        border.width: root.isCurrentPage("training") ? 2 : 1
+
+                        Rectangle {
+                            objectName: "shell_nav_active_strip_training"
+                            visible: root.isCurrentPage("training")
+                            width: 4
+                            radius: 2
+                            anchors.left: parent.left
+                            anchors.leftMargin: 7
+                            anchors.top: parent.top
+                            anchors.topMargin: 10
+                            anchors.bottom: parent.bottom
+                            anchors.bottomMargin: 10
+                            color: String(root.appShellLayoutValue("active_page_accent_strip", "#EAFBFF"))
+                        }
+
+                        Text { anchors.left: parent.left; anchors.leftMargin: 20; anchors.verticalCenter: parent.verticalCenter; text: "Training"; color: root.navCardText("training"); font.pixelSize: 14; font.bold: root.isCurrentPage("training") }
+                        Text { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; text: "RUN"; color: root.navCardText("training"); font.pixelSize: 12; font.bold: true }
+                        MouseArea { anchors.fill: parent; onClicked: root.goPage("training") }
+                    }
+
+                    Rectangle {
+                        id: shell_nav_card_report
+                        objectName: "shell_nav_card_report"
+                        width: parent.width
+                        height: 50
+                        radius: 16
+                        color: root.navCardBackground("report")
+                        border.color: root.navCardBorder("report")
+                        border.width: root.isCurrentPage("report") ? 2 : 1
+
+                        Rectangle {
+                            objectName: "shell_nav_active_strip_report"
+                            visible: root.isCurrentPage("report")
+                            width: 4
+                            radius: 2
+                            anchors.left: parent.left
+                            anchors.leftMargin: 7
+                            anchors.top: parent.top
+                            anchors.topMargin: 10
+                            anchors.bottom: parent.bottom
+                            anchors.bottomMargin: 10
+                            color: String(root.appShellLayoutValue("active_page_accent_strip", "#EAFBFF"))
+                        }
+
+                        Text { anchors.left: parent.left; anchors.leftMargin: 20; anchors.verticalCenter: parent.verticalCenter; text: "Report"; color: root.navCardText("report"); font.pixelSize: 14; font.bold: root.isCurrentPage("report") }
+                        Text { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; text: "TXT"; color: root.navCardText("report"); font.pixelSize: 12; font.bold: true }
+                        MouseArea { anchors.fill: parent; onClicked: root.goPage("report") }
+                    }
+
+                    Rectangle {
+                        id: shell_nav_card_developer_lab
+                        objectName: "shell_nav_card_developer_lab"
+                        width: parent.width
+                        height: 50
+                        radius: 16
+                        color: root.navCardBackground("developer_lab")
+                        border.color: root.navCardBorder("developer_lab")
+                        border.width: root.isCurrentPage("developer_lab") ? 2 : 1
+
+                        Rectangle {
+                            objectName: "shell_nav_active_strip_developer_lab"
+                            visible: root.isCurrentPage("developer_lab")
+                            width: 4
+                            radius: 2
+                            anchors.left: parent.left
+                            anchors.leftMargin: 7
+                            anchors.top: parent.top
+                            anchors.topMargin: 10
+                            anchors.bottom: parent.bottom
+                            anchors.bottomMargin: 10
+                            color: String(root.appShellLayoutValue("active_page_accent_strip", "#EAFBFF"))
+                        }
+
+                        Text { anchors.left: parent.left; anchors.leftMargin: 20; anchors.verticalCenter: parent.verticalCenter; text: "Developer Lab"; color: root.navCardText("developer_lab"); font.pixelSize: 14; font.bold: root.isCurrentPage("developer_lab") }
+                        Text { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; text: "LAB"; color: root.navCardText("developer_lab"); font.pixelSize: 12; font.bold: true }
+                        MouseArea { anchors.fill: parent; onClicked: root.goPage("developer_lab") }
+                    }
+
+                    Item { width: parent.width; height: 8 }
+
+                    Rectangle {
+                        id: shell_global_safety_card
+                        objectName: "shell_global_safety_card"
+                        width: parent.width
+                        height: 176
+                        radius: 18
+                        color: root.safetyCardBackground()
+                        border.color: root.safetyCardBorder()
+                        border.width: 1
+
+                        Column {
+                            anchors.fill: parent
+                            anchors.margins: 10
+                            spacing: 8
+
+                            Text {
+                                text: "Global Safety"
+                                color: String(root.appShellLayoutValue("safety_card_text", "#FFE8F2"))
+                                font.bold: true
+                                font.pixelSize: 14
+                                width: parent.width
+                                elide: Text.ElideRight
+                            }
+
+                            DesignButton {
+                                renderResourcesObj: root.renderResourcesObj
+                                text: "Refresh"
+                                width: parent.width
+                                buttonStyleObj: root.componentStyle("button")
+                                themeObj: root.designThemeObj
+                                onClicked: root.invokeNative("app.refresh_now")
+                            }
+
+                            DesignButton {
+                                renderResourcesObj: root.renderResourcesObj
+                                text: "Safe Stop"
+                                width: parent.width
+                                buttonStyleObj: root.componentStyle("button")
+                                themeObj: root.designThemeObj
+                                onClicked: root.invokeNative("live.safe_stop")
+                            }
+
+                            DesignButton {
+                                renderResourcesObj: root.renderResourcesObj
+                                text: "Quit"
+                                width: parent.width
+                                buttonStyleObj: root.componentStyle("button")
+                                themeObj: root.designThemeObj
+                                onClicked: Qt.quit()
+                            }
+                        }
+                    }
                 }
             }
 
             DesignPanel {
-                width: parent.width - Number(root.appShellLayoutValue("nav_width", 230)) - parent.spacing
+                id: shell_content_host_card
+                objectName: "shell_content_host_card"
+                width: parent.width - Number(root.appShellLayoutValue("nav_width", 252)) - parent.spacing
                 height: parent.height
-                panelStyleObj: root.componentStyle("panel")
+                panelStyleObj: ({
+                    "background": String(root.appShellLayoutValue("content_background", "#0B1420")),
+                    "border": String(root.appShellLayoutValue("content_border", "#2A455C")),
+                    "border_width": 1,
+                    "radius": Number(root.appShellLayoutValue("corner_radius", 22)),
+                    "opacity": 0.94
+                })
                 themeObj: root.designThemeObj
+                renderResourcesObj: root.renderResourcesObj
 
                 Item {
                     id: pageHost
@@ -300,6 +826,8 @@ ApplicationWindow {
                         commandSummary: root.commandsFor("report")
                     }
 
+                    // DiagnosticsPage is retained as a hidden compatibility host for legacy tests/resources.
+                    // User-visible navigation to diagnostics is removed in TASK26I step1.
                     DiagnosticsPage {
                         anchors.fill: parent
                         visible: root.currentPage === "diagnostics"
@@ -334,6 +862,7 @@ ApplicationWindow {
         }
     }
 
+    // TASK26I shell card tokens: shell_top_status_card shell_left_nav_card shell_nav_card_home shell_nav_card_user shell_nav_card_calibration shell_nav_card_training shell_nav_card_report shell_nav_card_developer_lab shell_global_safety_card shell_status_chip_current_user shell_status_chip_connection shell_status_chip_quality shell_status_chip_control shell_status_chip_session shell_content_host_card
     // TASK25B global GUI skin layer: DesignBackground / DesignPanel / DesignButton consume design pack tokens. background.app.main
     // Compatibility token for static tests: pageStylesObj=renderResourcesObj.page_styles componentStylesObj=renderResourcesObj.component_styles gameStylesObj=renderResourcesObj.game_styles effectStylesObj=renderResourcesObj.effect_styles
 }
@@ -348,5 +877,3 @@ ApplicationWindow {
 // profile_status calibration_status profile_loaded user_type attention_low_threshold attention_high_threshold preferred_game_id calibration_usable last_calibration_id failure_reason
 // First Profile Calibration Quick Check Periodic Recalibration Triggered Recalibration
 // GameCanvas will be restored in TASK24 score combo level session_elapsed_ms behavior_sample_count Fragment Lock Signal Hunter Stabilizer last_session_status current_session_id attention sqi fi_smoothed control_state
-
-

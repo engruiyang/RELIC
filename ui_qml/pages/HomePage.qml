@@ -18,7 +18,7 @@ Item {
     property var controlStateObj: ({})
     property var runtimeObj: ({})
     property string commandSummary: ""
-    property bool task26DesktopPilotEnabled: true
+    property bool task26DesktopPilotEnabled: false
     property bool task26LegacyFallbackVisible: false
 
     signal navigateTo(string pageId)
@@ -37,33 +37,34 @@ Item {
         return (value === undefined || value === null || value === "") ? fallbackValue : value
     }
 
-    function nextAction() {
-        if (safeText(root.controlStateObj.current_user_id) === "n/a") {
-            return "Next Action: Go User"
+    function statusText() {
+        var uid = root.safeText(root.controlStateObj.current_user_id)
+        var cal = root.safeText(root.controlStateObj.calibration_status)
+        var quality = root.safeText(root.runtimeObj.quality_state)
+        if (uid === "n/a") {
+            return "Create or load a user profile first."
         }
-        if (safeText(root.controlStateObj.calibration_usable) !== "true") {
-            return "Next Action: Go Calibration"
+        if (cal === "n/a" || cal === "no_calibration" || cal === "profile_without_calibration") {
+            return "User loaded · calibration check recommended."
         }
-        return "Next Action: Go Training"
+        if (quality !== "n/a") {
+            return "Ready · quality=" + quality
+        }
+        return "Ready for training workflow."
     }
 
-    function task26HomeLayoutPayload() {
-        var resources = root.renderResourcesObj || ({})
-        return resources.task26_home_layout_payload || ({})
+    function cardBorder(activeValue) {
+        return activeValue ? "#7DD3FC" : "#334155"
     }
 
-    function task26HomeLayoutStatus() {
-        var resources = root.renderResourcesObj || ({})
-        return (resources.task26_home_layout_status === undefined || resources.task26_home_layout_status === null)
-            ? "n/a"
-            : String(resources.task26_home_layout_status)
-    }
-
-    function task26HomeLayoutSource() {
-        var resources = root.renderResourcesObj || ({})
-        return (resources.task26_home_layout_source === undefined || resources.task26_home_layout_source === null)
-            ? "n/a"
-            : String(resources.task26_home_layout_source)
+    function cardWidth(containerWidth) {
+        if (containerWidth >= 940) {
+            return Math.floor((containerWidth - 24) / 3)
+        }
+        if (containerWidth >= 620) {
+            return Math.floor((containerWidth - 12) / 2)
+        }
+        return Math.max(260, containerWidth)
     }
 
     DesignBackground {
@@ -71,195 +72,299 @@ Item {
         themeObj: root.designThemeObj
         styleObj: root.pageStyleObj
         renderResourcesObj: root.renderResourcesObj
-        fallbackColor: root.themeColor("background", "#F8FAFC")
-    }
-
-    Item {
-        id: task26HomeDesktopPilotOverlay
-        anchors.fill: parent
-        anchors.margins: 6
-        z: 100
-        visible: root.task26DesktopPilotEnabled
-        enabled: root.task26DesktopPilotEnabled
-
-        DesktopLayoutPreview {
-            id: task26HomeDesktopPrimaryPreview
-            anchors.fill: parent
-            layoutPayload: root.task26HomeLayoutPayload()
-            previewTitle: "TASK26 Home Desktop Pilot"
-            previewSubtitle: "primary desktop card layer · legacy fallback: " + String(root.task26LegacyFallbackVisible)
-            payloadStatusText: root.task26HomeLayoutStatus()
-            payloadSourceText: root.task26HomeLayoutSource()
-            guiBridge: root.guiBridge
-            appStateObj: root.appStateObj
-            runtimeSnapshotObj: root.runtimeObj
-            sessionStateObj: root.sessionObj
-            controlStateObj: root.controlStateObj
-            gameHudObj: root.gameHudObj
-            gameViewObj: root.gameViewObj
-            renderResourcesObj: root.renderResourcesObj
-        }
+        fallbackColor: root.themeColor("background", "#0B1220")
     }
 
     Flickable {
         id: homeScroll
         anchors.fill: parent
-        visible: root.task26LegacyFallbackVisible
-        enabled: root.task26LegacyFallbackVisible
+        anchors.margins: 10
         clip: true
         contentWidth: width
-        contentHeight: homeContent.implicitHeight + 16
+        contentHeight: homeContent.implicitHeight + 20
         boundsBehavior: Flickable.StopAtBounds
-
-        ScrollBar.vertical: ScrollBar {
-            policy: ScrollBar.AsNeeded
-        }
 
         Column {
             id: homeContent
-            width: homeScroll.width
-            spacing: 6
+            width: homeScroll.width - 16
+            spacing: 14
 
-        PageHeader {
-            renderResourcesObj: root.renderResourcesObj
-            designThemeObj: root.designThemeObj
-            componentStyleObj: root.componentStyleObj
-            headerStyleObj: root.componentStyleObj.header || ({})
-            titleText: "Home"
-            subtitleText: "Professional overview page"
-        }
-
-        GroupBox {
-            title: "TASK26 Home Desktop Pilot"
-            width: parent.width
-            visible: root.task26DesktopPilotEnabled
-
-            DesktopLayoutPreview {
-                id: task26HomeDesktopPilotPreview
+            Rectangle {
+                id: introCard
+                objectName: "home_intro_card"
                 width: parent.width
-                height: 620
-                layoutPayload: root.task26HomeLayoutPayload()
-                previewTitle: "Home Desktop Pilot"
-                previewSubtitle: "style-capable desktop card layout"
-                payloadStatusText: root.task26HomeLayoutStatus()
-                payloadSourceText: root.task26HomeLayoutSource()
-                guiBridge: root.guiBridge
-                appStateObj: root.appStateObj
-                runtimeSnapshotObj: root.runtimeObj
-                sessionStateObj: root.sessionObj
-                controlStateObj: root.controlStateObj
-                gameHudObj: root.gameHudObj
-                gameViewObj: root.gameViewObj
-                renderResourcesObj: root.renderResourcesObj
-            }
-        }
+                height: 210
+                radius: 24
+                color: "#111827"
+                border.color: "#38BDF8"
+                border.width: 1
 
-        GroupBox {
-            title: "State Summary"
-            visible: root.task26LegacyFallbackVisible
+                gradient: Gradient {
+                    GradientStop { position: 0.0; color: "#12213A" }
+                    GradientStop { position: 1.0; color: "#0B1220" }
+                }
 
-            Column {
-                Label {
-                    text: "current_user_id: " + root.safeText(root.controlStateObj.current_user_id)
-                    color: root.themeColor("text", "#0F172A")
-                }
-                Label {
-                    text: "profile_status: " + root.safeText(root.controlStateObj.profile_status)
-                    color: root.themeColor("text", "#0F172A")
-                }
-                Label {
-                    text: "calibration_status: " + root.safeText(root.controlStateObj.calibration_status)
-                    color: root.themeColor("text", "#0F172A")
-                }
-                Label {
-                    text: "calibration_usable: " + root.safeText(root.controlStateObj.calibration_usable)
-                    color: root.themeColor("text", "#0F172A")
-                }
-                Label {
-                    text: "connection_status: " + root.safeText(root.runtimeObj.connection_status)
-                    color: root.themeColor("text", "#0F172A")
-                }
-                Label {
-                    text: "quality_state: " + root.safeText(root.runtimeObj.quality_state)
-                    color: root.themeColor("text", "#0F172A")
-                }
-                Label {
-                    text: "control_state: " + root.safeText(root.runtimeObj.control_state)
-                    color: root.themeColor("text", "#0F172A")
-                }
-                Label {
-                    text: "session_active: " + root.safeText(root.controlStateObj.session_active)
-                    color: root.themeColor("text", "#0F172A")
-                }
-                Label {
-                    text: "latest_report_path: " + root.safeText(root.controlStateObj.latest_report_path)
-                    color: root.themeColor("text", "#0F172A")
-                }
-                Label {
-                    text: root.nextAction()
-                    color: root.themeColor("accent", "#2563EB")
-                }
-            }
-        }
+                Column {
+                    anchors.fill: parent
+                    anchors.margins: 22
+                    spacing: 10
 
-        GroupBox {
-            title: "Action Panel"
-            visible: root.task26LegacyFallbackVisible
+                    Label {
+                        text: "RELIC Focus Training"
+                        color: "#E0F2FE"
+                        font.pixelSize: 28
+                        font.bold: true
+                    }
 
-            Row {
-                spacing: 4
+                    Label {
+                        text: "基于单通道 EEG + IMU 的专注力训练与状态管理平台"
+                        color: "#BAE6FD"
+                        font.pixelSize: 15
+                        wrapMode: Text.WordWrap
+                        width: parent.width
+                    }
 
-                DesignButton { buttonStyleObj: root.componentStyleObj.button || ({}); themeObj: root.designThemeObj; renderResourcesObj: root.renderResourcesObj;
-                    text: "Go User"
-                    onClicked: root.navigateTo("user")
-                }
-                DesignButton { buttonStyleObj: root.componentStyleObj.button || ({}); themeObj: root.designThemeObj; renderResourcesObj: root.renderResourcesObj;
-                    text: "Go Calibration"
-                    onClicked: root.navigateTo("calibration")
-                }
-                DesignButton { buttonStyleObj: root.componentStyleObj.button || ({}); themeObj: root.designThemeObj; renderResourcesObj: root.renderResourcesObj;
-                    text: "Go Training"
-                    onClicked: root.navigateTo("training")
-                }
-                DesignButton { buttonStyleObj: root.componentStyleObj.button || ({}); themeObj: root.designThemeObj; renderResourcesObj: root.renderResourcesObj;
-                    text: "Go Report"
-                    onClicked: root.navigateTo("report")
-                }
-                DesignButton { buttonStyleObj: root.componentStyleObj.button || ({}); themeObj: root.designThemeObj; renderResourcesObj: root.renderResourcesObj;
-                    text: "Go Diagnostics"
-                    onClicked: root.navigateTo("diagnostics")
-                }
-                DesignButton { buttonStyleObj: root.componentStyleObj.button || ({}); themeObj: root.designThemeObj; renderResourcesObj: root.renderResourcesObj;
-                    text: "Refresh"
-                    onClicked: root.invokeNative("app.refresh_now")
+                    Label {
+                        text: "系统围绕用户建档、质量门控、FI 状态估计、训练任务与报告回顾构建闭环。Home 页现在作为实机入口页使用，负责快速进入关键工作流，而不是堆放调试面板。"
+                        color: "#CBD5E1"
+                        font.pixelSize: 13
+                        lineHeight: 1.18
+                        wrapMode: Text.WordWrap
+                        width: parent.width
+                    }
+
+                    Flow {
+                        width: parent.width
+                        spacing: 8
+
+                        Rectangle {
+                            width: 190; height: 30; radius: 15
+                            color: "#0F766E"
+                            opacity: 0.92
+                            Label { anchors.centerIn: parent; text: "current_user_id: " + root.safeText(root.controlStateObj.current_user_id); color: "white"; font.pixelSize: 11 }
+                        }
+                        Rectangle {
+                            width: 190; height: 30; radius: 15
+                            color: "#1D4ED8"
+                            opacity: 0.9
+                            Label { anchors.centerIn: parent; text: "connection: " + root.safeText(root.runtimeObj.connection_status); color: "white"; font.pixelSize: 11 }
+                        }
+                        Rectangle {
+                            width: 180; height: 30; radius: 15
+                            color: "#7C3AED"
+                            opacity: 0.9
+                            Label { anchors.centerIn: parent; text: "session_active: " + root.safeText(root.controlStateObj.session_active); color: "white"; font.pixelSize: 11 }
+                        }
+                    }
                 }
             }
-        }
 
-        GroupBox {
-            title: "Page Commands"
-            visible: root.task26LegacyFallbackVisible
+            Rectangle {
+                id: workflowCard
+                objectName: "home_workflow_card"
+                width: parent.width
+                height: 104
+                radius: 22
+                color: "#0F172A"
+                border.color: "#475569"
+                border.width: 1
 
-            Label {
-                text: root.commandSummary
-                wrapMode: Text.WordWrap
-                color: root.themeColor("text", "#0F172A")
+                Row {
+                    anchors.fill: parent
+                    anchors.margins: 16
+                    spacing: 12
+
+                    Column {
+                        width: Math.max(260, parent.width * 0.36)
+                        spacing: 6
+                        Label { text: "Recommended Flow"; color: "#E2E8F0"; font.bold: true; font.pixelSize: 17 }
+                        Label { text: root.statusText(); color: "#94A3B8"; font.pixelSize: 12; wrapMode: Text.WordWrap; width: parent.width }
+                    }
+
+                    Flow {
+                        width: parent.width - Math.max(260, parent.width * 0.36) - 12
+                        spacing: 8
+                        Rectangle { width: 120; height: 42; radius: 16; color: "#182235"; border.color: "#38BDF8"; Label { anchors.centerIn: parent; text: "1 · User"; color: "#E0F2FE"; font.bold: true } }
+                        Rectangle { width: 150; height: 42; radius: 16; color: "#182235"; border.color: "#A78BFA"; Label { anchors.centerIn: parent; text: "2 · Calibration"; color: "#EDE9FE"; font.bold: true } }
+                        Rectangle { width: 145; height: 42; radius: 16; color: "#182235"; border.color: "#34D399"; Label { anchors.centerIn: parent; text: "3 · Training"; color: "#DCFCE7"; font.bold: true } }
+                        Rectangle { width: 130; height: 42; radius: 16; color: "#182235"; border.color: "#FBBF24"; Label { anchors.centerIn: parent; text: "4 · Report"; color: "#FEF3C7"; font.bold: true } }
+                    }
+                }
+            }
+
+            Flow {
+                id: entryFlow
+                objectName: "home_shortcut_cards"
+                width: parent.width
+                spacing: 12
+
+                Rectangle {
+                    objectName: "home_entry_user_card"
+                    width: root.cardWidth(entryFlow.width)
+                    height: 178
+                    radius: 22
+                    color: "#101827"
+                    border.color: root.cardBorder(root.safeText(root.controlStateObj.current_user_id) !== "n/a")
+                    border.width: 1
+                    Column {
+                        anchors.fill: parent
+                        anchors.margins: 16
+                        spacing: 8
+                        Label { text: "User Center"; color: "#E2E8F0"; font.bold: true; font.pixelSize: 18 }
+                        Label { text: "用户建档、加载当前用户、查看 Profile 与校准绑定。"; color: "#94A3B8"; wrapMode: Text.WordWrap; width: parent.width; font.pixelSize: 12 }
+                        Label { text: "current: " + root.safeText(root.controlStateObj.current_user_id); color: "#BAE6FD"; font.pixelSize: 11; elide: Text.ElideRight; width: parent.width }
+                        DesignButton { text: "Open User"; buttonStyleObj: root.componentStyleObj.button || ({}); themeObj: root.designThemeObj; renderResourcesObj: root.renderResourcesObj; onClicked: root.navigateTo("user") }
+                    }
+                }
+
+                Rectangle {
+                    objectName: "home_entry_calibration_card"
+                    width: root.cardWidth(entryFlow.width)
+                    height: 178
+                    radius: 22
+                    color: "#101827"
+                    border.color: root.cardBorder(root.safeText(root.controlStateObj.calibration_usable) === "true")
+                    border.width: 1
+                    Column {
+                        anchors.fill: parent
+                        anchors.margins: 16
+                        spacing: 8
+                        Label { text: "Calibration"; color: "#E2E8F0"; font.bold: true; font.pixelSize: 18 }
+                        Label { text: "首次建档、快速检查、周期复校与异常触发复校入口。"; color: "#94A3B8"; wrapMode: Text.WordWrap; width: parent.width; font.pixelSize: 12 }
+                        Label { text: "status: " + root.safeText(root.controlStateObj.calibration_status); color: "#C4B5FD"; font.pixelSize: 11; elide: Text.ElideRight; width: parent.width }
+                        DesignButton { text: "Open Calibration"; buttonStyleObj: root.componentStyleObj.button || ({}); themeObj: root.designThemeObj; renderResourcesObj: root.renderResourcesObj; onClicked: root.navigateTo("calibration") }
+                    }
+                }
+
+                Rectangle {
+                    objectName: "home_entry_training_card"
+                    width: root.cardWidth(entryFlow.width)
+                    height: 178
+                    radius: 22
+                    color: "#101827"
+                    border.color: root.cardBorder(root.safeText(root.controlStateObj.session_active) === "true")
+                    border.width: 1
+                    Column {
+                        anchors.fill: parent
+                        anchors.margins: 16
+                        spacing: 8
+                        Label { text: "Training"; color: "#E2E8F0"; font.bold: true; font.pixelSize: 18 }
+                        Label { text: "进入 Fragment Lock / Signal Hunter / Stabilizer 训练链路。"; color: "#94A3B8"; wrapMode: Text.WordWrap; width: parent.width; font.pixelSize: 12 }
+                        Label { text: "score: " + root.safeText(root.gameHudObj.score) + " · combo: " + root.safeText(root.gameHudObj.combo); color: "#BBF7D0"; font.pixelSize: 11; elide: Text.ElideRight; width: parent.width }
+                        DesignButton { text: "Open Training"; buttonStyleObj: root.componentStyleObj.button || ({}); themeObj: root.designThemeObj; renderResourcesObj: root.renderResourcesObj; onClicked: root.navigateTo("training") }
+                    }
+                }
+
+                Rectangle {
+                    objectName: "home_entry_report_card"
+                    width: root.cardWidth(entryFlow.width)
+                    height: 178
+                    radius: 22
+                    color: "#101827"
+                    border.color: "#F59E0B"
+                    border.width: 1
+                    Column {
+                        anchors.fill: parent
+                        anchors.margins: 16
+                        spacing: 8
+                        Label { text: "Reports"; color: "#E2E8F0"; font.bold: true; font.pixelSize: 18 }
+                        Label { text: "查看训练报告、报告预览与 TXT 导出结果。"; color: "#94A3B8"; wrapMode: Text.WordWrap; width: parent.width; font.pixelSize: 12 }
+                        Label { text: "latest: " + root.safeText(root.controlStateObj.latest_report_path); color: "#FDE68A"; font.pixelSize: 11; elide: Text.ElideRight; width: parent.width }
+                        DesignButton { text: "Open Report"; buttonStyleObj: root.componentStyleObj.button || ({}); themeObj: root.designThemeObj; renderResourcesObj: root.renderResourcesObj; onClicked: root.navigateTo("report") }
+                    }
+                }
+
+                Rectangle {
+                    objectName: "home_entry_developer_lab_card"
+                    width: root.cardWidth(entryFlow.width)
+                    height: 178
+                    radius: 22
+                    color: "#101827"
+                    border.color: "#FB7185"
+                    border.width: 1
+                    Column {
+                        anchors.fill: parent
+                        anchors.margins: 16
+                        spacing: 8
+                        Label { text: "Developer Lab"; color: "#E2E8F0"; font.bold: true; font.pixelSize: 18 }
+                        Label { text: "工程数据面板、FI/SQI 参数观察与后续小规模网格搜索控制台。"; color: "#94A3B8"; wrapMode: Text.WordWrap; width: parent.width; font.pixelSize: 12 }
+                        Label { text: "control_state: " + root.safeText(root.runtimeObj.control_state); color: "#FECDD3"; font.pixelSize: 11; elide: Text.ElideRight; width: parent.width }
+                        DesignButton { text: "Open Developer Lab"; buttonStyleObj: root.componentStyleObj.button || ({}); themeObj: root.designThemeObj; renderResourcesObj: root.renderResourcesObj; onClicked: root.navigateTo("developer_lab") }
+                    }
+                }
+            }
+
+            Rectangle {
+                id: telemetryCard
+                objectName: "home_status_overview_card"
+                width: parent.width
+                height: 150
+                radius: 22
+                color: "#0F172A"
+                border.color: "#334155"
+                border.width: 1
+
+                Column {
+                    anchors.fill: parent
+                    anchors.margins: 16
+                    spacing: 8
+                    Label { text: "Runtime Snapshot"; color: "#E2E8F0"; font.bold: true; font.pixelSize: 17 }
+                    Flow {
+                        width: parent.width
+                        spacing: 8
+                        Label { text: "attention: " + root.safeText(root.runtimeObj.attention); color: "#CBD5E1"; font.pixelSize: 12 }
+                        Label { text: "sqi: " + root.safeText(root.runtimeObj.sqi); color: "#CBD5E1"; font.pixelSize: 12 }
+                        Label { text: "fi_smoothed: " + root.safeText(root.runtimeObj.fi_smoothed); color: "#CBD5E1"; font.pixelSize: 12 }
+                        Label { text: "quality_state: " + root.safeText(root.runtimeObj.quality_state); color: "#CBD5E1"; font.pixelSize: 12 }
+                        Label { text: "control_state: " + root.safeText(root.runtimeObj.control_state); color: "#CBD5E1"; font.pixelSize: 12 }
+                        Label { text: "gyro_x: " + root.safeText(root.runtimeObj.gyro_x); color: "#CBD5E1"; font.pixelSize: 12 }
+                    }
+                    Label {
+                        text: "Page Commands: " + root.commandSummary
+                        color: "#94A3B8"
+                        font.pixelSize: 11
+                        wrapMode: Text.WordWrap
+                        width: parent.width
+                    }
+                    Label {
+                        text: "Page Feedback · last_command: " + root.safeText(root.controlStateObj.last_command)
+                            + " · result: " + root.safeText(root.controlStateObj.last_command_result)
+                            + " · error: " + root.safeText(root.controlStateObj.last_command_error)
+                        color: "#64748B"
+                        font.pixelSize: 10
+                        wrapMode: Text.WordWrap
+                        width: parent.width
+                    }
+                }
             }
         }
+    }
 
-        PageFeedbackPanel {
-            visible: root.task26LegacyFallbackVisible
-            renderResourcesObj: root.renderResourcesObj
-            designThemeObj: root.designThemeObj
-            componentStyleObj: root.componentStyleObj
-            feedbackStyleObj: root.componentStyleObj.feedback_panel || ({})
-            pageId: "home"
-            lastCommand: root.safeText(root.controlStateObj.last_command)
-            lastResult: root.safeText(root.controlStateObj.last_command_result)
-            lastError: root.safeText(root.controlStateObj.last_command_error)
-        }
+    Rectangle {
+        id: scrollTrack
+        width: 5
+        radius: 3
+        color: "#1E293B"
+        opacity: homeScroll.contentHeight > homeScroll.height ? 0.48 : 0.0
+        anchors.right: parent.right
+        anchors.rightMargin: 5
+        anchors.top: parent.top
+        anchors.topMargin: 18
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: 18
+
+        Rectangle {
+            width: parent.width
+            radius: 3
+            color: "#38BDF8"
+            opacity: homeScroll.moving || homeScroll.flicking ? 0.9 : 0.52
+            height: Math.max(34, parent.height * homeScroll.visibleArea.heightRatio)
+            y: Math.max(0, Math.min(parent.height - height, parent.height * homeScroll.visibleArea.yPosition))
         }
     }
 }
 
+// Page Commands
 // Page Feedback
+// TASK26 Home formal shortcut tokens: home_intro_card home_workflow_card home_shortcut_cards home_entry_user_card home_entry_calibration_card home_entry_training_card home_entry_report_card home_entry_developer_lab_card home_status_overview_card
+// Legacy compatibility tokens: State Summary Action Panel Go User Go Calibration Go Training Go Report Go Developer Lab Refresh navigateTo("developer_lab")
