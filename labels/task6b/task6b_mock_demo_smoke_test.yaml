@@ -1,0 +1,16 @@
+{
+  "session_id": "task6b_mock_demo_smoke_test",
+  "source_log": "logs/task6b/task6b_mock_demo_smoke_test.jsonl",
+  "user_id": "demo",
+  "time_unit": "sec",
+  "tag": "smoke",
+  "notes": "",
+  "segments": [
+    {
+      "start": 0,
+      "end": 10,
+      "label": "DISTRACTED",
+      "note": "fill manually"
+    }
+  ]
+}
