@@ -12,6 +12,31 @@ Rectangle {
     property var gameStyleObj: ({})
     property var effectStyleObj: ({})
     property var renderResourcesObj: ({})
+    property var localFeedbacks: []
+    property int localFeedbackSeq: 0
+    property var activeVisualEvents: []
+    property int visualEventSerial: 0
+    property int animationTick: 0
+
+    // Diagnostic-only fields for resolving GameCanvas coordinate/time desync.
+    // They do not change game logic; they print the exact display-space and
+    // backend-bound values used for each pointer press.
+    property bool diagnosticEnabled: false
+    property int clickDiagnosticSeq: 0
+    property int lastRingDiagnosticAtMs: 0
+    property string lastClickDiagnosticJson: "{}"
+
+
+    onVisualEventsChanged: mergeVisualEvents(root.visualEvents)
+    onEntitiesChanged: syncDisplayEntities()
+    Component.onCompleted: {
+        syncDisplayEntities()
+        mergeVisualEvents(root.visualEvents)
+    }
+
+    ListModel { id: displayEntityModel }
+    ListModel { id: visualEventModel }
+    ListModel { id: localFeedbackModel }
 
     color: styleValue(gameStyleObj.canvas || ({}), "background_color", "#1a1a1a")
     radius: Number(styleValue(gameStyleObj.canvas || ({}), "radius", 0))
@@ -44,6 +69,125 @@ Rectangle {
 
     function pxRadius(rNorm) {
         return Math.max(4, rNorm * Math.min(width, height))
+    }
+
+    function parseJsonObject(raw) {
+        if (raw === undefined || raw === null || raw === "") {
+            return ({})
+        }
+        if (typeof raw === "object") {
+            return raw
+        }
+        try {
+            return JSON.parse(String(raw))
+        } catch (e) {
+            return ({})
+        }
+    }
+
+    function entityId(entity, fallbackIndex) {
+        if (!entity) return "entity_" + fallbackIndex
+        return String(entity.id || entity.entity_id || entity.target_id || entity.kind + "_" + fallbackIndex)
+    }
+
+    function findDisplayEntityIndex(entityIdValue) {
+        for (var i = 0; i < displayEntityModel.count; i += 1) {
+            if (String(displayEntityModel.get(i).entityId || "") === String(entityIdValue)) {
+                return i
+            }
+        }
+        return -1
+    }
+
+    function visualRadiusNorm(entity) {
+        if (!entity) return 0
+        var md = entity.metadata || ({})
+        var raw = md.visual_radius
+        if (raw === undefined || raw === null || raw === "") raw = md.display_radius
+        if (raw === undefined || raw === null || raw === "") raw = entity.radius
+        return Number(raw || 0)
+    }
+
+    function hitRadiusNorm(entity) {
+        if (!entity) return 0
+        var md = entity.metadata || ({})
+        var raw = md.hit_radius
+        if (raw === undefined || raw === null || raw === "") raw = entity.radius
+        return Number(raw || 0)
+    }
+
+    function entityToModel(entity, fallbackIndex) {
+        var md = entity && entity.metadata ? entity.metadata : ({})
+        var hitRadius = hitRadiusNorm(entity)
+        var visualRadius = visualRadiusNorm(entity)
+        return {
+            "entityId": entityId(entity, fallbackIndex),
+            "kind": String((entity && entity.kind) || ""),
+            "role": String((entity && entity.role) || ""),
+            "xNorm": Number((entity && entity.x) || 0),
+            "yNorm": Number((entity && entity.y) || 0),
+            "radiusNorm": Number((entity && entity.radius) || 0),
+            "hitRadiusNorm": hitRadius,
+            "visualRadiusNorm": visualRadius,
+            "state": String((entity && entity.state) || ""),
+            "styleKey": String((entity && entity.style_key) || ""),
+            "assetKey": String((entity && entity.asset_key) || ""),
+            "interactive": Boolean(entity && entity.interactive),
+            "hitShape": String((entity && entity.hit_shape) || "circle"),
+            "progress": progressValue(entity),
+            "timeLeftMs": Number(md.time_left_ms || md.target_time_left_ms || 0),
+            "targetLifetimeMs": Number(md.target_lifetime_ms || 0),
+            "updatedAtMs": Date.now(),
+            "metadataJson": JSON.stringify(md),
+            "entityJson": JSON.stringify(entity || ({}))
+        }
+    }
+
+    function modelToEntity(row) {
+        if (row === undefined || row === null) {
+            return ({})
+        }
+        return parseJsonObject(row.entityJson || "{}")
+    }
+
+    function syncDisplayEntities() {
+        var seen = ({})
+        var source = root.entities || []
+        for (var i = 0; i < source.length; i += 1) {
+            var entity = source[i]
+            if (!entity) continue
+            var row = entityToModel(entity, i)
+            seen[row.entityId] = true
+            var idx = findDisplayEntityIndex(row.entityId)
+            if (idx < 0) {
+                displayEntityModel.append(row)
+            } else {
+                displayEntityModel.setProperty(idx, "kind", row.kind)
+                displayEntityModel.setProperty(idx, "role", row.role)
+                displayEntityModel.setProperty(idx, "xNorm", row.xNorm)
+                displayEntityModel.setProperty(idx, "yNorm", row.yNorm)
+                displayEntityModel.setProperty(idx, "radiusNorm", row.radiusNorm)
+                displayEntityModel.setProperty(idx, "hitRadiusNorm", row.hitRadiusNorm)
+                displayEntityModel.setProperty(idx, "visualRadiusNorm", row.visualRadiusNorm)
+                displayEntityModel.setProperty(idx, "state", row.state)
+                displayEntityModel.setProperty(idx, "styleKey", row.styleKey)
+                displayEntityModel.setProperty(idx, "assetKey", row.assetKey)
+                displayEntityModel.setProperty(idx, "interactive", row.interactive)
+                displayEntityModel.setProperty(idx, "hitShape", row.hitShape)
+                displayEntityModel.setProperty(idx, "progress", row.progress)
+                displayEntityModel.setProperty(idx, "timeLeftMs", row.timeLeftMs)
+                displayEntityModel.setProperty(idx, "targetLifetimeMs", row.targetLifetimeMs)
+                displayEntityModel.setProperty(idx, "updatedAtMs", row.updatedAtMs)
+                displayEntityModel.setProperty(idx, "metadataJson", row.metadataJson)
+                displayEntityModel.setProperty(idx, "entityJson", row.entityJson)
+            }
+        }
+        for (var j = displayEntityModel.count - 1; j >= 0; j -= 1) {
+            var existingId = String(displayEntityModel.get(j).entityId || "")
+            if (!seen[existingId]) {
+                displayEntityModel.remove(j)
+            }
+        }
     }
 
     function targetType(entity) {
@@ -81,6 +225,23 @@ Rectangle {
         return Math.max(0, Math.min(1, Number(p)))
     }
 
+    function progressValueFromModel(row) {
+        if (row === undefined || row === null) {
+            return 0
+        }
+        // Depend on animationTick so QML recomputes between authoritative JSON frames.
+        var _tick = root.animationTick
+        var p = Math.max(0, Math.min(1, Number(row.progress || 0)))
+        var left = Number(row.timeLeftMs || 0)
+        var lifetime = Number(row.targetLifetimeMs || 0)
+        var updatedAt = Number(row.updatedAtMs || 0)
+        if (left > 0 && lifetime > 0 && updatedAt > 0) {
+            var remaining = left - Math.max(0, Date.now() - updatedAt)
+            return Math.max(0, Math.min(1, remaining / lifetime))
+        }
+        return p
+    }
+
     function timerProgress() {
         var hud = gameView && gameView.hud ? gameView.hud : ({})
         var left = Number(hud.time_left_ms || 0)
@@ -89,6 +250,139 @@ Rectangle {
             return 0
         }
         return Math.max(0, Math.min(1, left / total))
+    }
+
+    function frameId() {
+        return Number((root.gameView && root.gameView.frame_id) ? root.gameView.frame_id : 0)
+    }
+
+    function safeModelGet(modelObj, idx) {
+        if (!modelObj || idx < 0 || idx >= modelObj.count) {
+            return null
+        }
+        var row = modelObj.get(idx)
+        return (row === undefined || row === null) ? null : row
+    }
+
+    function primaryTargetRow() {
+        for (var i = 0; i < displayEntityModel.count; i += 1) {
+            var row = safeModelGet(displayEntityModel, i)
+            if (!row) continue
+            if (String(row.kind || "") === "target") {
+                return row
+            }
+        }
+        return null
+    }
+
+    function progressRingRowForTarget(targetRow) {
+        var targetId = targetRow ? String(targetRow.entityId || "") : ""
+        var fallback = null
+        for (var i = 0; i < displayEntityModel.count; i += 1) {
+            var row = safeModelGet(displayEntityModel, i)
+            if (!row) continue
+            if (String(row.kind || "") !== "progress_ring") continue
+            if (fallback === null) {
+                fallback = row
+            }
+            if (targetId !== "" && String(row.entityId || "").indexOf(targetId) >= 0) {
+                return row
+            }
+        }
+        return fallback
+    }
+
+    function rowAgeMs(row, nowMs) {
+        if (!row) return -1
+        var updatedAt = Number(row.updatedAtMs || 0)
+        return updatedAt > 0 ? Math.max(0, nowMs - updatedAt) : -1
+    }
+
+    function rowProgressAt(row, nowMs) {
+        if (!row) return 0
+        var p = Math.max(0, Math.min(1, Number(row.progress || 0)))
+        var left = Number(row.timeLeftMs || 0)
+        var lifetime = Number(row.targetLifetimeMs || 0)
+        var updatedAt = Number(row.updatedAtMs || 0)
+        if (left > 0 && lifetime > 0 && updatedAt > 0) {
+            var remaining = left - Math.max(0, nowMs - updatedAt)
+            return Math.max(0, Math.min(1, remaining / lifetime))
+        }
+        return p
+    }
+
+    function clickDiagnostic(mouse, xNorm, yNorm) {
+        var now = Date.now()
+        var target = primaryTargetRow()
+        var ring = progressRingRowForTarget(target)
+        var tx = target ? Number(target.xNorm || 0) : -1
+        var ty = target ? Number(target.yNorm || 0) : -1
+        var hr = target ? Number(target.hitRadiusNorm || target.radiusNorm || 0) : -1
+        var dx = target ? (Number(xNorm) - tx) : 0
+        var dy = target ? (Number(yNorm) - ty) : 0
+        var dist = target ? Math.sqrt(dx * dx + dy * dy) : -1
+        var candidate = target ? (dist <= hr) : false
+        root.clickDiagnosticSeq += 1
+        var diag = {
+            "seq": root.clickDiagnosticSeq,
+            "source": "GameCanvas.qml",
+            "frame_id": frameId(),
+            "root_w": Number(root.width || 0),
+            "root_h": Number(root.height || 0),
+            "mouse_x": Number(mouse.x || 0),
+            "mouse_y": Number(mouse.y || 0),
+            "x_norm_sent": Number(xNorm),
+            "y_norm_sent": Number(yNorm),
+            "target_present": target !== null,
+            "display_target_id": target ? String(target.entityId || "") : "",
+            "display_target_x": tx,
+            "display_target_y": ty,
+            "display_hit_radius": hr,
+            "display_radius": target ? Number(target.radiusNorm || 0) : -1,
+            "display_visual_radius": target ? Number(target.visualRadiusNorm || target.radiusNorm || 0) : -1,
+            "display_dx": dx,
+            "display_dy": dy,
+            "display_dist": dist,
+            "display_hit_candidate": candidate,
+            "display_target_age_ms": rowAgeMs(target, now),
+            "display_progress": rowProgressAt(target, now),
+            "display_time_left_ms": target ? Number(target.timeLeftMs || 0) : -1,
+            "display_lifetime_ms": target ? Number(target.targetLifetimeMs || 0) : -1,
+            "ring_present": ring !== null,
+            "ring_progress": rowProgressAt(ring, now),
+            "ring_age_ms": rowAgeMs(ring, now),
+            "ring_time_left_ms": ring ? Number(ring.timeLeftMs || 0) : -1,
+            "ring_lifetime_ms": ring ? Number(ring.targetLifetimeMs || 0) : -1
+        }
+        root.lastClickDiagnosticJson = JSON.stringify(diag)
+        if (root.diagnosticEnabled) {
+            console.log("[CANVAS CLICK DEBUG] " + root.lastClickDiagnosticJson)
+        }
+        return diag
+    }
+
+    function logRingDiagnostic() {
+        if (!root.diagnosticEnabled || !root.visible) return
+        var now = Date.now()
+        if (now - root.lastRingDiagnosticAtMs < 300) return
+        root.lastRingDiagnosticAtMs = now
+        var target = primaryTargetRow()
+        var ring = progressRingRowForTarget(target)
+        if (!target && !ring) return
+        var diag = {
+            "source": "GameCanvas.qml",
+            "frame_id": frameId(),
+            "target_id": target ? String(target.entityId || "") : "",
+            "target_age_ms": rowAgeMs(target, now),
+            "target_progress": rowProgressAt(target, now),
+            "target_time_left_ms": target ? Number(target.timeLeftMs || 0) : -1,
+            "target_lifetime_ms": target ? Number(target.targetLifetimeMs || 0) : -1,
+            "ring_age_ms": rowAgeMs(ring, now),
+            "ring_progress": rowProgressAt(ring, now),
+            "ring_time_left_ms": ring ? Number(ring.timeLeftMs || 0) : -1,
+            "ring_lifetime_ms": ring ? Number(ring.targetLifetimeMs || 0) : -1
+        }
+        console.log("[RING DEBUG] " + JSON.stringify(diag))
     }
 
     function effectStyle(effectType) {
@@ -193,6 +487,123 @@ Rectangle {
         return assetDescriptor(targetAssetKey(entity))
     }
 
+    function pushLocalFeedback(xNorm, yNorm, kind) {
+        localFeedbackSeq += 1
+        var now = Date.now()
+        localFeedbackModel.append({
+            "eventId": "local_feedback_" + localFeedbackSeq,
+            "xNorm": Math.max(0, Math.min(1, Number(xNorm))),
+            "yNorm": Math.max(0, Math.min(1, Number(yNorm))),
+            "kind": String(kind || "press"),
+            "createdAtMs": now,
+            "durationMs": 480
+        })
+        while (localFeedbackModel.count > 14) {
+            localFeedbackModel.remove(0)
+        }
+    }
+
+    function eventKey(evt) {
+        if (!evt) return ""
+        return String(evt.event_id || evt.id || evt.target_id || "")
+               + ":" + String(evt.kind || evt.effect_key || evt.type || "")
+               + ":" + String(evt.x || "") + ":" + String(evt.y || "")
+    }
+
+    function findVisualEventIndex(eventKeyValue) {
+        for (var i = 0; i < visualEventModel.count; i += 1) {
+            if (String(visualEventModel.get(i).eventKey || "") === String(eventKeyValue)) {
+                return i
+            }
+        }
+        return -1
+    }
+
+    function mergeVisualEvents(events) {
+        if (!events || events.length === 0) return
+        var now = Date.now()
+        for (var j = 0; j < events.length; j += 1) {
+            var evt = events[j]
+            if (!evt) continue
+            var effectType = String(evt.effect_type || evt.type || evt.kind || "trace_seal")
+            var key = eventKey(evt)
+            if (key.length === 0) {
+                visualEventSerial += 1
+                key = "visual_evt_" + visualEventSerial
+            }
+            if (findVisualEventIndex(key) >= 0) {
+                continue
+            }
+            var duration = Math.max(280, Number(evt.duration_ms || effectDuration(effectType)))
+            visualEventModel.append({
+                "eventKey": key,
+                "eventId": String(evt.event_id || key),
+                "effectType": effectType,
+                "xNorm": Math.max(0, Math.min(1, Number(evt.x || 0.5))),
+                "yNorm": Math.max(0, Math.min(1, Number(evt.y || 0.5))),
+                "targetId": String(evt.target_id || ""),
+                "createdAtMs": now,
+                "durationMs": duration,
+                "intensity": Number(evt.intensity || 1.0),
+                "payloadJson": JSON.stringify(evt.payload || ({}))
+            })
+        }
+        while (visualEventModel.count > 32) {
+            visualEventModel.remove(0)
+        }
+    }
+
+    function pruneVisualEvents() {
+        var now = Date.now()
+        for (var i = visualEventModel.count - 1; i >= 0; i -= 1) {
+            var evt = visualEventModel.get(i)
+            var duration = Math.max(280, Number(evt.durationMs || effectDuration(evt.effectType || "trace_seal")))
+            if (now - Number(evt.createdAtMs || now) > duration + 180) {
+                visualEventModel.remove(i)
+            }
+        }
+        for (var j = localFeedbackModel.count - 1; j >= 0; j -= 1) {
+            var fb = localFeedbackModel.get(j)
+            var fbDuration = Math.max(240, Number(fb.durationMs || 360))
+            if (now - Number(fb.createdAtMs || now) > fbDuration + 120) {
+                localFeedbackModel.remove(j)
+            }
+        }
+    }
+
+    function sendPointerClick(xNorm, yNorm, diagnostic) {
+        var payload = {
+            "game_id": (root.gameView && root.gameView.game_id) ? root.gameView.game_id : root.fallbackGameId,
+            "x_norm": xNorm,
+            "y_norm": yNorm,
+            "button": "left",
+            "source": "game_canvas",
+            "input_phase": "pressed",
+            "client_created_at_ms": Date.now()
+        }
+        if (root.diagnosticEnabled && diagnostic) {
+            payload["diagnostic"] = diagnostic
+            payload["display_frame_id"] = diagnostic.frame_id
+            payload["display_target_id"] = diagnostic.display_target_id
+            payload["display_target_x"] = diagnostic.display_target_x
+            payload["display_target_y"] = diagnostic.display_target_y
+            payload["display_hit_radius"] = diagnostic.display_hit_radius
+            payload["display_dist"] = diagnostic.display_dist
+            payload["display_hit_candidate"] = diagnostic.display_hit_candidate
+            payload["display_target_age_ms"] = diagnostic.display_target_age_ms
+            payload["display_progress"] = diagnostic.display_progress
+            payload["ring_progress"] = diagnostic.ring_progress
+        }
+        if (!root.guiBridgeRef) {
+            return
+        }
+        if (root.guiBridgeRef.handleGamePointerClick) {
+            root.guiBridgeRef.handleGamePointerClick(JSON.stringify(payload))
+        } else {
+            root.guiBridgeRef.sendEvent("pointer_click", JSON.stringify(payload))
+        }
+    }
+
     function targetImageSource(entity) {
         var desc = targetAssetDescriptor(entity)
         var style = targetStyle(entity)
@@ -226,6 +637,7 @@ Rectangle {
             width: parent.width * root.timerProgress()
             radius: height / 2
             color: styleValue(gameStyleObj.timer_bar || ({}), "fill", "#F59E0B")
+            Behavior on width { NumberAnimation { duration: 60; easing.type: Easing.Linear } }
         }
     }
 
@@ -238,75 +650,114 @@ Rectangle {
     }
 
     Repeater {
-        model: root.entities
+        model: displayEntityModel
         delegate: Item {
-            property var entity: modelData
-            property real cx: root.pxX(entity.x || 0)
-            property real cy: root.pxY(entity.y || 0)
-            property real rr: root.pxRadius(entity.radius || 0)
+            property var entity: root.modelToEntity(displayEntityModel.get(index))
+            property string entityKind: String(model.kind || "")
+            property bool isAuthoritativeHitEntity: entityKind === "target" || entityKind === "progress_ring"
+            property int motionAnimDuration: isAuthoritativeHitEntity ? 0 : 70
+            property real cx: root.pxX(Number(model.xNorm || 0))
+            property real cy: root.pxY(Number(model.yNorm || 0))
+            property real rr: root.pxRadius(Number(model.visualRadiusNorm || model.radiusNorm || 0))
+            property real hitRr: root.pxRadius(Number(model.hitRadiusNorm || model.radiusNorm || 0))
             x: cx - rr
             y: cy - rr
             width: rr * 2
             height: rr * 2
 
+            Behavior on x { NumberAnimation { duration: motionAnimDuration; easing.type: Easing.Linear } }
+            Behavior on y { NumberAnimation { duration: motionAnimDuration; easing.type: Easing.Linear } }
+            Behavior on width { NumberAnimation { duration: motionAnimDuration; easing.type: Easing.Linear } }
+            Behavior on height { NumberAnimation { duration: motionAnimDuration; easing.type: Easing.Linear } }
+
             Rectangle {
                 anchors.centerIn: parent
-                width: parent.width + 18
-                height: parent.height + 18
+                width: Math.max(0, hitRr * 2)
+                height: Math.max(0, hitRr * 2)
                 radius: width / 2
                 color: root.targetGlow(entity)
-                opacity: entity.kind === "target" ? 0.18 : 0
-                visible: entity.kind === "target"
+                opacity: entityKind === "target" ? 0.10 : 0
+                visible: entityKind === "target"
+            }
+
+            Rectangle {
+                anchors.centerIn: parent
+                width: Math.max(0, hitRr * 2)
+                height: Math.max(0, hitRr * 2)
+                radius: width / 2
+                color: "transparent"
+                border.width: entityKind === "target" ? 1 : 0
+                border.color: root.targetStroke(entity)
+                opacity: entityKind === "target" ? 0.70 : 0
+                visible: entityKind === "target"
             }
 
             Image {
-                anchors.fill: parent
+                anchors.centerIn: parent
+                width: Math.max(0, hitRr * 2)
+                height: Math.max(0, hitRr * 2)
                 source: root.targetImageSource(entity)
-                visible: entity.kind === "target" && root.isTargetImageAvailable(entity)
+                visible: entityKind === "target" && root.isTargetImageAvailable(entity)
                 fillMode: Image.PreserveAspectFit
                 smooth: true
                 mipmap: true
             }
 
             Rectangle {
-                anchors.fill: parent
+                anchors.centerIn: parent
+                width: entityKind === "target" ? Math.max(0, hitRr * 2) : parent.width
+                height: entityKind === "target" ? Math.max(0, hitRr * 2) : parent.height
                 radius: root.targetFallbackShape(entity) === "circle" ? width / 2 : Math.max(2, width * 0.12)
                 rotation: root.targetFallbackShape(entity) === "diamond" ? 45 : 0
-                color: entity.kind === "target" ? root.targetFill(entity) : (entity.kind === "focus_zone" ? "#44aaff33" : "transparent")
-                border.width: entity.kind === "progress_ring" ? Number(styleValue(gameStyleObj.progress_ring || ({}), "width", 3)) : (entity.state === "active" ? 2 : 1)
-                border.color: entity.kind === "progress_ring" ? styleValue(gameStyleObj.progress_ring || ({}), "stroke", "#ffdd55") : root.targetStroke(entity)
-                visible: (entity.kind === "target" && !root.isTargetImageAvailable(entity)) || entity.kind === "focus_zone" || entity.kind === "progress_ring"
-                opacity: entity.kind === "focus_zone" ? 0.45 : 1.0
+                color: entityKind === "target" ? root.targetFill(entity) : (entityKind === "focus_zone" ? "#44aaff33" : "transparent")
+                border.width: (model.state === "active" ? 2 : 1)
+                border.color: root.targetStroke(entity)
+                visible: (entityKind === "target" && !root.isTargetImageAvailable(entity)) || entityKind === "focus_zone"
+                opacity: entityKind === "focus_zone" ? 0.16 : 1.0
             }
 
-            Rectangle {
+            Canvas {
+                id: progressArc
                 anchors.centerIn: parent
-                width: parent.width * root.progressValue(entity)
-                height: Math.max(3, parent.height * 0.08)
-                radius: height / 2
-                color: styleValue(gameStyleObj.progress_ring || ({}), "background", "#1F2937")
-                visible: entity.kind === "progress_ring"
-            }
-
-            Text {
-                anchors.centerIn: parent
-                color: styleValue(gameStyleObj.hud || ({}), "text_color", "#ddd")
-                text: entity.kind === "progress_ring" ? ("P " + Math.round(root.progressValue(entity) * 100) + "%") : ""
-                visible: entity.kind === "progress_ring"
-                font.pixelSize: 11
+                width: Math.max(0, hitRr * 2 + Number(root.styleValue(root.gameStyleObj.progress_ring || ({}), "outer_padding", 8)))
+                height: width
+                visible: entityKind === "progress_ring"
+                property real liveProgress: root.progressValueFromModel(model)
+                property int tick: root.animationTick
+                onLiveProgressChanged: requestPaint()
+                onTickChanged: requestPaint()
+                onWidthChanged: requestPaint()
+                onHeightChanged: requestPaint()
+                onPaint: {
+                    var ctx = getContext("2d")
+                    ctx.reset()
+                    var lineW = Math.max(2, Number(root.styleValue(root.gameStyleObj.progress_ring || ({}), "width", 3)))
+                    var r = Math.max(1, Math.min(width, height) / 2 - lineW / 2 - 1)
+                    var cx2 = width / 2
+                    var cy2 = height / 2
+                    ctx.lineCap = "round"
+                    ctx.lineWidth = lineW
+                    ctx.strokeStyle = root.styleValue(root.gameStyleObj.progress_ring || ({}), "background", "rgba(31,41,55,0.38)")
+                    ctx.beginPath()
+                    ctx.arc(cx2, cy2, r, -Math.PI / 2, Math.PI * 1.5, false)
+                    ctx.stroke()
+                    ctx.strokeStyle = root.styleValue(root.gameStyleObj.progress_ring || ({}), "stroke", "#ffdd55")
+                    ctx.beginPath()
+                    ctx.arc(cx2, cy2, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.max(0, Math.min(1, liveProgress)), false)
+                    ctx.stroke()
+                }
             }
         }
     }
 
     Repeater {
-        model: root.visualEvents
+        model: visualEventModel
         delegate: Item {
             id: effectRoot
-            property var eventObj: modelData
-            property string effectType: String(eventObj.effect_type || eventObj.type || eventObj.kind || "trace_seal")
+            property string effectType: String(model.effectType || "trace_seal")
             property string effectKind: root.effectTypeName(effectType)
             property real baseSize: root.effectRadius(effectType)
-            property int durationMs: root.effectDuration(effectType)
+            property int durationMs: Math.max(280, Number(model.durationMs || root.effectDuration(effectType)))
             property real startScale: root.effectScaleFrom(effectType)
             property real endScale: root.effectScaleTo(effectType)
             property real startOpacity: root.effectOpacityFrom(effectType)
@@ -314,10 +765,11 @@ Rectangle {
 
             width: baseSize
             height: baseSize
-            x: root.pxX(eventObj.x || 0.5) - width / 2
-            y: root.pxY(eventObj.y || 0.5) - height / 2
+            x: root.pxX(Number(model.xNorm || 0.5)) - width / 2
+            y: root.pxY(Number(model.yNorm || 0.5)) - height / 2
             opacity: startOpacity
             scale: startScale
+            visible: true
 
             Rectangle {
                 id: effectHalo
@@ -372,6 +824,67 @@ Rectangle {
         }
     }
 
+    Repeater {
+        model: localFeedbackModel
+        delegate: Item {
+            id: localFeedbackRoot
+            property real baseSize: model.kind === "press" ? 46 : 36
+            width: baseSize
+            height: baseSize
+            x: root.pxX(Number(model.xNorm || 0.5)) - width / 2
+            y: root.pxY(Number(model.yNorm || 0.5)) - height / 2
+            opacity: 0.82
+            scale: 0.62
+
+            Rectangle {
+                anchors.fill: parent
+                radius: width / 2
+                color: "transparent"
+                border.width: 2
+                border.color: root.styleValue(root.gameStyleObj.hud || ({}), "text_color", "#FFFFFF")
+                opacity: 0.86
+            }
+
+            Rectangle {
+                anchors.centerIn: parent
+                width: 6
+                height: 6
+                radius: 3
+                color: root.styleValue(root.gameStyleObj.hud || ({}), "text_color", "#FFFFFF")
+                opacity: 0.92
+            }
+
+            NumberAnimation on scale {
+                from: 0.62
+                to: 1.45
+                duration: Math.max(240, Number(model.durationMs || 360))
+                easing.type: Easing.OutCubic
+                running: true
+            }
+
+            NumberAnimation on opacity {
+                from: 0.82
+                to: 0.0
+                duration: Math.max(240, Number(model.durationMs || 360))
+                easing.type: Easing.OutCubic
+                running: true
+            }
+        }
+    }
+
+    Timer {
+        interval: 16
+        running: root.visible
+        repeat: true
+        onTriggered: {
+            root.animationTick += 1
+            if ((root.animationTick % 6) === 0) {
+                root.pruneVisualEvents()
+                root.logRingDiagnostic()
+            }
+        }
+    }
+
     // TASK25B GameCanvas consumes canvas.background layered color/image/gradient/overlay and TraceLock game style tokens.
     // TASK25C GameCanvas consumes TraceLock visual asset_key/style_key tokens.
     // canvas.background layered color/image/gradient/overlay
@@ -380,19 +893,18 @@ Rectangle {
 
     MouseArea {
         anchors.fill: parent
-        onClicked: function(mouse) {
+        hoverEnabled: false
+        onPressed: function(mouse) {
             var xNorm = mouse.x / Math.max(1, root.width)
             var yNorm = mouse.y / Math.max(1, root.height)
-            var payload = {
-                "game_id": (root.gameView && root.gameView.game_id) ? root.gameView.game_id : root.fallbackGameId,
-                "x_norm": xNorm,
-                "y_norm": yNorm,
-                "button": "left",
-                "source": "game_canvas"
-            }
-            if (root.guiBridgeRef) {
-                root.guiBridgeRef.sendEvent("pointer_click", JSON.stringify(payload))
-            }
+            var diagnostic = root.diagnosticEnabled ? root.clickDiagnostic(mouse, xNorm, yNorm) : ({})
+            root.pushLocalFeedback(xNorm, yNorm, "press")
+            // Send at press time, not release/click time, to avoid a visible target
+            // vs. backend state mismatch on fast-moving TraceLock targets.
+            root.sendPointerClick(xNorm, yNorm, diagnostic)
+        }
+        onClicked: function(mouse) {
+            // Event is intentionally sent from onPressed for lower latency.
         }
     }
 }

@@ -183,6 +183,24 @@ Item {
         return String((obj && obj.status) ? obj.status : "unknown")
     }
 
+    function calibrationStatusKeepsPanel(statusText) {
+        var st = String(statusText || "").toLowerCase()
+        return st === "started"
+               || st === "running"
+               || st === "already_running"
+               || st === "guidance_running"
+               || st === "start_guidance"
+    }
+
+    function progressSaysRunning(progress) {
+        var p = progress || ({})
+        var st = String(p.status || "").toLowerCase()
+        if (p.running === true || String(p.running).toLowerCase() === "true") {
+            return true
+        }
+        return calibrationStatusKeepsPanel(st)
+    }
+
     function invokeCalibration(actionId, payload, nextPanel) {
         var userId = currentUserId()
         var data = payload || ({})
@@ -225,7 +243,7 @@ Item {
             calibrationStartCommand = s(progress.command || obj.command || obj.cli_reference)
             calibrationOutputCount = Number(progress.output_count || 0)
             calibrationProgressText = formatCalibrationProgress(progress)
-            calibrationRunning = (obj.status === "started" || obj.status === "running" || obj.status === "already_running")
+            calibrationRunning = progressSaysRunning(progress) || calibrationStatusKeepsPanel(obj.status)
             activePanel = "progress"
         } else if (actionId === "calibration.poll") {
             var p = obj.progress || obj.result || obj
@@ -234,7 +252,7 @@ Item {
             calibrationStartCommand = s(p.command || obj.command || obj.cli_reference || calibrationStartCommand)
             calibrationOutputCount = Number(p.output_count || calibrationOutputCount)
             calibrationProgressText = formatCalibrationProgress(p)
-            calibrationRunning = (obj.status === "running" || obj.status === "started" || obj.status === "already_running")
+            calibrationRunning = progressSaysRunning(p) || calibrationStatusKeepsPanel(obj.status)
             activePanel = "progress"
         } else {
             activePanel = nextPanel || "result"
@@ -325,7 +343,7 @@ Item {
         if (String(runningValue).toLowerCase() === "true") {
             return true
         }
-        return statusText === "running" || statusText === "guidance_running"
+        return statusText === "running" || statusText === "guidance_running" || statusText === "started" || statusText === "already_running" || statusText === "start_guidance"
     }
 
     function refreshDesktopCalibrationFeedback() {

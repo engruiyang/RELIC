@@ -29,6 +29,8 @@ ApplicationWindow {
     property var componentStylesObj: ({})
     property var gameStylesObj: ({})
     property var effectStylesObj: ({})
+    property int gameViewPullSeq: 0
+    property int lastGameViewPullAtMs: 0
 
     function safeJsonParse(t) {
         try {
@@ -154,8 +156,7 @@ ApplicationWindow {
         appStateObj = safeJsonParse(guiBridge.appState)
         runtimeObj = safeJsonParse(guiBridge.runtimeSnapshot)
         sessionObj = safeJsonParse(guiBridge.sessionState)
-        gameHudObj = safeJsonParse(guiBridge.gameHudJson)
-        gameViewObj = safeJsonParse(guiBridge.gameViewJson)
+        pullGameState()
         controlStateObj = safeJsonParse(guiBridge.controlStateJson)
         pageCommandManifestObj = safeJsonParse(guiBridge.pageCommandManifestJson)
         renderResourcesObj = safeJsonParse(guiBridge.renderResourcesJson)
@@ -164,6 +165,37 @@ ApplicationWindow {
         componentStylesObj = renderResourcesObj.component_styles || ({})
         gameStylesObj = renderResourcesObj.game_styles || ({})
         effectStylesObj = renderResourcesObj.effect_styles || ({})
+    }
+
+    function pullGameState() {
+        if (!guiBridge) {
+            return
+        }
+        var now = Date.now()
+        gameHudObj = safeJsonParse(guiBridge.gameHudJson)
+        gameViewObj = safeJsonParse(guiBridge.gameViewJson)
+        gameViewPullSeq += 1
+        lastGameViewPullAtMs = now
+        if (gameViewObj && typeof gameViewObj === "object") {
+            var hints = gameViewObj.layout_hints || ({})
+            var built = Number(hints.backend_view_built_wall_ms || 0)
+            var bridgePull = Number(hints.bridge_pull_wall_ms || 0)
+            hints.qml_shell_pull_wall_ms = now
+            hints.qml_shell_pull_seq = gameViewPullSeq
+            hints.qml_shell_game_view_age_ms = built > 0 ? Math.max(0, now - built) : -1
+            hints.qml_shell_after_bridge_ms = bridgePull > 0 ? Math.max(0, now - bridgePull) : -1
+            gameViewObj.layout_hints = hints
+            if ((gameViewPullSeq % 20) === 0 || hints.qml_shell_game_view_age_ms > 160) {
+                console.log("[SHELL GAMEVIEW DEBUG] " + JSON.stringify({
+                    "seq": gameViewPullSeq,
+                    "frame_id": gameViewObj.frame_id,
+                    "backend_age_ms": hints.qml_shell_game_view_age_ms,
+                    "after_bridge_ms": hints.qml_shell_after_bridge_ms,
+                    "bridge_emit_seq": hints.bridge_emit_seq_next,
+                    "backend_update_count": hints.backend_game_update_count
+                }))
+            }
+        }
     }
 
     function invokeNative(actionId) {
@@ -175,6 +207,15 @@ ApplicationWindow {
     Connections {
         target: root.desktopGuiBridge ? root.desktopGuiBridge : null
         function onStateChanged() {
+            pullState()
+        }
+        function onGameViewJsonChanged() {
+            pullGameState()
+        }
+        function onGameHudJsonChanged() {
+            pullGameState()
+        }
+        function onRenderResourcesJsonChanged() {
             pullState()
         }
     }

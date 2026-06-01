@@ -392,6 +392,59 @@ Item {
         return text
     }
 
+    function parseArgsObject(argsText) {
+        try {
+            var obj = JSON.parse(argsText && argsText.length > 0 ? argsText : "{}")
+            return obj && typeof obj === "object" ? obj : ({})
+        } catch (e) {
+            return ({})
+        }
+    }
+
+    function isAutoDifficultyValue(value) {
+        var t = String(value === undefined || value === null ? "" : value).trim().toLowerCase()
+        return t.length === 0 || t === "auto" || t === "dynamic" || t === "none" || t === "null" || t === "nan" || t === "n/a"
+    }
+
+    function sessionStartPayloadFrom(baseArgsText, currentUser) {
+        var payload = parseArgsObject(baseArgsText)
+        if (currentUser && currentUser !== "n/a" && (payload.user_id === undefined || payload.user_id === null || payload.user_id === "")) {
+            payload.user_id = currentUser
+        }
+        if (!payload.game_id || payload.game_id === "n/a") {
+            payload.game_id = root.widgetCurrentValue("selected_game_id") || sourceValue("gameHudJson.game_id", sourceValue("controlStateJson.current_game_id", "trace_lock"))
+        }
+        if (!payload.game_id || payload.game_id === "n/a") payload.game_id = "trace_lock"
+
+        var explicitMode = String(payload.difficulty_mode || payload.mode || "").trim().toLowerCase()
+        var explicitLevel = payload.difficulty_level !== undefined && payload.difficulty_level !== null ? payload.difficulty_level : (payload.debug_difficulty !== undefined && payload.debug_difficulty !== null ? payload.debug_difficulty : payload.selected_difficulty_level)
+        var hudMode = String(sourceValue("gameHudJson.difficulty_mode", "auto")).trim().toLowerCase()
+        var hudDebug = sourceValue("gameHudJson.debug_difficulty", "auto")
+        var hudHasManual = hudMode === "manual" || !isAutoDifficultyValue(hudDebug)
+        var explicitHasManual = explicitMode === "manual" || !isAutoDifficultyValue(explicitLevel)
+
+        // Explicit stale card templates often say auto/auto.  Do not let that
+        // erase a difficulty that was already applied in the existing HUD path.
+        if (!explicitHasManual && hudHasManual) {
+            payload.difficulty_mode = "manual"
+            payload.debug_difficulty = hudDebug
+            payload.selected_difficulty_level = hudDebug
+            payload.difficulty_level = hudDebug
+        } else if (explicitHasManual) {
+            var level = explicitLevel
+            payload.difficulty_mode = "manual"
+            payload.debug_difficulty = level
+            payload.selected_difficulty_level = level
+            payload.difficulty_level = level
+        } else {
+            payload.difficulty_mode = "auto"
+            payload.debug_difficulty = "auto"
+            payload.selected_difficulty_level = "auto"
+            payload.difficulty_level = null
+        }
+        return JSON.stringify(payload)
+    }
+
     function actionArgsJson(actionId, argsJson, widgetId) {
         var currentUser = sourceValue("controlStateJson.current_user_id", sourceValue("appState.current_user_id", ""))
         var calibrationId = sourceValue("controlStateJson.last_calibration_id", "")
@@ -399,6 +452,9 @@ Item {
         var hasArgs = argsJson && argsJson.length > 0 && argsJson !== "{}"
         if (hasArgs) {
             var resolved = resolveArgsTemplate(argsJson)
+            if (actionId === "session.start") {
+                return sessionStartPayloadFrom(resolved, currentUser)
+            }
             // Card widgets may define explicit args such as {"calibration_id": "..."}.
             // Preserve those args, but always attach the current GUI user unless the
             // card deliberately provided user_id. This prevents calibration.bind/show
@@ -419,14 +475,7 @@ Item {
         if ((actionId === "calibration.show" || actionId === "calibration.bind") && calibrationId && calibrationId !== "n/a") payload.calibration_id = calibrationId
         if ((actionId === "report.show" || actionId === "report.show_session" || actionId === "report.export" || actionId === "report.export_txt") && sessionId && sessionId !== "n/a" && sessionId !== "no_report_available") payload.session_id = sessionId
         if (actionId === "session.start") {
-            payload.game_id = root.widgetCurrentValue("selected_game_id") || sourceValue("gameHudJson.game_id", sourceValue("controlStateJson.current_game_id", "trace_lock"))
-            if (!payload.game_id || payload.game_id === "n/a") payload.game_id = "trace_lock"
-            payload.difficulty_mode = sourceValue("gameHudJson.difficulty_mode", "auto")
-            if (!payload.difficulty_mode || payload.difficulty_mode === "n/a") payload.difficulty_mode = "auto"
-            var debugValue = sourceValue("gameHudJson.debug_difficulty", "auto")
-            payload.debug_difficulty = debugValue && debugValue !== "n/a" ? debugValue : "auto"
-            payload.selected_difficulty_level = payload.debug_difficulty
-            payload.difficulty_level = payload.difficulty_mode === "manual" ? payload.debug_difficulty : null
+            return sessionStartPayloadFrom(JSON.stringify(payload), currentUser)
         }
         return JSON.stringify(payload)
     }
@@ -815,22 +864,31 @@ Item {
         glassOpacity: root.cardGlassOpacity
         glassHighlight: root.cardGlassHighlight
 
-        GameCanvas {
-            id: desktopGameCanvas
-            visible: root.isGameCanvasCard()
+        Loader {
+            id: desktopGameCanvasLoader
             anchors.fill: parent
-            gameView: root.gameViewObj
-            guiBridgeRef: root.guiBridge
-            fallbackGameId: root.sourceValue("gameHudJson.game_id", root.sourceValue("controlStateJson.current_game_id", "trace_lock"))
-            designThemeObj: root.designThemeObj
-            gameStyleObj: root.gameStyleObj
-            effectStyleObj: root.effectStyleObj
-            renderResourcesObj: root.renderResourcesObj
+            active: root.visible && root.isGameCanvasCard()
+            visible: active
+            asynchronous: false
+            sourceComponent: Component {
+                GameCanvas {
+                    id: desktopGameCanvas
+                    anchors.fill: parent
+                    gameView: root.gameViewObj
+                    guiBridgeRef: root.guiBridge
+                    fallbackGameId: root.sourceValue("gameHudJson.game_id", root.sourceValue("controlStateJson.current_game_id", "trace_lock"))
+                    designThemeObj: root.designThemeObj
+                    gameStyleObj: root.gameStyleObj
+                    effectStyleObj: root.effectStyleObj
+                    renderResourcesObj: root.renderResourcesObj
+                    diagnosticEnabled: false
+                }
+            }
         }
 
         Rectangle {
             id: gameCanvasHudOverlay
-            visible: root.isGameCanvasCard()
+            visible: desktopGameCanvasLoader.active
             anchors.left: parent.left
             anchors.top: parent.top
             anchors.margins: 10

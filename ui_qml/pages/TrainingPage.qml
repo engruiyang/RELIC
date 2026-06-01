@@ -521,26 +521,36 @@ Item {
                 width: parent.width
                 visible: trainingPage.task26DesktopPilotEnabled
 
-                DesktopLayoutPreview {
-                    id: task26TrainingDesktopPilotPreview
+                Loader {
+                    id: task26TrainingDesktopPilotPreviewLoader
                     width: parent.width
                     height: 680
-                    layoutPayload: trainingPage.task26TrainingLayoutPayload()
-                    previewTitle: "Training Desktop Pilot"
-                    previewSubtitle: "style-capable training card layout"
-                    payloadStatusText: trainingPage.task26TrainingLayoutStatus()
-                    payloadSourceText: trainingPage.task26TrainingLayoutSource()
-                    guiBridge: trainingPage.guiBridge
-                    appStateObj: trainingPage.appStateObj
-                    runtimeSnapshotObj: trainingPage.runtimeObj
-                    sessionStateObj: trainingPage.sessionObj
-                    controlStateObj: trainingPage.controlStateObj
-                    gameHudObj: trainingPage.gameHudObj
-                    gameViewObj: trainingPage.gameViewObj
-                    renderResourcesObj: trainingPage.renderResourcesObj
-                    designThemeObj: trainingPage.designThemeObj
-                    gameStyleObj: trainingPage.gameStyleObj
-                    effectStyleObj: trainingPage.effectStyleObj
+                    active: trainingPage.task26LegacyFallbackVisible && trainingPage.task26DesktopPilotEnabled
+                    visible: active
+                    asynchronous: false
+                    sourceComponent: Component {
+                        DesktopLayoutPreview {
+                            id: task26TrainingDesktopPilotPreview
+                            width: task26TrainingDesktopPilotPreviewLoader.width
+                            height: task26TrainingDesktopPilotPreviewLoader.height
+                            layoutPayload: trainingPage.task26TrainingLayoutPayload()
+                            previewTitle: "Training Desktop Pilot"
+                            previewSubtitle: "style-capable training card layout"
+                            payloadStatusText: trainingPage.task26TrainingLayoutStatus()
+                            payloadSourceText: trainingPage.task26TrainingLayoutSource()
+                            guiBridge: trainingPage.guiBridge
+                            appStateObj: trainingPage.appStateObj
+                            runtimeSnapshotObj: trainingPage.runtimeObj
+                            sessionStateObj: trainingPage.sessionObj
+                            controlStateObj: trainingPage.controlStateObj
+                            gameHudObj: trainingPage.gameHudObj
+                            gameViewObj: trainingPage.gameViewObj
+                            renderResourcesObj: trainingPage.renderResourcesObj
+                            designThemeObj: trainingPage.designThemeObj
+                            gameStyleObj: trainingPage.gameStyleObj
+                            effectStyleObj: trainingPage.effectStyleObj
+                        }
+                    }
                 }
             }
 
@@ -843,17 +853,28 @@ Item {
                         Label { text: "visual_event_count: " + s(gameVisualEvents().length) }
                     }
 
-                    GameCanvas {
-                        id: trainingGameCanvas
+                    Loader {
+                        id: trainingGameCanvasLoader
                         width: parent.width
                         height: Number(gameDesignValue("canvas", "height", 360))
-                        gameView: trainingPage.currentGameView()
-                        guiBridgeRef: (typeof guiBridge !== "undefined") ? guiBridge : null
-                        fallbackGameId: s(gameViewField("game_id"))
-                        designThemeObj: trainingPage.designThemeObj
-                        gameStyleObj: trainingPage.gameStyleObj
-                        effectStyleObj: trainingPage.effectStyleObj
-                        renderResourcesObj: trainingPage.renderResourcesObj
+                        active: trainingPage.task26LegacyFallbackVisible
+                        visible: active
+                        asynchronous: false
+                        sourceComponent: Component {
+                            GameCanvas {
+                                id: trainingGameCanvas
+                                width: trainingGameCanvasLoader.width
+                                height: trainingGameCanvasLoader.height
+                                gameView: trainingPage.currentGameView()
+                                guiBridgeRef: (typeof guiBridge !== "undefined") ? guiBridge : null
+                                fallbackGameId: s(gameViewField("game_id"))
+                                designThemeObj: trainingPage.designThemeObj
+                                gameStyleObj: trainingPage.gameStyleObj
+                                effectStyleObj: trainingPage.effectStyleObj
+                                renderResourcesObj: trainingPage.renderResourcesObj
+                                diagnosticEnabled: false
+                            }
+                        }
                     }
 
                     Label {
