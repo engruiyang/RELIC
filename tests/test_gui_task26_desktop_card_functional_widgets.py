@@ -14,8 +14,12 @@ def test_card_preview_declares_six_widget_slots_and_action_ids() -> None:
         assert f"widget{idx}ActionId" in text
     assert "function sourceValue" in text
     assert "eval" not in text
-    for token in ["Loader", "Repeater", "Timer", "subprocess", "XMLHttpRequest"]:
+    # Loader is now intentionally allowed for the game_canvas card only, so
+    # non-game cards do not create hidden GameCanvas instances.
+    for token in ["Repeater", "Timer", "subprocess", "XMLHttpRequest"]:
         assert token not in text
+    assert "Loader" in text
+    assert "isGameCanvasCard" in text
 
 
 def test_layout_preview_accepts_runtime_objects_for_cards() -> None:

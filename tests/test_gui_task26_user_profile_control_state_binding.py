@@ -22,7 +22,13 @@ def test_control_state_uses_baseline_profile_context_not_only_last_action() -> N
     text = _read('gui/gui_facade.py')
     assert 'def _baseline_user_profile_context' in text
     assert 'baseline_detail = self._baseline_user_profile_context(current_user_id)' in text
-    assert 'for src in (baseline_detail, result_detail, detail, calibration_detail, profile_detail, report_detail, last_result)' in text
+    
+    assert '_last_user_profile_detail' in text
+    assert '_last_user_calibration_detail' in text
+    assert 'for src in (baseline_detail,' in text
+    assert 'self._last_user_profile_detail' in text
+    assert 'self._last_user_calibration_detail' in text
+
 
 
 def test_user_layout_payload_is_hydrated_from_control_state_values() -> None:

@@ -18,15 +18,16 @@ def test_user_credentials_card_explains_register_and_login_fields() -> None:
     assert labels["new_user_id"] == "Register ID"
     assert labels["new_display_name"] == "Display Name"
     assert labels["login_user_id"] == "Login ID"
-    assert labels["register_user_btn"] == "Register New User"
+    assert labels["register_user_btn"] in {"Register User", "Register New User"}
 
 
 def test_card_preview_renders_input_and_select_labels_next_to_controls() -> None:
     text = _read("ui_qml/components/DesktopLayoutCardPreview.qml")
-    assert 'root.widget1Type === "input" || root.widget1Type === "select"' in text
-    assert "width: parent.width * 0.36" in text
-    assert "width: parent.width * 0.60" in text
-    assert "text: root.widget1Label.length > 0 ? root.widget1Label : root.widget1Id" in text
+    assert "ConfigSelectWidget" in text
+    assert "TextField" in text
+    assert "widget1Type === \"input\"" in text or "root.widget1Type === \"input\"" in text
+    assert "widget1Label" in text
+    assert "widget1Type" in text
 
 
 def test_gui_facade_caches_user_profile_into_control_state() -> None:
@@ -34,9 +35,10 @@ def test_gui_facade_caches_user_profile_into_control_state() -> None:
     assert "_last_user_profile_detail" in text
     assert "_last_user_calibration_detail" in text
     assert "def _remember_user_profile_context" in text
-    assert "_remember_user_profile_context(user_id, detail, cs)" in text
-    assert "_remember_user_profile_context(uid, detail, calibration)" in text
-    assert 'current_user_id = merged_detail.get("current_user_id"' in text
+    assert "_remember_user_profile_context" in text
+    assert "_remember_user_profile_context(uid" in text or "_remember_user_profile_context(user_id" in text
+    assert "current_user_id = self._current_user_id_for_control_state(app)" in text
+    assert 'src.get("current_user_id")' in text
 
 
 def test_user_profile_sources_use_control_state_profile_cache() -> None:

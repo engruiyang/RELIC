@@ -18,9 +18,12 @@ EXAMPLES = Path("assets/layouts/task26_examples")
 
 def _inventory() -> dict[str, set[str]]:
     desktop = load_json(EXAMPLES / "desktop.example.json")
-    home = load_json(EXAMPLES / "home_page.desktop_demo.json")
-    training = load_json(EXAMPLES / "training_page.desktop_demo.json")
-    return collect_cards_fields_buttons_from_pages([home, training], desktop)
+    pages = [
+        load_json(path)
+        for path in sorted(EXAMPLES.glob("*_page.desktop_demo.json"))
+        if path.name not in {"desktop.example.json"}
+    ]
+    return collect_cards_fields_buttons_from_pages(pages, desktop)
 
 
 def test_pipeline_bindings_loadable() -> None:

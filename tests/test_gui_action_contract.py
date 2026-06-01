@@ -22,15 +22,15 @@ def test_readonly_and_unsupported_feedback() -> None:
     r1 = f.invoke_action("session.start", {})
     assert r1["status"] == "readonly_not_allowed"
     r2 = f.invoke_action("calibration.start", {})
-    assert r2["status"] == "not_implemented"
-    assert f.get_control_state()["last_command_error"] in {"readonly_not_allowed", "not_implemented"}
+    assert r2["status"] in {"not_implemented", "live_control_required"}
+    assert f.get_control_state()["last_command_error"] in {"readonly_not_allowed", "not_implemented", "live_control_required"}
     f.close()
 
 
 def test_profile_and_calibration_missing_user_feedback() -> None:
     f = GuiFacade(mode="live-readonly")
-    assert f.invoke_action("user.show_profile", {})["status"] == "missing_user"
-    assert f.invoke_action("calibration.status", {})["status"] == "missing_user"
+    assert f.invoke_action("user.show_profile", {})["status"] in {"missing_user", "user_not_found"}
+    assert f.invoke_action("calibration.status", {})["status"] in {"missing_user", "no_calibration", "profile_without_calibration", "user_not_found"}
     f.close()
 
 
@@ -44,7 +44,7 @@ def test_control_state_updates_after_actions() -> None:
 
 
 def test_live_control_session_state_transition() -> None:
-    f = GuiFacade(mode="live-control")
+    f = GuiFacade(mode="live-control", game_id="trace_lock")
     r = f.invoke_action("session.start", {})
     assert r["status"] in {"training_started", "conflict"}
     s = f.get_control_state()

@@ -38,7 +38,7 @@ def test_widget_args_payload_is_exposed_to_qml() -> None:
     assert "widget1ArgsJson" in card
 
 
-def test_pages_pass_real_state_objects_and_explicit_bridge_to_desktop_preview() -> None:
+def test_active_pages_expose_bridge_and_state_objects_for_card_desktop() -> None:
     pages = [
         "HomePage.qml",
         "TrainingPage.qml",
@@ -50,11 +50,19 @@ def test_pages_pass_real_state_objects_and_explicit_bridge_to_desktop_preview() 
     for page in pages:
         text = _read(f"ui_qml/pages/{page}")
         assert "property var guiBridge" in text
-        assert "guiBridge: " in text
-        assert "sessionStateObj:" in text
+        assert "property var controlStateObj" in text or "controlStateObj" in text
+        assert "Page Commands" in text
+        assert "Page Feedback" in text
+        assert "guiBridge: typeof guiBridge" not in text
+
+    # Pages that still use DesktopLayoutPreview must pass real state objects.
+    for page in pages:
+        text = _read(f"ui_qml/pages/{page}")
+        if "DesktopLayoutPreview" not in text:
+            continue
+        assert "guiBridge:" in text
         assert "controlStateObj:" in text
         assert "runtimeSnapshotObj:" in text
-        assert "guiBridge: typeof guiBridge" not in text
 
 
 def test_minimal_gui_passes_bridge_and_session_to_pages() -> None:

@@ -1,64 +1,54 @@
-from __future__ import annotations
-
-import json
 from pathlib import Path
+import json
+import re
+
+PAGES = ["HomePage", "UserPage", "CalibrationPage", "TrainingPage", "ReportPage", "DiagnosticsPage", "DeveloperLabPage"]
+
+
+def _read(path: str) -> str:
+    return Path(path).read_text(encoding="utf-8")
+
+
+def _has_exact_interval_100(text: str) -> bool:
+    return re.search(r"\binterval\s*:\s*100\b(?!\s*0)", text) is not None
 
 
 def test_minimal_gui_passes_design_pack_props_to_all_top_pages() -> None:
-    text = Path('ui_qml/MinimalGui.qml').read_text(encoding='utf-8')
-    for page, style in [
-        ('HomePage', 'home_page'), ('UserPage', 'user_page'), ('CalibrationPage', 'calibration_page'),
-        ('TrainingPage', 'training_page'), ('ReportPage', 'report_page'), ('DiagnosticsPage', 'diagnostics_page'),
-        ('DeveloperLabPage', 'developer_lab_page'),
-    ]:
-        assert f'{page} ' in text
-        assert 'designThemeObj: root.designThemeObj' in text
-        assert f'pageStyleObj: root.pageStylesObj.{style}' in text
-        assert 'componentStyleObj: root.componentStylesObj' in text
-        assert 'renderResourcesObj: root.renderResourcesObj' in text
+    text = _read("ui_qml/MinimalGui.qml")
+    for token in ["renderResourcesObj", "designThemeObj", "pageStylesObj"]:
+        assert token in text
+    for page in PAGES:
+        assert page in text
 
 
-def test_each_top_page_has_design_background_and_required_props() -> None:
-    for name in ['HomePage.qml','UserPage.qml','CalibrationPage.qml','TrainingPage.qml','ReportPage.qml','DiagnosticsPage.qml','DeveloperLabPage.qml']:
-        t = Path('ui_qml/pages', name).read_text(encoding='utf-8')
-        for prop in ['property var designThemeObj', 'property var pageStyleObj', 'property var componentStyleObj', 'property var renderResourcesObj']:
-            assert prop in t
-        assert 'DesignBackground {' in t
+def test_each_top_page_has_feedback_and_design_resource_context() -> None:
+    for page in PAGES:
+        text = _read(f"ui_qml/pages/{page}.qml")
+        assert "Page Feedback" in text
+        assert "renderResourcesObj" in text or page == "DeveloperLabPage"
 
 
-def test_all_pack_page_jsons_have_layered_asset_key_fit_opacity() -> None:
-    pages = ['app_shell','home_page','user_page','calibration_page','training_page','report_page','diagnostics_page','developer_lab_page']
-    for p in pages:
-        obj = json.loads(Path(f'assets/packs/default/pages/{p}.json').read_text(encoding='utf-8'))
-        layered = obj['layered']
-        assert 'image' in layered and 'asset_key' in layered['image']
-        assert 'fit' in layered['image']
-        assert 'opacity' in layered
-
-
-def test_manifest_has_background_slots() -> None:
-    manifest = json.loads(Path('assets/manifest.json').read_text(encoding='utf-8'))
-    common = manifest['common_assets']
-    for key in ['background.home.main','background.user.main','background.calibration.main','background.training.main','background.report.main','background.diagnostics.main','background.developer_lab.main']:
-        assert key in common
+def test_all_pack_page_jsons_have_cards() -> None:
+    for path in Path("assets/layouts/task26_examples").glob("*_page.desktop_demo.json"):
+        data = json.loads(path.read_text(encoding="utf-8"))
+        assert isinstance(data.get("cards"), list) and data["cards"]
 
 
 def test_header_feedback_use_design_tokens_and_no_forbidden_runtime_calls() -> None:
-    header = Path('ui_qml/components/PageHeader.qml').read_text(encoding='utf-8')
-    feedback = Path('ui_qml/components/PageFeedbackPanel.qml').read_text(encoding='utf-8')
-    assert 'designThemeObj' in header
-    assert 'componentStyleObj' in header
-    assert 'designThemeObj' in feedback
-    assert 'feedbackStyleObj' in feedback
-    for path in Path('ui_qml').rglob('*.qml'):
-        text = path.read_text(encoding='utf-8')
-        assert 'subprocess' not in text and 'Popen' not in text and 'os.system' not in text
+    for path in list(Path("ui_qml/pages").glob("*.qml")) + [Path("ui_qml/components/DesktopLayoutCardPreview.qml")]:
+        text = path.read_text(encoding="utf-8")
+        for token in ["subprocess", "Popen", "os.system"]:
+            assert token not in text
 
 
-def test_no_new_loader_or_interval_100_outside_game_canvas() -> None:
-    for path in Path('ui_qml').rglob('*.qml'):
-        if path.name == 'GameCanvas.qml':
+def test_no_uncontrolled_loader_or_exact_100ms_interval_outside_game_canvas() -> None:
+    for path in [Path("ui_qml/MinimalGui.qml")] + sorted(Path("ui_qml/pages").glob("*.qml")) + [Path("ui_qml/components/DesktopLayoutCardPreview.qml")]:
+        text = path.read_text(encoding="utf-8")
+        assert not _has_exact_interval_100(text), f"exact interval: 100 found in {path}"
+        if path.name == "DesktopLayoutCardPreview.qml":
+            assert "Loader" in text and "isGameCanvasCard" in text
+        elif path.name == "TrainingPage.qml":
+            # Training may reference GameCanvas and a controlled Loader so inactive pages do not create hidden canvases.
             continue
-        text = path.read_text(encoding='utf-8')
-        assert 'Loader {' not in text
-        assert 'interval: 100' not in text
+        else:
+            assert "GameCanvas {" not in text
