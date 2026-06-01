@@ -81,6 +81,27 @@ class GuiBridge(QObject):
             return True
         return False
 
+    def _action_requires_render_resource_refresh(self, action_id: str) -> bool:
+        """Return True when an action mutates dynamic desktop-card context.
+
+        TASK26 render resources contain mostly static layout/style data, but a
+        few context blocks are hydrated from live control state:
+        calibration/user/report panels read those blocks from renderResources.
+        FIX11 cached renderResources to protect GameCanvas from stale full
+        refresh frames, so these non-game actions must explicitly refresh the
+        resource bundle after they change state.  Game actions stay on the
+        dedicated 50 ms gameView/gameHud path.
+        """
+        text = str(action_id or "").strip().lower()
+        if not text:
+            return False
+        return (
+            text.startswith("calibration.")
+            or text.startswith("user.")
+            or text.startswith("report.")
+            or text.startswith("diagnostics.")
+        )
+
     @Slot()
     def refreshRenderResources(self) -> None:
         self._refresh_render_resources_from_facade(force=True)
@@ -335,6 +356,8 @@ class GuiBridge(QObject):
             payload = {}
         result = self._facade.invoke_action(action_id, payload)
         self.update_state_from_facade()
+        if self._action_requires_render_resource_refresh(action_id):
+            self._refresh_render_resources_from_facade(force=True)
         self.update_game_state_from_facade()
         # Desktop card buttons depend on stateChanged to make MinimalGui pull fresh
         # control/session/runtime objects after an action. Some actions only update
@@ -355,6 +378,8 @@ class GuiBridge(QObject):
             args = {}
         self._facade.handle_gui_command(command, args)
         self.update_state_from_facade()
+        if self._action_requires_render_resource_refresh(command):
+            self._refresh_render_resources_from_facade(force=True)
         self.update_game_state_from_facade()
 
     @Slot(str, str)
