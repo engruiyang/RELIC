@@ -912,7 +912,7 @@ ApplicationWindow {
 // RELIC Core / Developer Diagnostics Console
 // QML smoke shell loaded
 // Connection Runtime Snapshot Attention Gyroscope Session Diagnostics Game HUD
-// device_connected attention_fresh attention_age_ms attention_last_update_ms gyro_x gyro_y gyro_z gyro_fresh gyro_age_ms gyro_last_update_ms session_type session_id latest_report_path warning_flags error_flags
+// connection_status stream_alive device_connected attention_fresh attention_age_ms attention_last_update_ms gyro_x gyro_y gyro_z gyro_fresh gyro_age_ms gyro_last_update_ms session_type session_id latest_report_path warning_flags error_flags
 // Control Panel Reconnect Start Session Stop Session Calibration Status Game Status Quality / Focus (TASK6) Live Input
 // gameViewJson controlManifestJson controlStateJson last_command last_command_result last_command_error command_count
 // profile_status calibration_status profile_loaded user_type attention_low_threshold attention_high_threshold preferred_game_id calibration_usable last_calibration_id failure_reason
