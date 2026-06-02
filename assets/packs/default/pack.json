@@ -61,21 +61,26 @@
     "trace_lock": [
       "tracelock.background.grid",
       "tracelock.target.marked_trace",
-      "tracelock.target.noise_trace",
       "tracelock.focus_zone.default",
       "tracelock.progress_ring.default",
-      "tracelock.timer_bar.default"
+      "tracelock.timer_bar.default",
+      "tracelock.target.burst_trace",
+      "tracelock.target.unstable_trace"
     ],
     "effects": [
       "tracelock.effect.trace_seal",
       "tracelock.effect.lock_failed",
       "tracelock.effect.trace_drop",
-      "tracelock.effect.combo_popup"
+      "tracelock.effect.combo_popup",
+      "tracelock.effect.local_ripple"
     ],
     "audio": [
       "audio.ui.click",
       "audio.tracelock.hit",
-      "audio.tracelock.miss"
+      "audio.tracelock.miss",
+      "audio.tracelock.music.loop",
+      "audio.tracelock.ambient.loop",
+      "audio.tracelock.combo"
     ],
     "fonts": [
       "font.ui.primary"

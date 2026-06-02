@@ -13,19 +13,19 @@
           "asset_key": "tracelock.background.grid",
           "fit": "cover",
           "position": "center",
-          "opacity": 0.65
+          "opacity": 0.72
         },
         {
           "type": "gradient",
           "from": "#020617",
           "to": "#082F49",
           "direction": "vertical",
-          "opacity": 0.45
+          "opacity": 0.48
         },
         {
           "type": "overlay",
           "value": "#000000",
-          "opacity": 0.1
+          "opacity": 0.12
         }
       ]
     },
@@ -34,8 +34,21 @@
     "height": 460,
     "radius": 16,
     "grid_enabled": true,
-    "scanline_enabled": false,
-    "asset_key": "tracelock.background.grid"
+    "scanline_enabled": true,
+    "asset_key": "tracelock.background.grid",
+    "background_effects": {
+      "enabled": true,
+      "scanline_enabled": true,
+      "pulse_enabled": true,
+      "data_stream_enabled": true,
+      "particle_count": 28,
+      "opacity": 0.24,
+      "speed": 1.0,
+      "primary": "#22D3EE",
+      "secondary": "#A855F7",
+      "warning": "#F59E0B",
+      "line_alpha": 0.18
+    }
   },
   "target": {
     "marked_trace": {
@@ -50,15 +63,32 @@
       "fallback_shape": "diamond",
       "fill": "#334155",
       "stroke": "#64748B",
-      "glow": "#94A3B8"
+      "glow": "#94A3B8",
+      "legacy_unused": true
+    },
+    "burst_trace": {
+      "asset_key": "tracelock.target.burst_trace",
+      "fallback_shape": "circle",
+      "fill": "#F97316",
+      "stroke": "#FDBA74",
+      "glow": "#FFEDD5"
+    },
+    "unstable_trace": {
+      "asset_key": "tracelock.target.unstable_trace",
+      "fallback_shape": "circle",
+      "fill": "#A855F7",
+      "stroke": "#D8B4FE",
+      "glow": "#F0ABFC"
     }
   },
   "progress_ring": {
     "asset_key": "tracelock.progress_ring.default",
     "fallback_shape": "ring",
     "stroke": "#10B981",
-    "background": "#1F2937",
-    "width": 4
+    "background": "rgba(31,41,55,0.38)",
+    "width": 4,
+    "outer_padding": 8,
+    "image_opacity": 0.34
   },
   "timer_bar": {
     "asset_key": "tracelock.timer_bar.default",
@@ -78,5 +108,21 @@
     "fallback_shape": "circle",
     "fill": "#44AAFF33",
     "stroke": "#60A5FA"
+  },
+  "audio": {
+    "music_key": "audio.tracelock.music.loop",
+    "ambient_key": "audio.tracelock.ambient.loop",
+    "hit_key": "audio.tracelock.hit",
+    "miss_key": "audio.tracelock.miss",
+    "music_enabled": true,
+    "playback_note": "Set playback_enabled/music_enabled/sfx_enabled to true after replacing demo audio with licensed project audio. TraceLockAudioController handles playback outside GameCanvas.",
+    "combo_key": "audio.tracelock.combo",
+    "ui_click_key": "audio.ui.click",
+    "playback_enabled": true,
+    "ambient_enabled": true,
+    "sfx_enabled": true,
+    "music_volume": 0.28,
+    "ambient_volume": 0.18,
+    "sfx_volume": 0.55
   }
 }

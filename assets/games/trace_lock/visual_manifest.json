@@ -7,21 +7,21 @@
   "assets": {
     "tracelock.target.marked_trace": {
       "type": "sprite",
-      "url": null,
+      "url": "packs/default/images/trace_lock/targets/marked_trace_demo.png",
       "fallback_shape": "circle",
       "style_key": "tracelock.target.marked_trace",
       "description": "Primary marked trace target."
     },
     "tracelock.target.burst_trace": {
       "type": "sprite",
-      "url": null,
+      "url": "packs/default/images/trace_lock/targets/burst_trace_demo.png",
       "fallback_shape": "circle",
       "style_key": "tracelock.target.burst_trace",
       "description": "Burst trace target variant."
     },
     "tracelock.target.unstable_trace": {
       "type": "sprite",
-      "url": null,
+      "url": "packs/default/images/trace_lock/targets/unstable_trace_demo.png",
       "fallback_shape": "circle",
       "style_key": "tracelock.target.unstable_trace",
       "description": "Unstable trace target variant."
@@ -34,11 +34,11 @@
       "description": "Focus zone guide ring."
     },
     "tracelock.progress_ring.default": {
-      "type": "shape",
-      "url": null,
+      "type": "image",
+      "url": "packs/default/images/trace_lock/rings/progress_ring_demo.png",
       "fallback_shape": "ring",
-      "style_key": "progress_ring.default",
-      "description": "Progress ring visual."
+      "style_key": "tracelock.progress_ring.default",
+      "description": "Progress ring decorative image; dynamic arc remains Canvas-based."
     },
     "tracelock.timer.round": {
       "type": "shape",
@@ -53,35 +53,49 @@
       "fallback_shape": "badge",
       "style_key": "tracelock.hud.combo_badge",
       "description": "Combo badge HUD marker."
+    },
+    "tracelock.background.grid": {
+      "type": "image",
+      "url": "packs/default/images/trace_lock/backgrounds/cyber_grid_demo.png",
+      "fallback_shape": "rect",
+      "style_key": "tracelock.canvas.background",
+      "description": "TraceLock canvas cyber grid background."
+    },
+    "tracelock.timer_bar.default": {
+      "type": "shape",
+      "url": null,
+      "fallback_shape": "bar",
+      "style_key": "tracelock.timer_bar.default",
+      "description": "Round timer bar visual."
     }
   },
   "effects": {
     "tracelock.effect.trace_seal": {
       "type": "vfx",
-      "url": null,
+      "url": "packs/default/images/trace_lock/effects/trace_seal_demo.png",
       "style_key": "tracelock.effect.trace_seal",
-      "duration_ms": 250,
+      "duration_ms": 320,
       "description": "Success lock feedback effect."
     },
     "tracelock.effect.lock_failed": {
       "type": "vfx",
-      "url": null,
+      "url": "packs/default/images/trace_lock/effects/lock_failed_demo.png",
       "style_key": "tracelock.effect.lock_failed",
-      "duration_ms": 220,
+      "duration_ms": 260,
       "description": "Failed lock feedback effect."
     },
     "tracelock.effect.trace_drop": {
       "type": "vfx",
-      "url": null,
+      "url": "packs/default/images/trace_lock/effects/trace_drop_demo.png",
       "style_key": "tracelock.effect.trace_drop",
-      "duration_ms": 240,
+      "duration_ms": 300,
       "description": "Dropped trace feedback effect."
     },
     "tracelock.effect.combo_popup": {
       "type": "vfx",
-      "url": null,
+      "url": "packs/default/images/trace_lock/effects/combo_popup_demo.png",
       "style_key": "tracelock.effect.combo_popup",
-      "duration_ms": 300,
+      "duration_ms": 500,
       "description": "Combo popup effect."
     },
     "tracelock.effect.level_up": {
@@ -97,6 +111,13 @@
       "style_key": "tracelock.effect.level_down",
       "duration_ms": 320,
       "description": "Level down effect."
+    },
+    "tracelock.effect.local_ripple": {
+      "type": "vfx",
+      "url": "packs/default/images/trace_lock/effects/local_ripple_demo.png",
+      "style_key": "tracelock.effect.local_ripple",
+      "duration_ms": 300,
+      "description": "Local pointer press ripple effect."
     }
   },
   "styles": {
@@ -104,9 +125,31 @@
     "tracelock.target.burst_trace": "tracelock.target.burst_trace",
     "tracelock.target.unstable_trace": "tracelock.target.unstable_trace",
     "tracelock.focus_zone.default": "focus_zone.default",
-    "tracelock.progress_ring.default": "progress_ring.default",
-    "tracelock.timer.round": "timer.round"
+    "tracelock.progress_ring.default": "tracelock.progress_ring.default",
+    "tracelock.timer.round": "timer.round",
+    "tracelock.background.grid": "tracelock.background.grid",
+    "tracelock.timer_bar.default": "tracelock.timer_bar.default",
+    "tracelock.effect.local_ripple": "tracelock.effect.local_ripple"
   },
-  "supported_entities": ["target", "focus_zone", "progress_ring", "timer_bar"],
-  "supported_visual_states": ["active", "locked", "failed", "expired", "warning", "disabled"]
+  "supported_entities": [
+    "target",
+    "focus_zone",
+    "progress_ring",
+    "timer_bar"
+  ],
+  "supported_visual_states": [
+    "active",
+    "locked",
+    "failed",
+    "expired",
+    "warning",
+    "disabled"
+  ],
+  "supported_effects": [
+    "combo_popup",
+    "local_ripple",
+    "lock_failed",
+    "trace_drop",
+    "trace_seal"
+  ]
 }

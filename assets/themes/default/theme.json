@@ -47,6 +47,113 @@
       "opacity": 0.85,
       "radius_scale": 1.0,
       "debug_label": "target.background"
+    },
+    "tracelock.canvas.background": {
+      "fill": "#020617",
+      "stroke": "#22D3EE",
+      "stroke_width": 1,
+      "opacity": 1.0,
+      "debug_label": "tracelock.canvas.background"
+    },
+    "tracelock.target.marked_trace": {
+      "fill": "#22D3EE",
+      "stroke": "#0891B2",
+      "stroke_width": 2,
+      "opacity": 1.0,
+      "debug_label": "tracelock.target.marked_trace"
+    },
+    "tracelock.target.burst_trace": {
+      "fill": "#F97316",
+      "stroke": "#FDBA74",
+      "stroke_width": 2,
+      "opacity": 1.0,
+      "debug_label": "tracelock.target.burst_trace"
+    },
+    "tracelock.target.unstable_trace": {
+      "fill": "#A855F7",
+      "stroke": "#D8B4FE",
+      "stroke_width": 2,
+      "opacity": 1.0,
+      "debug_label": "tracelock.target.unstable_trace"
+    },
+    "tracelock.progress_ring.default": {
+      "fill": "#00000000",
+      "stroke": "#10B981",
+      "stroke_width": 4,
+      "opacity": 0.95,
+      "debug_label": "tracelock.progress_ring.default"
+    },
+    "tracelock.timer_bar.default": {
+      "fill": "#F59E0B",
+      "stroke": "#374151",
+      "stroke_width": 1,
+      "opacity": 1.0,
+      "debug_label": "tracelock.timer_bar.default"
+    },
+    "tracelock.effect.trace_seal": {
+      "fill": "#22D3EE",
+      "stroke": "#67E8F9",
+      "stroke_width": 2,
+      "opacity": 0.9,
+      "debug_label": "tracelock.effect.trace_seal"
+    },
+    "tracelock.effect.lock_failed": {
+      "fill": "#EF4444",
+      "stroke": "#FCA5A5",
+      "stroke_width": 2,
+      "opacity": 0.88,
+      "debug_label": "tracelock.effect.lock_failed"
+    },
+    "tracelock.effect.trace_drop": {
+      "fill": "#F59E0B",
+      "stroke": "#FCD34D",
+      "stroke_width": 2,
+      "opacity": 0.72,
+      "debug_label": "tracelock.effect.trace_drop"
+    },
+    "tracelock.effect.combo_popup": {
+      "fill": "#10B981",
+      "stroke": "#6EE7B7",
+      "stroke_width": 2,
+      "opacity": 0.9,
+      "debug_label": "tracelock.effect.combo_popup"
+    },
+    "tracelock.effect.local_ripple": {
+      "fill": "#FFFFFF",
+      "stroke": "#67E8F9",
+      "stroke_width": 2,
+      "opacity": 0.78,
+      "debug_label": "tracelock.effect.local_ripple"
+    },
+    "audio.tracelock.music.loop": {
+      "debug_label": "audio.tracelock.music.loop",
+      "volume": 0.28,
+      "enabled": false
+    },
+    "audio.tracelock.ambient.loop": {
+      "debug_label": "audio.tracelock.ambient.loop",
+      "volume": 0.18,
+      "enabled": false
+    },
+    "audio.ui.click": {
+      "debug_label": "audio.ui.click",
+      "volume": 0.45,
+      "enabled": true
+    },
+    "audio.tracelock.hit": {
+      "debug_label": "audio.tracelock.hit",
+      "volume": 0.55,
+      "enabled": true
+    },
+    "audio.tracelock.miss": {
+      "debug_label": "audio.tracelock.miss",
+      "volume": 0.5,
+      "enabled": true
+    },
+    "audio.tracelock.combo": {
+      "debug_label": "audio.tracelock.combo",
+      "volume": 0.6,
+      "enabled": true
     }
   }
 }

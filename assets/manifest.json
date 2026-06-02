@@ -179,29 +179,41 @@
       "description": "feedback error icon slot",
       "task25e0_role": "artist_replaceable_slot"
     },
-    "tracelock.background.grid": {
+    "tracelock.background.default": {
       "type": "image",
-      "url": null,
+      "url": "packs/default/images/trace_lock/backgrounds/cyber_grid_demo.png",
       "fallback_shape": "rect",
       "style_key": "tracelock.canvas.background",
-      "description": "TraceLock canvas background grid slot",
-      "task25e0_role": "artist_replaceable_slot"
+      "description": "TraceLock default replaceable animated background image slot",
+      "task25e0_role": "artist_replaceable_slot",
+      "recommended_path": "packs/default/images/trace_lock/backgrounds/"
+    },
+    "tracelock.background.grid": {
+      "type": "image",
+      "url": "packs/default/images/trace_lock/backgrounds/cyber_grid_demo.png",
+      "fallback_shape": "rect",
+      "style_key": "tracelock.canvas.background",
+      "description": "TraceLock animated cyber grid background image slot",
+      "task25e0_role": "artist_replaceable_slot",
+      "recommended_path": "packs/default/images/trace_lock/backgrounds/"
     },
     "tracelock.target.marked_trace": {
       "type": "image",
-      "url": null,
+      "url": "packs/default/images/trace_lock/targets/marked_trace_demo.png",
       "fallback_shape": "circle",
       "style_key": "tracelock.target.marked_trace",
       "description": "TraceLock primary target image slot",
-      "task25e0_role": "artist_replaceable_slot"
+      "task25e0_role": "artist_replaceable_slot",
+      "recommended_path": "packs/default/images/trace_lock/targets/"
     },
     "tracelock.target.noise_trace": {
       "type": "image",
       "url": null,
       "fallback_shape": "diamond",
       "style_key": "tracelock.target.noise_trace",
-      "description": "TraceLock noise target image slot",
-      "task25e0_role": "artist_replaceable_slot"
+      "description": "Legacy unused TraceLock noise target slot; current gameplay does not spawn fake targets.",
+      "task25e0_role": "legacy_unused_slot",
+      "recommended_path": "packs/default/images/trace_lock/targets/"
     },
     "tracelock.focus_zone.default": {
       "type": "image",
@@ -209,79 +221,89 @@
       "fallback_shape": "circle",
       "style_key": "tracelock.focus_zone.default",
       "description": "TraceLock focus zone image slot",
-      "task25e0_role": "artist_replaceable_slot"
+      "task25e0_role": "artist_replaceable_slot",
+      "recommended_path": "packs/default/images/trace_lock/rings/"
     },
     "tracelock.progress_ring.default": {
       "type": "image",
-      "url": null,
+      "url": "packs/default/images/trace_lock/rings/progress_ring_demo.png",
       "fallback_shape": "ring",
       "style_key": "tracelock.progress_ring.default",
-      "description": "TraceLock progress ring image slot",
-      "task25e0_role": "artist_replaceable_slot"
+      "description": "TraceLock progress ring decorative image slot; dynamic arc is still drawn by Canvas",
+      "task25e0_role": "artist_replaceable_slot",
+      "recommended_path": "packs/default/images/trace_lock/rings/"
     },
     "tracelock.timer_bar.default": {
       "type": "image",
       "url": null,
       "fallback_shape": "rect",
       "style_key": "tracelock.timer_bar.default",
-      "description": "TraceLock timer bar image slot",
-      "task25e0_role": "artist_replaceable_slot"
+      "description": "TraceLock round timer bar texture slot",
+      "task25e0_role": "artist_replaceable_slot",
+      "recommended_path": "packs/default/images/trace_lock/rings/"
     },
     "tracelock.effect.trace_seal": {
       "type": "image",
-      "url": null,
+      "url": "packs/default/images/trace_lock/effects/trace_seal_demo.png",
       "fallback_shape": "circle",
       "style_key": "tracelock.effect.trace_seal",
       "description": "TraceLock hit effect image slot",
-      "task25e0_role": "artist_replaceable_slot"
+      "task25e0_role": "artist_replaceable_slot",
+      "recommended_path": "packs/default/images/trace_lock/effects/"
     },
     "tracelock.effect.lock_failed": {
       "type": "image",
-      "url": null,
+      "url": "packs/default/images/trace_lock/effects/lock_failed_demo.png",
       "fallback_shape": "circle",
       "style_key": "tracelock.effect.lock_failed",
       "description": "TraceLock miss/failed effect image slot",
-      "task25e0_role": "artist_replaceable_slot"
+      "task25e0_role": "artist_replaceable_slot",
+      "recommended_path": "packs/default/images/trace_lock/effects/"
     },
     "tracelock.effect.trace_drop": {
       "type": "image",
-      "url": null,
+      "url": "packs/default/images/trace_lock/effects/trace_drop_demo.png",
       "fallback_shape": "circle",
       "style_key": "tracelock.effect.trace_drop",
       "description": "TraceLock drop/omission effect image slot",
-      "task25e0_role": "artist_replaceable_slot"
+      "task25e0_role": "artist_replaceable_slot",
+      "recommended_path": "packs/default/images/trace_lock/effects/"
     },
     "tracelock.effect.combo_popup": {
       "type": "image",
-      "url": null,
+      "url": "packs/default/images/trace_lock/effects/combo_popup_demo.png",
       "fallback_shape": "rect",
       "style_key": "tracelock.effect.combo_popup",
       "description": "TraceLock combo popup image slot",
-      "task25e0_role": "artist_replaceable_slot"
+      "task25e0_role": "artist_replaceable_slot",
+      "recommended_path": "packs/default/images/trace_lock/effects/"
     },
     "audio.ui.click": {
       "type": "audio",
-      "url": null,
+      "url": "packs/default/audio/ui/ui_click_demo.wav",
       "fallback_shape": null,
       "style_key": "audio.ui.click",
       "description": "UI click sound slot",
-      "task25e0_role": "artist_replaceable_slot"
+      "task25e0_role": "artist_replaceable_slot",
+      "recommended_path": "packs/default/audio/ui/"
     },
     "audio.tracelock.hit": {
       "type": "audio",
-      "url": null,
+      "url": "packs/default/audio/trace_lock/tracelock_hit_demo.wav",
       "fallback_shape": null,
       "style_key": "audio.tracelock.hit",
       "description": "TraceLock hit sound slot",
-      "task25e0_role": "artist_replaceable_slot"
+      "task25e0_role": "artist_replaceable_slot",
+      "recommended_path": "packs/default/audio/trace_lock/"
     },
     "audio.tracelock.miss": {
       "type": "audio",
-      "url": null,
+      "url": "packs/default/audio/trace_lock/tracelock_miss_demo.wav",
       "fallback_shape": null,
       "style_key": "audio.tracelock.miss",
       "description": "TraceLock miss sound slot",
-      "task25e0_role": "artist_replaceable_slot"
+      "task25e0_role": "artist_replaceable_slot",
+      "recommended_path": "packs/default/audio/trace_lock/"
     },
     "font.ui.primary": {
       "type": "font",
@@ -290,6 +312,60 @@
       "style_key": "font.ui.primary",
       "description": "optional primary UI font slot; prefer system font unless licensed",
       "task25e0_role": "artist_replaceable_slot"
+    },
+    "tracelock.target.burst_trace": {
+      "type": "image",
+      "url": "packs/default/images/trace_lock/targets/burst_trace_demo.png",
+      "fallback_shape": "circle",
+      "style_key": "tracelock.target.burst_trace",
+      "description": "TraceLock burst target variant image slot",
+      "task25e0_role": "artist_replaceable_slot",
+      "recommended_path": "packs/default/images/trace_lock/targets/"
+    },
+    "tracelock.target.unstable_trace": {
+      "type": "image",
+      "url": "packs/default/images/trace_lock/targets/unstable_trace_demo.png",
+      "fallback_shape": "circle",
+      "style_key": "tracelock.target.unstable_trace",
+      "description": "TraceLock unstable moving target image slot",
+      "task25e0_role": "artist_replaceable_slot",
+      "recommended_path": "packs/default/images/trace_lock/targets/"
+    },
+    "tracelock.effect.local_ripple": {
+      "type": "image",
+      "url": "packs/default/images/trace_lock/effects/local_ripple_demo.png",
+      "fallback_shape": "circle",
+      "style_key": "tracelock.effect.local_ripple",
+      "description": "TraceLock local click ripple image slot",
+      "task25e0_role": "artist_replaceable_slot",
+      "recommended_path": "packs/default/images/trace_lock/effects/"
+    },
+    "audio.tracelock.music.loop": {
+      "type": "audio",
+      "url": "packs/default/audio/trace_lock/tracelock_music_loop_demo.wav",
+      "fallback_shape": null,
+      "style_key": "audio.tracelock.music.loop",
+      "description": "TraceLock loop music slot; add a licensed .wav/.ogg/.mp3 here when audio playback is enabled",
+      "task25e0_role": "artist_replaceable_slot",
+      "recommended_path": "packs/default/audio/trace_lock/"
+    },
+    "audio.tracelock.ambient.loop": {
+      "type": "audio",
+      "url": "packs/default/audio/trace_lock/tracelock_ambient_loop_demo.wav",
+      "fallback_shape": null,
+      "style_key": "audio.tracelock.ambient.loop",
+      "description": "TraceLock ambient loop slot; add a licensed .wav/.ogg/.mp3 here when audio playback is enabled",
+      "task25e0_role": "artist_replaceable_slot",
+      "recommended_path": "packs/default/audio/trace_lock/"
+    },
+    "audio.tracelock.combo": {
+      "type": "audio",
+      "url": "packs/default/audio/trace_lock/tracelock_combo_demo.wav",
+      "fallback_shape": null,
+      "style_key": "audio.tracelock.combo",
+      "description": "TraceLock combo sound slot; add a licensed .wav/.ogg/.mp3 file when combo SFX playback is enabled",
+      "task25e0_role": "artist_replaceable_slot",
+      "recommended_path": "packs/default/audio/trace_lock/"
     }
   },
   "default_design_pack": "default",
@@ -313,7 +389,8 @@
       ],
       "audio": [
         ".wav",
-        ".ogg"
+        ".ogg",
+        ".mp3"
       ],
       "font": [
         ".ttf",
