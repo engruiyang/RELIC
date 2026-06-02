@@ -51,6 +51,75 @@ Rectangle {
         fallbackColor: root.styleValue(root.gameStyleObj.canvas || ({}), "background_color", "#1a1a1a")
     }
 
+    Canvas {
+        id: backgroundVfxCanvas
+        anchors.fill: parent
+        visible: Boolean(root.styleValue((root.gameStyleObj.canvas || ({})).background_effects || ({}), "enabled", true))
+        opacity: Number(root.styleValue((root.gameStyleObj.canvas || ({})).background_effects || ({}), "opacity", 0.22))
+        property int tick: root.animationTick
+        onTickChanged: requestPaint()
+        onWidthChanged: requestPaint()
+        onHeightChanged: requestPaint()
+        onPaint: {
+            var fx = (root.gameStyleObj.canvas || ({})).background_effects || ({})
+            var ctx = getContext("2d")
+            ctx.reset()
+            var primary = root.styleValue(fx, "primary", "#22D3EE")
+            var secondary = root.styleValue(fx, "secondary", "#A855F7")
+            var warning = root.styleValue(fx, "warning", "#F59E0B")
+            var speed = Math.max(0.1, Number(root.styleValue(fx, "speed", 1.0)))
+            var t = Number(root.animationTick || 0) * speed
+            var lineAlpha = Math.max(0.02, Math.min(0.5, Number(root.styleValue(fx, "line_alpha", 0.18))))
+
+            if (root.styleValue(fx, "scanline_enabled", true)) {
+                ctx.globalAlpha = lineAlpha
+                ctx.strokeStyle = primary
+                ctx.lineWidth = 1
+                var step = 18
+                var offset = (t * 0.9) % step
+                for (var y = -step; y < height + step; y += step) {
+                    ctx.beginPath()
+                    ctx.moveTo(0, y + offset)
+                    ctx.lineTo(width, y + offset)
+                    ctx.stroke()
+                }
+            }
+
+            if (root.styleValue(fx, "data_stream_enabled", true)) {
+                var count = Math.max(0, Number(root.styleValue(fx, "particle_count", 24)))
+                for (var i = 0; i < count; i += 1) {
+                    var x = ((i * 97 + t * (1.6 + (i % 5) * 0.2)) % Math.max(1, width + 80)) - 40
+                    var y2 = (i * 53) % Math.max(1, height)
+                    var len = 18 + (i % 4) * 10
+                    ctx.globalAlpha = 0.10 + (i % 5) * 0.025
+                    ctx.strokeStyle = (i % 3 === 0) ? secondary : primary
+                    ctx.lineWidth = 1 + (i % 2)
+                    ctx.beginPath()
+                    ctx.moveTo(x, y2)
+                    ctx.lineTo(x + len, y2 - len * 0.24)
+                    ctx.stroke()
+                }
+            }
+
+            if (root.styleValue(fx, "pulse_enabled", true)) {
+                var pulse = 0.5 + 0.5 * Math.sin(t / 18.0)
+                var r = Math.max(width, height) * (0.16 + pulse * 0.10)
+                var cx = width * (0.5 + Math.sin(t / 55.0) * 0.10)
+                var cy = height * (0.52 + Math.cos(t / 60.0) * 0.08)
+                var grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r)
+                grad.addColorStop(0.0, warning)
+                grad.addColorStop(0.36, secondary)
+                grad.addColorStop(1.0, "rgba(0,0,0,0)")
+                ctx.globalAlpha = 0.12 + pulse * 0.10
+                ctx.fillStyle = grad
+                ctx.beginPath()
+                ctx.arc(cx, cy, r, 0, Math.PI * 2)
+                ctx.fill()
+            }
+            ctx.globalAlpha = 1.0
+        }
+    }
+
     function styleValue(obj, key, fallbackValue) {
         if (obj === undefined || obj === null) {
             return fallbackValue
@@ -240,6 +309,10 @@ Rectangle {
             return Math.max(0, Math.min(1, remaining / lifetime))
         }
         return p
+    }
+
+    function progressStyle() {
+        return renderResourceStyle("tracelock.progress_ring.default", root.gameStyleObj.progress_ring || ({}))
     }
 
     function timerProgress() {
@@ -604,6 +677,77 @@ Rectangle {
         }
     }
 
+    function renderResourceStyle(assetKey, fallbackStyle) {
+        var desc = assetDescriptor(assetKey)
+        var styleKey = desc.style_key || ""
+        var styles = renderResourcesObj.styles || ({})
+        if (styleKey !== "" && styles[styleKey]) {
+            return styles[styleKey]
+        }
+        return fallbackStyle || ({})
+    }
+
+    function backgroundAssetDescriptor() {
+        var canvas = root.gameStyleObj.canvas || ({})
+        return assetDescriptor(root.styleValue(canvas, "asset_key", "tracelock.background.grid"))
+    }
+
+    function backgroundImageSource() {
+        var desc = backgroundAssetDescriptor()
+        return normalizedImageUrl(desc.url || "")
+    }
+
+    function isBackgroundImageAvailable() {
+        return backgroundImageSource() !== ""
+    }
+
+    function progressRingAssetDescriptor(row) {
+        var style = root.progressStyle()
+        var key = String((row && row.assetKey) || root.styleValue(style, "asset_key", "tracelock.progress_ring.default"))
+        return assetDescriptor(key)
+    }
+
+    function progressRingImageSource(row) {
+        var desc = progressRingAssetDescriptor(row)
+        var style = root.progressStyle()
+        return normalizedImageUrl(desc.url || root.styleValue(style, "url", ""))
+    }
+
+    function isProgressRingImageAvailable(row) {
+        return progressRingImageSource(row) !== ""
+    }
+
+    function rowImageSource(row) {
+        if (!row) return ""
+        if (String(row.kind || "") === "progress_ring") {
+            return progressRingImageSource(row)
+        }
+        return ""
+    }
+
+    function effectAssetKey(effectType) {
+        var e = effectStyle(effectType)
+        var key = root.styleValue(e, "asset_key", "")
+        if (key !== "") return key
+        var et = String(effectType || "trace_seal")
+        if (et.indexOf("tracelock.effect.") === 0) return et
+        return "tracelock.effect." + et
+    }
+
+    function effectAssetDescriptor(effectType) {
+        return assetDescriptor(effectAssetKey(effectType))
+    }
+
+    function effectImageSource(effectType) {
+        var desc = effectAssetDescriptor(effectType)
+        var e = effectStyle(effectType)
+        return normalizedImageUrl(desc.url || root.styleValue(e, "url", ""))
+    }
+
+    function isEffectImageAvailable(effectType) {
+        return effectImageSource(effectType) !== ""
+    }
+
     function targetImageSource(entity) {
         var desc = targetAssetDescriptor(entity)
         var style = targetStyle(entity)
@@ -716,10 +860,23 @@ Rectangle {
                 opacity: entityKind === "focus_zone" ? 0.16 : 1.0
             }
 
+            Image {
+                id: progressRingImage
+                anchors.centerIn: parent
+                width: Math.max(0, hitRr * 2 + Number(root.styleValue(root.progressStyle(), "outer_padding", 8)) + 10)
+                height: width
+                source: root.progressRingImageSource(model)
+                visible: entityKind === "progress_ring" && root.isProgressRingImageAvailable(model)
+                fillMode: Image.PreserveAspectFit
+                smooth: true
+                mipmap: true
+                opacity: Number(root.styleValue(root.progressStyle(), "image_opacity", 0.36))
+            }
+
             Canvas {
                 id: progressArc
                 anchors.centerIn: parent
-                width: Math.max(0, hitRr * 2 + Number(root.styleValue(root.gameStyleObj.progress_ring || ({}), "outer_padding", 8)))
+                width: Math.max(0, hitRr * 2 + Number(root.styleValue(root.progressStyle(), "outer_padding", 8)))
                 height: width
                 visible: entityKind === "progress_ring"
                 property real liveProgress: root.progressValueFromModel(model)
@@ -731,17 +888,17 @@ Rectangle {
                 onPaint: {
                     var ctx = getContext("2d")
                     ctx.reset()
-                    var lineW = Math.max(2, Number(root.styleValue(root.gameStyleObj.progress_ring || ({}), "width", 3)))
+                    var lineW = Math.max(2, Number(root.styleValue(root.progressStyle(), "width", 3)))
                     var r = Math.max(1, Math.min(width, height) / 2 - lineW / 2 - 1)
                     var cx2 = width / 2
                     var cy2 = height / 2
                     ctx.lineCap = "round"
                     ctx.lineWidth = lineW
-                    ctx.strokeStyle = root.styleValue(root.gameStyleObj.progress_ring || ({}), "background", "rgba(31,41,55,0.38)")
+                    ctx.strokeStyle = root.styleValue(root.progressStyle(), "background", "rgba(31,41,55,0.38)")
                     ctx.beginPath()
                     ctx.arc(cx2, cy2, r, -Math.PI / 2, Math.PI * 1.5, false)
                     ctx.stroke()
-                    ctx.strokeStyle = root.styleValue(root.gameStyleObj.progress_ring || ({}), "stroke", "#ffdd55")
+                    ctx.strokeStyle = root.styleValue(root.progressStyle(), "stroke", "#ffdd55")
                     ctx.beginPath()
                     ctx.arc(cx2, cy2, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.max(0, Math.min(1, liveProgress)), false)
                     ctx.stroke()
@@ -779,6 +936,19 @@ Rectangle {
                 opacity: effectRoot.effectKind === "flash" ? 0.54 : 0.28
                 border.width: effectRoot.effectKind === "fade" ? 1 : 2
                 border.color: root.effectGlow(effectRoot.effectType)
+            }
+
+            Image {
+                id: effectImage
+                anchors.centerIn: parent
+                width: parent.width
+                height: parent.height
+                source: root.effectImageSource(effectRoot.effectType)
+                visible: root.isEffectImageAvailable(effectRoot.effectType)
+                fillMode: Image.PreserveAspectFit
+                smooth: true
+                mipmap: true
+                opacity: Number(root.styleValue(root.effectStyle(effectRoot.effectType), "image_opacity", 0.72))
             }
 
             Text {
@@ -828,21 +998,39 @@ Rectangle {
         model: localFeedbackModel
         delegate: Item {
             id: localFeedbackRoot
-            property real baseSize: model.kind === "press" ? 46 : 36
+            property string effectType: "local_ripple"
+            property real baseSize: root.effectRadius(effectType)
+            property int durationMs: Math.max(220, Number(model.durationMs || root.effectDuration(effectType)))
+            property real startScale: root.effectScaleFrom(effectType)
+            property real endScale: root.effectScaleTo(effectType)
+            property real startOpacity: root.effectOpacityFrom(effectType)
+            property real endOpacity: root.effectOpacityTo(effectType)
             width: baseSize
             height: baseSize
             x: root.pxX(Number(model.xNorm || 0.5)) - width / 2
             y: root.pxY(Number(model.yNorm || 0.5)) - height / 2
-            opacity: 0.82
-            scale: 0.62
+            opacity: startOpacity
+            scale: startScale
 
             Rectangle {
                 anchors.fill: parent
                 radius: width / 2
                 color: "transparent"
                 border.width: 2
-                border.color: root.styleValue(root.gameStyleObj.hud || ({}), "text_color", "#FFFFFF")
-                opacity: 0.86
+                border.color: root.effectGlow(localFeedbackRoot.effectType)
+                opacity: root.isEffectImageAvailable(localFeedbackRoot.effectType) ? 0.38 : 0.86
+            }
+
+            Image {
+                anchors.centerIn: parent
+                width: parent.width
+                height: parent.height
+                source: root.effectImageSource(localFeedbackRoot.effectType)
+                visible: root.isEffectImageAvailable(localFeedbackRoot.effectType)
+                fillMode: Image.PreserveAspectFit
+                smooth: true
+                mipmap: true
+                opacity: Number(root.styleValue(root.effectStyle(localFeedbackRoot.effectType), "image_opacity", 0.72))
             }
 
             Rectangle {
@@ -850,22 +1038,22 @@ Rectangle {
                 width: 6
                 height: 6
                 radius: 3
-                color: root.styleValue(root.gameStyleObj.hud || ({}), "text_color", "#FFFFFF")
-                opacity: 0.92
+                color: root.effectColor(localFeedbackRoot.effectType)
+                opacity: root.isEffectImageAvailable(localFeedbackRoot.effectType) ? 0.42 : 0.92
             }
 
             NumberAnimation on scale {
-                from: 0.62
-                to: 1.45
-                duration: Math.max(240, Number(model.durationMs || 360))
+                from: localFeedbackRoot.startScale
+                to: localFeedbackRoot.endScale
+                duration: localFeedbackRoot.durationMs
                 easing.type: Easing.OutCubic
                 running: true
             }
 
             NumberAnimation on opacity {
-                from: 0.82
-                to: 0.0
-                duration: Math.max(240, Number(model.durationMs || 360))
+                from: localFeedbackRoot.startOpacity
+                to: localFeedbackRoot.endOpacity
+                duration: localFeedbackRoot.durationMs
                 easing.type: Easing.OutCubic
                 running: true
             }
@@ -885,6 +1073,8 @@ Rectangle {
         }
     }
 
+    // TASK25E TraceLock asset replacement verifies backgroundVfxCanvas progressRingImageSource effectAssetDescriptor effectImageSource isEffectImageAvailable tracelock.effect.local_ripple.
+    // Audio slots audio.tracelock.music.loop and audio.tracelock.ambient.loop are exposed as replaceable assets; playback is intentionally left to a dedicated audio renderer.
     // TASK25B GameCanvas consumes canvas.background layered color/image/gradient/overlay and TraceLock game style tokens.
     // TASK25C GameCanvas consumes TraceLock visual asset_key/style_key tokens.
     // canvas.background layered color/image/gradient/overlay

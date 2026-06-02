@@ -29,6 +29,19 @@ ApplicationWindow {
     property var componentStylesObj: ({})
     property var gameStylesObj: ({})
     property var effectStylesObj: ({})
+    property bool traceLockAudioPlaybackEnabled: false
+    property bool traceLockMusicEnabled: false
+    property bool traceLockAmbientEnabled: false
+    property bool traceLockSfxEnabled: false
+    property string traceLockMusicKey: "audio.tracelock.music.loop"
+    property string traceLockAmbientKey: "audio.tracelock.ambient.loop"
+    property string traceLockHitKey: "audio.tracelock.hit"
+    property string traceLockMissKey: "audio.tracelock.miss"
+    property string traceLockComboKey: "audio.tracelock.combo"
+    property string traceLockUiClickKey: "audio.ui.click"
+    property real traceLockMusicVolume: 0.28
+    property real traceLockAmbientVolume: 0.18
+    property real traceLockSfxVolume: 0.55
     property int gameViewPullSeq: 0
     property int lastGameViewPullAtMs: 0
 
@@ -70,6 +83,56 @@ ApplicationWindow {
 
     function componentStyle(componentId) {
         return componentStylesObj[componentId] || ({})
+    }
+
+
+    function traceLockGameConfig() {
+        var gs = gameStylesObj.trace_lock || gameStylesObj.tracelock || ({})
+        return gs
+    }
+
+    function traceLockAudioConfig() {
+        var gs = traceLockGameConfig()
+        return gs.audio || ({})
+    }
+
+    function boolConfigValue(v, fallbackValue) {
+        if (v === true || v === "true" || v === 1 || v === "1") return true
+        if (v === false || v === "false" || v === 0 || v === "0") return false
+        return fallbackValue
+    }
+
+    function stringConfigValue(v, fallbackValue) {
+        if (v === undefined || v === null || v === "") return fallbackValue
+        return String(v)
+    }
+
+    function numberConfigValue(v, fallbackValue) {
+        var n = Number(v)
+        return isNaN(n) ? fallbackValue : n
+    }
+
+    function pullTraceLockAudioFlags() {
+        var cfg = traceLockAudioConfig()
+        traceLockAudioPlaybackEnabled = boolConfigValue(cfg.playback_enabled, false)
+        traceLockMusicEnabled = boolConfigValue(cfg.music_enabled, false)
+        traceLockAmbientEnabled = boolConfigValue(cfg.ambient_enabled, false)
+        traceLockSfxEnabled = boolConfigValue(cfg.sfx_enabled, false)
+        traceLockMusicKey = stringConfigValue(cfg.music_key, "audio.tracelock.music.loop")
+        traceLockAmbientKey = stringConfigValue(cfg.ambient_key, "audio.tracelock.ambient.loop")
+        traceLockHitKey = stringConfigValue(cfg.hit_key, "audio.tracelock.hit")
+        traceLockMissKey = stringConfigValue(cfg.miss_key, "audio.tracelock.miss")
+        traceLockComboKey = stringConfigValue(cfg.combo_key, "audio.tracelock.combo")
+        traceLockUiClickKey = stringConfigValue(cfg.ui_click_key, "audio.ui.click")
+        traceLockMusicVolume = numberConfigValue(cfg.music_volume, 0.28)
+        traceLockAmbientVolume = numberConfigValue(cfg.ambient_volume, 0.18)
+        traceLockSfxVolume = numberConfigValue(cfg.sfx_volume, 0.55)
+    }
+
+    function syncTraceLockAudioController() {
+        if (traceLockAudioController) {
+            traceLockAudioController.updateMusicState()
+        }
     }
 
     function appShellLayoutValue(key, fallbackValue) {
@@ -165,6 +228,8 @@ ApplicationWindow {
         componentStylesObj = renderResourcesObj.component_styles || ({})
         gameStylesObj = renderResourcesObj.game_styles || ({})
         effectStylesObj = renderResourcesObj.effect_styles || ({})
+        pullTraceLockAudioFlags()
+        syncTraceLockAudioController()
     }
 
     function pullGameState() {
@@ -174,6 +239,7 @@ ApplicationWindow {
         var now = Date.now()
         gameHudObj = safeJsonParse(guiBridge.gameHudJson)
         gameViewObj = safeJsonParse(guiBridge.gameViewJson)
+        syncTraceLockAudioController()
         gameViewPullSeq += 1
         lastGameViewPullAtMs = now
         if (gameViewObj && typeof gameViewObj === "object") {
@@ -901,6 +967,27 @@ ApplicationWindow {
                 }
             }
         }
+    }
+
+
+    TraceLockAudioController {
+        id: traceLockAudioController
+        renderResourcesObj: root.renderResourcesObj
+        gameHudObj: root.gameHudObj
+        gameViewObj: root.gameViewObj
+        playbackEnabled: root.traceLockAudioPlaybackEnabled
+        musicEnabled: root.traceLockMusicEnabled
+        ambientEnabled: root.traceLockAmbientEnabled
+        sfxEnabled: root.traceLockSfxEnabled
+        musicKey: root.traceLockMusicKey
+        ambientKey: root.traceLockAmbientKey
+        hitKey: root.traceLockHitKey
+        missKey: root.traceLockMissKey
+        comboKey: root.traceLockComboKey
+        uiClickKey: root.traceLockUiClickKey
+        musicVolume: root.traceLockMusicVolume
+        ambientVolume: root.traceLockAmbientVolume
+        sfxVolume: root.traceLockSfxVolume
     }
 
     // TASK26I shell card tokens: shell_top_status_card shell_left_nav_card shell_nav_card_home shell_nav_card_user shell_nav_card_calibration shell_nav_card_training shell_nav_card_report shell_nav_card_developer_lab shell_global_safety_card shell_status_chip_current_user shell_status_chip_connection shell_status_chip_quality shell_status_chip_control shell_status_chip_session shell_content_host_card
