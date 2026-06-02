@@ -51,6 +51,7 @@ class TraceLockClient:
             "supported_inputs": ["pointer_click"],
             "supported_entities": ["target", "focus_zone", "progress_ring", "timer_bar"],
             "supported_effects": ["trace_seal", "lock_failed", "trace_drop", "combo_popup", "level_up", "level_down"],
+            "supported_audio": ["audio.tracelock.hit", "audio.tracelock.miss", "audio.tracelock.music.loop"],
             "default_difficulty": 1,
             "mouse_action_map": {"0": "target_primary", "1": "background", "2": "target_omitted", "3": "trace_seal", "4": "lock_failed"},
         }
@@ -177,19 +178,19 @@ class TraceLockClient:
         target = self._active_target
         hit_debug = self._hit_debug_info(game_input_event.x_norm, game_input_event.y_norm, target, game_input_event.created_at_ms) if target else {"target_present": False, "final_hit": False, "reason": "no_active_target"}
         if isinstance(game_input_event.payload, dict):
-            qml_diag = game_input_event.payload.get("diagnostic")
-            if isinstance(qml_diag, dict):
+            display_diag = game_input_event.payload.get("diagnostic")
+            if isinstance(display_diag, dict):
                 hit_debug["qml_display"] = {
-                    "frame_id": qml_diag.get("frame_id"),
-                    "display_target_id": qml_diag.get("display_target_id"),
-                    "display_target_x": qml_diag.get("display_target_x"),
-                    "display_target_y": qml_diag.get("display_target_y"),
-                    "display_hit_radius": qml_diag.get("display_hit_radius"),
-                    "display_dist": qml_diag.get("display_dist"),
-                    "display_hit_candidate": qml_diag.get("display_hit_candidate"),
-                    "display_target_age_ms": qml_diag.get("display_target_age_ms"),
-                    "display_progress": qml_diag.get("display_progress"),
-                    "ring_progress": qml_diag.get("ring_progress"),
+                    "frame_id": display_diag.get("frame_id"),
+                    "display_target_id": display_diag.get("display_target_id"),
+                    "display_target_x": display_diag.get("display_target_x"),
+                    "display_target_y": display_diag.get("display_target_y"),
+                    "display_hit_radius": display_diag.get("display_hit_radius"),
+                    "display_dist": display_diag.get("display_dist"),
+                    "display_hit_candidate": display_diag.get("display_hit_candidate"),
+                    "display_target_age_ms": display_diag.get("display_target_age_ms"),
+                    "display_progress": display_diag.get("display_progress"),
+                    "ring_progress": display_diag.get("ring_progress"),
                 }
         print("[TRACELOCK HIT DEBUG] " + json.dumps(hit_debug, ensure_ascii=False, sort_keys=True), flush=True)
         if target and bool(hit_debug.get("final_hit")):
@@ -233,7 +234,7 @@ class TraceLockClient:
         score_multiplier = 1 if self._combo < 5 else (2 if self._combo < 10 else 3)
         entities = target_entities + [
             GameEntity(id="focus_zone", kind="focus_zone", role="lock_area", x=0.5, y=0.5, radius=0.42, state="active", style_key="tracelock.focus_zone.default", asset_key="tracelock.focus_zone.default", interactive=False, hit_shape="circle", metadata={}),
-            GameEntity(id="round_timer", kind="timer_bar", role="round_timer", x=0.5, y=0.04, radius=0.0, state="active", style_key="tracelock.timer.round", asset_key="tracelock.timer.round", interactive=False, hit_shape="rect", metadata={"progress": max(0.0, min(1.0, (self._game_duration_ms - self._clock_ms) / self._game_duration_ms))}),
+            GameEntity(id="round_timer", kind="timer_bar", role="round_timer", x=0.5, y=0.04, radius=0.0, state="active", style_key="tracelock.timer_bar.default", asset_key="tracelock.timer_bar.default", interactive=False, hit_shape="rect", metadata={"progress": max(0.0, min(1.0, (self._game_duration_ms - self._clock_ms) / self._game_duration_ms))}),
         ]
         visual_events = [v for v in self._visual_events]
         self._visual_events.clear()
@@ -470,7 +471,7 @@ class TraceLockClient:
             hit_swept = swept_dist <= compensated_radius
 
         payload = {}
-        qml_diag = {}
+        display_diag = {}
         try:
             # game_input_event.payload is not available here, so the caller
             # injects UI layer fields below by reading GameInputEvent in handle_input.
