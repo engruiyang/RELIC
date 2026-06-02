@@ -1,0 +1,368 @@
+TASK25A：设计包合同与资源清单
+
+状态：已完成
+
+目标是建立 assets/packs/default/ 的结构，让资源管理器能输出：
+
+design_pack
+theme
+page_styles
+component_styles
+game_styles
+effect_styles
+missing_design_pack_fields
+
+同时保留旧字段：
+
+theme_id
+layout_id
+game_id
+assets
+styles
+layout_regions
+missing_assets
+missing_styles
+missing_regions
+
+这一步已经由 Codex 完成，并且测试通过。当前设计包入口、默认包声明、theme/components/games/effects 的结构已经存在。
+
+TASK25B：全 GUI 页面外观读取设计包
+
+状态：下一步重点
+
+这一阶段要让整个 GUI 读取设计包，而不是只让 GameCanvas 改颜色。
+
+TASK25B 的目标
+
+让这些对象都能从设计包读取外观：
+
+MinimalGui / AppShell
+左侧导航栏
+顶部栏
+页面背景
+UserPage
+CalibrationPage
+TrainingPage
+ReportPage
+PageHeader
+PageFeedbackPanel
+GroupBox / 面板
+按钮基础样式
+文字样式
+页面间距
+页面边距
+HUD 面板尺寸
+Training 游戏区布局
+背景自定义必须升级
+
+背景不能只有颜色。需要支持完整背景系统。
+
+建议 page JSON 支持：
+
+{
+  "background": {
+    "type": "layered",
+    "layers": [
+      {
+        "type": "color",
+        "value": "#020617"
+      },
+      {
+        "type": "image",
+        "asset_key": "background.training.main",
+        "fit": "cover",
+        "position": "center",
+        "opacity": 0.85
+      },
+      {
+        "type": "gradient",
+        "from": "#020617",
+        "to": "#0F172A",
+        "direction": "vertical",
+        "opacity": 0.55
+      },
+      {
+        "type": "overlay",
+        "value": "#000000",
+        "opacity": 0.25
+      }
+    ]
+  }
+}
+
+其中 image.asset_key 必须通过 manifest / resource bundle 解析，不允许 QML 直接写死 assets/xxx.png 路径。
+
+背景图片应支持：
+
+fit: cover / contain / stretch / tile / center
+position: center / top / bottom / left / right
+opacity
+blur
+darken
+lighten
+overlay
+border_crop
+safe_area_margin
+
+第一版可以先支持：
+
+color
+gradient
+image asset_key
+opacity
+fit
+position
+overlay
+
+blur、parallax、tile 可以放到 TASK25D 或 TASK25F。
+
+组件自定义目标
+
+新增或强化这些设计组件：
+
+DesignRoot
+DesignPage
+DesignPanel
+DesignHeader
+DesignButton
+DesignMetricCard
+DesignDivider
+DesignBackground
+
+重点说明：按钮不能再直接给 Qt 原生 Button 写 background: Rectangle，你之前已经遇到过 native style 不支持的问题。正确方式是新增自绘按钮组件，例如 DesignButton.qml，内部用 Rectangle + MouseArea + Text 实现 pressed/hover/disabled 视觉状态。
+
+TASK25B 验收目标
+
+完成后应满足：
+
+1. AppShell 背景能从设计包读取。
+2. User / Calibration / Training / Report 页面背景能从 page style 读取。
+3. 背景支持图片 asset_key，缺图片时 fallback 到颜色。
+4. 面板背景、边框、圆角、透明度能从 panel.json 读取。
+5. 标题字体、字号、颜色能从 theme/header.json 读取。
+6. Training HUD 尺寸不再小得离谱，能从 training_page.json 或 trace_lock.json 调整。
+7. 不改任何业务逻辑。
+8. QML load 通过。
+9. pointer_click / difficulty / session / report 不受影响。
+TASK25C：GameCanvas 读取 TraceLock 游戏素材包
+
+状态：TASK25B 后继续
+
+这一阶段专门处理 GameCanvas 和 TraceLock 游戏视觉。你现在的 trace_lock.json 已经有 canvas、target、progress_ring、timer_bar、hud 字段，适合作为 TASK25C 的基础。
+
+TASK25C 目标
+
+让 GameCanvas 根据 trace_lock.json 渲染：
+
+游戏背景
+目标外观
+噪声目标外观
+进度环
+计时条
+焦点区
+HUD 文本颜色
+HUD 布局
+目标 glow
+目标描边
+目标尺寸修饰
+
+TraceLockClient 仍然只输出：
+
+entity.kind
+entity.role
+entity.asset_key
+entity.style_key
+entity.x / y / radius
+entity.metadata
+
+GameCanvas 根据这些字段和 design pack 查视觉样式。
+
+GameCanvas 背景目标
+
+GameCanvas 自己也要支持背景图片，而不是只读 canvas.background 颜色。
+
+建议 trace_lock.json 扩展：
+
+{
+  "canvas": {
+    "background": {
+      "type": "layered",
+      "layers": [
+        {
+          "type": "color",
+          "value": "#020617"
+        },
+        {
+          "type": "image",
+          "asset_key": "tracelock.background.grid",
+          "fit": "cover",
+          "opacity": 0.65
+        },
+        {
+          "type": "overlay",
+          "value": "#020617",
+          "opacity": 0.35
+        }
+      ]
+    },
+    "border": "#22D3EE",
+    "radius": 16,
+    "grid_enabled": true,
+    "scanline_enabled": false
+  }
+}
+TASK25C 验收目标
+1. 修改 trace_lock.json 中 target.marked_trace.fill 后，目标颜色变化。
+2. 修改 canvas image asset_key 后，GameCanvas 背景变化。
+3. 缺图片时 fallback 到颜色，不崩溃。
+4. pointer_click 坐标仍准确。
+5. 命中判定不变。
+6. TraceLock 难度和报告不变。
+TASK25D：动效 / 粒子 / 光效参数化
+
+状态：TASK25C 后做
+
+当前 trace_lock_effects.json 已经定义了 trace_seal、lock_failed、trace_drop、combo_popup 的类型、时长、粒子数量和颜色，这是好的起点。
+
+TASK25D 目标
+
+让 GameCanvas 根据 effects JSON 渲染：
+
+命中 pulse
+失败 flash
+遗漏 fade
+连击 popup
+粒子 burst
+目标 glow
+进度环闪烁
+计时条低时间警告
+动效参数应支持
+{
+  "trace_seal": {
+    "type": "particle_burst",
+    "duration_ms": 320,
+    "particle_count": 18,
+    "color": "#22D3EE",
+    "glow": "#67E8F9",
+    "scale_from": 0.7,
+    "scale_to": 1.4,
+    "opacity_from": 1.0,
+    "opacity_to": 0.0,
+    "easing": "out_cubic"
+  }
+}
+
+第一版可以只做：
+
+pulse
+flash
+fade
+popup
+simple burst
+
+复杂粒子、拖尾、后处理光效后置。
+
+TASK25D 验收目标
+1. 命中时显示 trace_seal 效果。
+2. 点空时显示 lock_failed 效果。
+3. 目标超时显示 trace_drop 效果。
+4. combo 增长时可显示 combo_popup。
+5. 修改 duration_ms / color / particle_count 后效果变化。
+6. 效果不影响 pointer_click。
+7. 效果不影响训练性能和报告。
+TASK25E：正式美术素材替换
+
+状态：最后做
+
+这一阶段才真正放入图片、图标、背景、音效、字体等素材。
+
+TASK25E 目标
+
+引入真实素材包，例如：
+
+背景图
+页面装饰图
+按钮贴图
+TraceLock 目标图
+TraceLock 噪声目标图
+进度环贴图
+命中特效贴图
+失败特效贴图
+HUD 装饰图
+音效
+可授权字体
+
+素材包目录建议：
+
+assets/packs/default/images/
+  backgrounds/
+  ui/
+  trace_lock/
+  effects/
+
+assets/packs/default/audio/
+  ui/
+  trace_lock/
+
+assets/packs/default/fonts/
+
+注意字体和素材版权。字体文件不要随便打包，除非你明确拥有授权。可以优先使用系统字体族名。
+
+TASK25E 验收目标
+1. 替换背景图不需要改 QML。
+2. 替换 TraceLock 目标图不需要改 TraceLockClient。
+3. 替换按钮图不需要改业务按钮逻辑。
+4. 换素材后全量测试通过。
+5. 缺素材 fallback 正常。
+6. 无授权风险素材不进入仓库。
+TASK25F：设计包验收、主题切换与稳定性收束
+
+这是新增的收尾阶段，建议加上。因为你的目标是“可替换素材包”，最终必须验证换包能力。
+
+TASK25F 目标
+1. 支持 default / experimental 两个设计包。
+2. 启动时可选择 design_pack_id。
+3. 缺字段 fallback 到 default。
+4. 坏 JSON 不导致 GUI 崩溃。
+5. QML load 通过。
+6. User / Calibration / Training / Report 主流程不受影响。
+7. GameCanvas 输入和 TraceLock 难度不受影响。
+
+以后可以支持：
+
+python -m ui_cli.run_gui_minimal --design-pack default
+python -m ui_cli.run_gui_minimal --design-pack neon
+
+这个阶段可以后置，但路线中应保留。
+
+重新整理后的完整路线
+TASK25A：设计包合同与资源清单
+已完成。
+建立 pack/theme/pages/components/games/effects 合同。
+
+TASK25B：全 GUI 页面外观读取设计包
+下一步。
+让 AppShell、页面、背景、面板、字体、间距、按钮基础外观、HUD 尺寸读取设计包。
+背景必须支持图片 asset_key、渐变、叠层、透明度、fit、position、fallback。
+
+TASK25C：GameCanvas 读取 TraceLock 游戏素材包
+让 GameCanvas 根据 trace_lock.json 渲染 canvas、target、ring、timer、hud。
+支持 GameCanvas 背景图片和目标素材 key。
+
+TASK25D：动效 / 粒子 / 光效参数化
+让 trace_seal、lock_failed、trace_drop、combo_popup 等效果由 effects JSON 控制。
+
+TASK25E：正式美术素材替换
+放入真实图片、背景、按钮贴图、TraceLock 目标图、音效、可授权字体。
+
+TASK25F：设计包验收与主题切换
+验证多设计包切换、fallback、坏资源安全、完整主流程稳定。
+现在下一步
+
+下一步应做：
+
+TASK25B：全 GUI 页面外观读取设计包
+
+重点第一轮不要碰复杂粒子，也不要急着放真实图片。先把背景系统扩展到支持图片 asset_key，并让 User / Calibration / Training / Report 都能吃到 theme/page/component token。
+
+然后再进入 TASK25C，专门做 GameCanvas 的素材包读取。
